@@ -29,16 +29,14 @@ public final class ClientHolder {
 
     public static TeletaskClient getClient() {
         if (client == null) {
-            TeletaskClient client = new TeletaskClient(getClientConfig(), Boolean.getBoolean("production"), System.getProperty("mqtt.host"), System.getProperty("mqtt.port", "1883"));
+            TeletaskClient client = new TeletaskClient(getClientConfig(System.getProperty("configFile")), Boolean.getBoolean("production"), System.getProperty("mqtt.host"), System.getProperty("mqtt.port", "1883"));
             setClient(client.start());
         }
         return client;
     }
 
-    public static ClientConfigSpec getClientConfig() {
+    public static ClientConfigSpec getClientConfig(String configFile) {
         ClientConfigSpec clientConfig = null;
-
-        String configFile = System.getProperty("configFile");
 
         Preconditions.checkArgument(configFile != null, "Please specify -DconfigFile as a startup parameter");
 
