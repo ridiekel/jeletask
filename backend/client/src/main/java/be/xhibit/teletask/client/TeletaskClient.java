@@ -150,8 +150,8 @@ public final class TeletaskClient implements TeletaskReceiver {
     private final boolean production;
 
     private final ClientConfigSpec config;
-
-    private static TeletaskClient instance = null;
+    private String mqttHost;
+    private String mqttPort;
 
     private final ExecutorService executorService;
 
@@ -162,15 +162,16 @@ public final class TeletaskClient implements TeletaskReceiver {
     private TeletaskTestServer teletaskTestServer;
     private EventMessageListener eventMessageListener;
 
-    /**
-     * Default constructor.  Responsible for reading the client config (JSON).
-     * Singleton class.  Private constructor to prevent new instance creations.
-     */
     public TeletaskClient(ClientConfigSpec config, boolean production) {
-        this.config = config;
         this.executorService = Executors.newSingleThreadExecutor();
+        this.config = config;
         this.production = production;
-        this.start();
+    }
+
+    public TeletaskClient(ClientConfigSpec config, boolean production, String mqttHost, String mqttPort) {
+        this(config, production);
+        this.mqttHost = mqttHost;
+        this.mqttPort = mqttPort;
     }
 
 // ################################################ PUBLIC API FUNCTIONS
@@ -332,7 +333,7 @@ public final class TeletaskClient implements TeletaskReceiver {
         }
     }
 
-    private void start() {
+    public TeletaskClient start() {
         String host = this.getConfig().getHost();
         int port = this.getConfig().getPort();
 
@@ -349,13 +350,13 @@ public final class TeletaskClient implements TeletaskReceiver {
         this.startKeepAlive();
 
         this.sendLogEventMessages("ON");
+
+        return this;
     }
 
     private void registerMqttPublisher() {
-        String mqttHost = System.getProperty("mqtt.host");
-        if (mqttHost != null) {
-            String mqttPort = System.getProperty("mqtt.port", "1883");
-            MqttPublisher publisher = new MqttPublisher(mqttHost, mqttPort);
+        if (this.mqttHost != null) {
+            MqttPublisher publisher = new MqttPublisher(this.mqttHost, this.mqttPort);
             this.registerStateChangeListener(new MqttStateChangeListener(publisher));
         }
     }

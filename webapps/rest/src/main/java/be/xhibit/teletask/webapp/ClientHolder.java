@@ -29,7 +29,8 @@ public final class ClientHolder {
 
     public static TeletaskClient getClient() {
         if (client == null) {
-            setClient(new TeletaskClient(getClientConfig(), Boolean.getBoolean("production")));
+            TeletaskClient client = new TeletaskClient(getClientConfig(), Boolean.getBoolean("production"), System.getProperty("mqtt.host"), System.getProperty("mqtt.port", "1883"));
+            setClient(client.start());
         }
         return client;
     }
