@@ -35,7 +35,7 @@ public final class ClientHolder {
         return client;
     }
 
-    protected static ClientConfigSpec getClientConfig() {
+    public static ClientConfigSpec getClientConfig() {
         ClientConfigSpec clientConfig = null;
 
         String configFile = System.getProperty("configFile");
