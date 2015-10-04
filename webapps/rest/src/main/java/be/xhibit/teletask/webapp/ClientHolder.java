@@ -29,7 +29,7 @@ public final class ClientHolder {
 
     public static TeletaskClient getClient() {
         if (client == null) {
-            setClient(TeletaskClient.getInstance(getClientConfig()));
+            setClient(new TeletaskClient(getClientConfig(), Boolean.getBoolean("production")));
         }
         return client;
     }

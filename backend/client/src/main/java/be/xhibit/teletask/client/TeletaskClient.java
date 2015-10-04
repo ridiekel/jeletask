@@ -147,6 +147,8 @@ public final class TeletaskClient implements TeletaskReceiver {
     private OutputStream outputStream;
     private InputStream inputStream;
 
+    private final boolean production;
+
     private final ClientConfigSpec config;
 
     private static TeletaskClient instance = null;
@@ -164,23 +166,11 @@ public final class TeletaskClient implements TeletaskReceiver {
      * Default constructor.  Responsible for reading the client config (JSON).
      * Singleton class.  Private constructor to prevent new instance creations.
      */
-    private TeletaskClient(ClientConfigSpec config) {
+    public TeletaskClient(ClientConfigSpec config, boolean production) {
         this.config = config;
         this.executorService = Executors.newSingleThreadExecutor();
-    }
-
-    /**
-     * Create of get an instance of the TDSClient.
-     *
-     * @return a new or existing TDSClient instance.
-     */
-    public static synchronized TeletaskClient getInstance(ClientConfigSpec clientConfig) {
-        if (instance == null) {
-            instance = new TeletaskClient(clientConfig);
-            instance.start();
-        }
-
-        return instance;
+        this.production = production;
+        this.start();
     }
 
 // ################################################ PUBLIC API FUNCTIONS
@@ -205,14 +195,11 @@ public final class TeletaskClient implements TeletaskReceiver {
 
     public void groupGet(final Function function, final int... numbers) {
         try {
-            this.getExecutorService().submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        TeletaskClient.this.getMessageHandler().getGroupGetStrategy().execute(TeletaskClient.this, function, numbers);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+            this.getExecutorService().submit((Runnable) () -> {
+                try {
+                    TeletaskClient.this.getMessageHandler().getGroupGetStrategy().execute(TeletaskClient.this, function, numbers);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }).get();
         } catch (InterruptedException e) {
@@ -374,7 +361,7 @@ public final class TeletaskClient implements TeletaskReceiver {
     }
 
     private String startTestServer(String host, int port) {
-        if (!Boolean.getBoolean("production")) {
+        if (!this.production) {
             LOG.debug("Starting test server...");
             host = "localhost";
 
@@ -522,16 +509,13 @@ public final class TeletaskClient implements TeletaskReceiver {
         @Override
         public void run() {
             try {
-                TeletaskClient.this.getExecutorService().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            KeepAliveService.this.keepAliveStrategy.execute(TeletaskClient.this);
-                        } catch (Exception e) {
-                            LOG.error("Exception ({}) caught in run: {} - Restarting Teletask Client Sockets", e.getClass().getName(), e.getMessage());
-                            TeletaskClient.this.stop();
-                            TeletaskClient.this.start();
-                        }
+                TeletaskClient.this.getExecutorService().execute(() -> {
+                    try {
+                        KeepAliveService.this.keepAliveStrategy.execute(TeletaskClient.this);
+                    } catch (Exception e) {
+                        LOG.error("Exception ({}) caught in run: {} - Restarting Teletask Client Sockets", e.getClass().getName(), e.getMessage());
+                        TeletaskClient.this.stop();
+                        TeletaskClient.this.start();
                     }
                 });
             } catch (Exception e) {
