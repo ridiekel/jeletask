@@ -10,7 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.function.Function;
 
 public final class ClientHolder {
     /**
@@ -35,19 +40,46 @@ public final class ClientHolder {
         return client;
     }
 
-    public static ClientConfigSpec getClientConfig(String configFile) {
+    public static ClientConfigSpec getClientConfig(String config) {
         ClientConfigSpec clientConfig = null;
 
-        Preconditions.checkArgument(configFile != null, "Please specify -DconfigFile as a startup parameter");
+        Preconditions.checkArgument(config != null, "Please specify -DconfigFile as a startup parameter");
 
-        LOG.debug("Using config file {}", configFile);
+        LOG.debug("Using config file {}", config);
 
-        try (FileInputStream jsonData = new FileInputStream(configFile)) {
+        if (Files.exists(Paths.get(config))) {
+            clientConfig = fromResource(config, toFileInputStream());
+        } else {
+            clientConfig = fromResource(config, toClasspathInputStream());
+        }
+
+        Preconditions.checkState(clientConfig != null, "Could not determine the configuration. Make sure the clientConfig parameter refers to a valid json config file or a valid teletask nbt printed text file.");
+
+        return clientConfig;
+    }
+
+    private static Function<String, InputStream> toClasspathInputStream() {
+        return ClientHolder.class::getResourceAsStream;
+    }
+
+    private static Function<String, InputStream> toFileInputStream() {
+        return (name) -> {
+            try {
+                return new FileInputStream(name);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    private static ClientConfigSpec fromResource(String configFile, Function<String, InputStream> toStream) {
+        ClientConfigSpec clientConfig = null;
+        try (InputStream jsonData = toStream.apply(configFile)) {
             LOG.debug("Trying to load the configFile as json...");
             clientConfig = TDSClientConfig.read(jsonData);
         } catch (Exception e) {
             LOG.debug("Trying to load the configFile as nbt printed text...");
-            try (FileInputStream inputStream = new FileInputStream(configFile)) {
+            try (InputStream inputStream = toStream.apply(configFile)) {
                 FullNbtModelConsumerImpl consumer = new FullNbtModelConsumerImpl();
                 PrintedFileVisitor.getInstance().visit(consumer, inputStream);
                 clientConfig = consumer.getCentralUnit();
@@ -55,9 +87,6 @@ public final class ClientHolder {
                 LOG.error("Exception ({}) caught in getClientConfig: {}", e1.getClass().getName(), e1.getMessage(), e1);
             }
         }
-
-        Preconditions.checkState(clientConfig != null, "Could not determine the configuration. Make sure the clientConfig parameter refers to a valid json config file or a valid teletask nbt printed text file.");
-
         return clientConfig;
     }
 }
