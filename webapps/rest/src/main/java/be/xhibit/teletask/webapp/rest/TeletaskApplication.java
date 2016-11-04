@@ -1,6 +1,6 @@
 package be.xhibit.teletask.webapp.rest;
 
-import be.xhibit.teletask.webapp.rest.component.ComponentResource;
+import be.xhibit.teletask.webapp.rest.component.ComponentResourceSupport;
 import be.xhibit.teletask.webapp.rest.ota.OneTimeAccessResource;
 
 import javax.ws.rs.core.Application;
@@ -14,7 +14,7 @@ public class TeletaskApplication extends Application {
     private final Set<Object> singletons = new HashSet<Object>();
 
     public TeletaskApplication() {
-        this.singletons.add(new ComponentResource());
+        this.singletons.add(new ComponentResourceSupport());
         this.singletons.add(new OneTimeAccessResource());
     }
 

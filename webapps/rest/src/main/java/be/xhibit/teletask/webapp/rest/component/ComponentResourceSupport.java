@@ -3,6 +3,7 @@ package be.xhibit.teletask.webapp.rest.component;
 import be.xhibit.teletask.client.TeletaskClient;
 import be.xhibit.teletask.model.spec.ComponentSpec;
 import be.xhibit.teletask.model.spec.Function;
+import be.xhibit.teletask.webapp.ClientHolder;
 import be.xhibit.teletask.webapp.rest.ResourceSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +17,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 @Path("/component")
-public abstract class ComponentResourceSupport extends ResourceSupport {
+public class ComponentResourceSupport extends ResourceSupport {
     private static final ObjectWriter PRETTY_WRITER = new ObjectMapper().writerWithDefaultPrettyPrinter();
     private static final ObjectWriter WRITER = new ObjectMapper().writer();
 
@@ -53,7 +54,7 @@ public abstract class ComponentResourceSupport extends ResourceSupport {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/config/{function}")
     public Response config(@PathParam("function") String function) throws JsonProcessingException {
-        return this.buildSuccessResponse(WRITER.writeValueAsString(this.getClient().getConfig().getComponents(Function.valueOf(function.toUpperCase()))));
+        return this.buildSuccessResponse(WRITER, this.getClient().getConfig().getComponents(Function.valueOf(function.toUpperCase())));
     }
 
     /**
@@ -66,15 +67,15 @@ public abstract class ComponentResourceSupport extends ResourceSupport {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pretty-config")
     public Response prettyConfig() throws JsonProcessingException {
-        return this.buildSuccessResponse(PRETTY_WRITER.writeValueAsString(this.getClient().getConfig()));
+        return this.buildSuccessResponse(PRETTY_WRITER, this.getClient().getConfig());
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{function}/{number}")
-    public Response component(@PathParam("function") String function, @PathParam("number") int number) {
+    public Response component(@PathParam("function") String function, @PathParam("number") int number) throws JsonProcessingException {
         APIResponse response = new APIResponse("success", this.getClient().getConfig().getComponent(Function.valueOf(function.toUpperCase()), number));
-        return this.buildSuccessResponse(response);
+        return this.buildSuccessResponse(PRETTY_WRITER, response);
     }
 
     @GET
@@ -84,7 +85,7 @@ public abstract class ComponentResourceSupport extends ResourceSupport {
         ComponentSpec component = this.getClient().getConfig().getComponent(Function.valueOf(function.toUpperCase()), number);
         this.getClient().get(component);
         APIResponse response = new APIResponse("success", component);
-        return this.buildSuccessResponse(response);
+        return this.buildSuccessResponse(PRETTY_WRITER, response);
     }
 
     @GET
@@ -108,7 +109,7 @@ public abstract class ComponentResourceSupport extends ResourceSupport {
 
     private Response buildGetResponse(ComponentSpec... component) {
         APIResponse apiResponse = new APIResponse("success", component);
-        return this.buildSuccessResponse(apiResponse);
+        return this.buildSuccessResponse(PRETTY_WRITER, apiResponse);
     }
 
     private TeletaskClient getClient() {
@@ -118,7 +119,9 @@ public abstract class ComponentResourceSupport extends ResourceSupport {
         return this.client;
     }
 
-    protected abstract TeletaskClient createClient();
+    protected TeletaskClient createClient() {
+        return ClientHolder.getClient();
+    }
 
     private void setClient(TeletaskClient client) {
         this.client = client;

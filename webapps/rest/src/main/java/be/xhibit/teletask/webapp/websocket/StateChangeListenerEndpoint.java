@@ -39,19 +39,16 @@ public class StateChangeListenerEndpoint extends JSONBroadcastingWebSocket {
         });
     }
 
-    @OnOpen
     @Override
     public void open(Session session) {
         super.open(session);
     }
 
-    @OnError
     @Override
     public void error(Session session, Throwable t) {
         super.error(session, t);
     }
 
-    @OnClose
     @Override
     public void closedConnection(Session session) {
         super.closedConnection(session);
