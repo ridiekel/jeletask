@@ -154,6 +154,7 @@ public final class TeletaskClient implements TeletaskReceiver {
     private String mqttPort;
 
     private final ExecutorService executorService;
+    private final ExecutorService stateChangeService;
 
     private final Timer keepAliveTimer = new Timer();
     private final Timer eventListenerTimer = new Timer();
@@ -164,6 +165,7 @@ public final class TeletaskClient implements TeletaskReceiver {
 
     public TeletaskClient(ClientConfigSpec config, boolean production) {
         this.executorService = Executors.newSingleThreadExecutor();
+        this.stateChangeService = Executors.newSingleThreadExecutor();
         this.config = config;
         this.production = production;
     }
@@ -181,7 +183,9 @@ public final class TeletaskClient implements TeletaskReceiver {
     }
 
     public void set(ComponentSpec component, String state) {
-        this.set(component.getFunction(), component.getNumber(), state);
+        if (!component.getState().equals(state)) {
+            this.set(component.getFunction(), component.getNumber(), state);
+        }
     }
 
     public void set(Function function, int number, String state) {
@@ -196,7 +200,7 @@ public final class TeletaskClient implements TeletaskReceiver {
 
     public void groupGet(final Function function, final int... numbers) {
         try {
-            this.getExecutorService().submit((Runnable) () -> {
+            this.getExecutorService().submit(() -> {
                 try {
                     TeletaskClient.this.getMessageHandler().getGroupGetStrategy().execute(TeletaskClient.this, function, numbers);
                 } catch (Exception e) {
@@ -213,12 +217,7 @@ public final class TeletaskClient implements TeletaskReceiver {
     public void groupGet(Function function) {
         List<? extends ComponentSpec> components = this.getConfig().getComponents(function);
         if (components != null) {
-            this.groupGet(function, Ints.toArray(Lists.transform(components, new com.google.common.base.Function<ComponentSpec, Integer>() {
-                @Override
-                public Integer apply(ComponentSpec input) {
-                    return input.getNumber();
-                }
-            })));
+            this.groupGet(function, Ints.toArray(Lists.transform(components, (com.google.common.base.Function<ComponentSpec, Integer>) ComponentSpec::getNumber)));
         }
     }
 
@@ -240,7 +239,7 @@ public final class TeletaskClient implements TeletaskReceiver {
     }
 
     public void get(Function function, int number) {
-        this.get(this.getConfig().getComponent(function, number));
+        this.get(getComponent(function, number));
     }
 
     public void get(ComponentSpec component) {
@@ -262,13 +261,10 @@ public final class TeletaskClient implements TeletaskReceiver {
         this.closeOutputStream();
         this.closeSocket();
         this.stopTestServer();
-
     }
 
     private void stopStateChangeListeners() {
-        for (StateChangeListener stateChangeListener : this.getStateChangeListeners()) {
-            stateChangeListener.stop();
-        }
+        this.getStateChangeListeners().forEach(StateChangeListener::stop);
     }
 
     private void stopTestServer() {
@@ -473,15 +469,23 @@ public final class TeletaskClient implements TeletaskReceiver {
             if (message instanceof EventMessage) {
                 EventMessage eventMessage = (EventMessage) message;
                 this.handleReceiveEvent(LOG, this.getConfig(), eventMessage);
-                components.add(this.getConfig().getComponent(eventMessage.getFunction(), eventMessage.getNumber()));
+                components.add(getComponent(eventMessage.getFunction(), eventMessage.getNumber()));
             }
         }
-        if (!components.isEmpty()) {
-            for (StateChangeListener stateChangeListener : this.getStateChangeListeners()) {
-                stateChangeListener.receive(components);
+
+        this.stateChangeService.submit(() -> {
+            if (!components.isEmpty()) {
+                for (StateChangeListener stateChangeListener : getStateChangeListeners()) {
+                    stateChangeListener.receive(components);
+                }
             }
-        }
+        });
     }
+
+    private ComponentSpec getComponent(Function function, int number) {
+        return this.getConfig().getComponent(function, number);
+    }
+
 
     public void handleReceiveEvent(Logger logger, ClientConfigSpec config, EventMessage eventMessage) {
         ComponentSpec component = config.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
