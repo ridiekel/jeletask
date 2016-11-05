@@ -7,7 +7,7 @@
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="${pattern}" />
         </Console>
-        <RollingFile name="teletask" fileName="${sys:logfile}" append="true" filePattern="${sys:logfile}-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="teletask" fileName="${sys:teletask.logfile}" append="true" filePattern="${sys:teletask.logfile}-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="${pattern}" />
             <Policies>
                 <TimeBasedTriggeringPolicy />
