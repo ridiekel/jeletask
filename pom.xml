@@ -281,8 +281,8 @@
     </dependencies>
 
     <scm>
-        <connection>scm:git:git@github.com/ridiekel/Teletask-api.git</connection>
-        <developerConnection>scm:git:git@github.com/ridiekel/Teletask-api.git</developerConnection>
+        <connection>scm:git:git@github.com:ridiekel/Teletask-api.git</connection>
+        <developerConnection>scm:git:git@github.com:ridiekel/Teletask-api.git</developerConnection>
         <url>http://github.com/ridiekel/Teletask-api/tree/master</url>
         <tag>HEAD</tag>
     </scm>
