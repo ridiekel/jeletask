@@ -229,7 +229,6 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <remoteTagging>true</remoteTagging>
                         <preparationGoals>clean install</preparationGoals>
-                        <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -283,7 +282,7 @@
 
     <scm>
         <connection>scm:git:git://github.com/ridiekel/Teletask-api.git</connection>
-        <developerConnection>scm:git:ssh://github.com:ridiekel/Teletask-api.git</developerConnection>
+        <developerConnection>scm:git:ssh://github.com/ridiekel/Teletask-api.git</developerConnection>
         <url>http://github.com/ridiekel/Teletask-api/tree/master</url>
         <tag>teletask-api-1.0.0</tag>
     </scm>
