@@ -231,6 +231,7 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <remoteTagging>true</remoteTagging>
                         <preparationGoals>clean install</preparationGoals>
+                        <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
                     </configuration>
                 </plugin>
                 <plugin>
