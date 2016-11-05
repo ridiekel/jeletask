@@ -5,7 +5,7 @@
     <groupId>be.xhibit</groupId>
     <artifactId>teletask-api</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
 
     <description>An API written in java for accessing Teletask central units. Including rest endpoints as example of the API usage.</description>
@@ -281,8 +281,8 @@
     </dependencies>
 
     <scm>
-        <connection>scm:git:git://github.com/ridiekel/Teletask-api.git</connection>
-        <developerConnection>scm:git:ssh://github.com/ridiekel/Teletask-api.git</developerConnection>
+        <connection>scm:git:git@github.com/ridiekel/Teletask-api.git</connection>
+        <developerConnection>scm:git:git@github.com/ridiekel/Teletask-api.git</developerConnection>
         <url>http://github.com/ridiekel/Teletask-api/tree/master</url>
         <tag>HEAD</tag>
     </scm>
