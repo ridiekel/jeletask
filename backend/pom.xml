@@ -5,7 +5,7 @@
     <parent>
         <groupId>be.xhibit</groupId>
         <artifactId>teletask-api</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.3</version>
     </parent>
 
     <artifactId>teletask-api-backend</artifactId>
