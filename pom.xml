@@ -8,7 +8,9 @@
     <artifactId>teletask-api</artifactId>
     <packaging>pom</packaging>
     <version>1.0.0-SNAPSHOT</version>
-    <name>TeleTask API</name>
+    <name>${project.groupId}:${project.artifactId}</name>
+
+    <description>An API written in java for accessing Teletask central units. Including rest endpoints as example of the API usage.</description>
 
     <modules>
         <module>backend</module>
@@ -221,6 +223,16 @@
                     <artifactId>maven-war-plugin</artifactId>
                     <version>2.4</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.3</version>
+                    <configuration>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+                        <remoteTagging>true</remoteTagging>
+                        <preparationGoals>clean install</preparationGoals>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -262,4 +274,26 @@
         </dependency>
     </dependencies>
 
+    <scm>
+        <connection>scm:git:git://github.com/ridiekel/Teletask-api.git</connection>
+        <developerConnection>scm:git:ssh://github.com:ridiekel/Teletask-api.git</developerConnection>
+        <url>http://github.com/ridiekel/Teletask-api/tree/master</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>Geroen Dierckx</name>
+            <email>teletask-api@b-lauw.be</email>
+            <organization>b-lauw.be</organization>
+            <organizationUrl>http://www.b-lauw.be</organizationUrl>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>GNU Lesser General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/lgpl-3.0.en.html</url>
+        </license>
+    </licenses>
 </project>
