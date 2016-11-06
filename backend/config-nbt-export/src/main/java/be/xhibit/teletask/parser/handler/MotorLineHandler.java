@@ -11,7 +11,7 @@ public class MotorLineHandler extends LineHandlerSupport {
 
     private static final Pattern START_PATTERN = Pattern.compile("\\s*MOTORS");
 
-    private static final Pattern MOTOR_PATTERN = Pattern.compile("(\\d*)\\s*([^�]*)�\\s*([^�]*)�\\s*(.*)\\s{2}.*");
+    private static final Pattern MOTOR_PATTERN = Pattern.compile("(\\d*)\\s*([^�]*)�\\s*([^�]*)�\\s*(.*)\\s*.*");
 
     private MotorLineHandler() {
     }

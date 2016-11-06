@@ -265,6 +265,7 @@ public final class TeletaskClient implements TeletaskReceiver {
 
     private void stopStateChangeListeners() {
         this.getStateChangeListeners().forEach(StateChangeListener::stop);
+        this.stateChangeService.shutdown();
     }
 
     private void stopTestServer() {
