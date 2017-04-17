@@ -2,18 +2,28 @@ package be.xhibit.teletask.client.builder.composer.config.statecalculator;
 
 public class StateMapping {
     private final String name;
-    private final Number number;
+    private final Number read;
+    private final Number write;
 
-    public StateMapping(String name, Number number) {
+    public StateMapping(String name, Number read) {
+        this(name, read, read);
+    }
+
+    public StateMapping(String name, Number read, Number write) {
         this.name = name;
-        this.number = number;
+        this.read = read;
+        this.write = write;
+    }
+
+    public Number getWrite() {
+        return write;
     }
 
     public String getName() {
         return this.name;
     }
 
-    public Number getNumber() {
-        return this.number;
+    public Number getRead() {
+        return this.read;
     }
 }
