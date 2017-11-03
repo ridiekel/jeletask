@@ -43,6 +43,11 @@ public class TDSComponent implements ComponentSpec {
     }
 
     @Override
+    public String getRoomName() {
+        return "N/A";
+    }
+
+    @Override
     public String getState() {
         return this.state;
     }

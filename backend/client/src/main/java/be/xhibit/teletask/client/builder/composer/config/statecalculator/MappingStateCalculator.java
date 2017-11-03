@@ -21,6 +21,7 @@ public class MappingStateCalculator extends SimpleStateCalculator {
             if (mapping.getRead() != null) {
                 this.byName.put(mapping.getName().toUpperCase(), String.valueOf(mapping.getWrite()));
                 this.byNumber.put(mapping.getRead().intValue(), mapping.getName().toUpperCase());
+                this.byNumber.put(mapping.getWrite().intValue(), mapping.getName().toUpperCase());
             }
         }
     }

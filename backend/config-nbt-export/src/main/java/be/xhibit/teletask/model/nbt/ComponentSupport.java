@@ -41,6 +41,11 @@ public abstract class ComponentSupport implements ComponentSpec {
         return this.room;
     }
 
+    @Override
+    public String getRoomName() {
+        return this.room.getName();
+    }
+
     public int getRoomId() {
         return this.getRoom().getId();
     }

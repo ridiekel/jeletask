@@ -492,7 +492,7 @@ public final class TeletaskClient implements TeletaskReceiver {
         ComponentSpec component = config.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
         if (component != null) {
             if (logger.isDebugEnabled()) {
-                logger.debug("Event: \nComponent: {}\nCurrent State: {} {}", component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
+                logger.debug("Event: \nRoom: {}\nComponent: {}\nCurrent State: {} {}", component.getRoomName(), component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
             }
             String state = eventMessage.getState();
             if (component.getFunction() != Function.MOTOR || !"STOP".equals(state)) {
