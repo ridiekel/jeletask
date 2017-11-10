@@ -11,21 +11,17 @@
     <description>An API written in java for accessing Teletask central units. Including rest endpoints as example of the API usage.</description>
 
     <modules>
-        <module>backend</module>
-        <module>webapps</module>
+        <module>config-spec</module>
+        <module>config-json</module>
+        <module>config-nbt-export</module>
+        <module>client</module>
     </modules>
 
     <properties>
-        <jdk.version>1.8</jdk.version>
-        <resteasy.version>3.0.19.Final</resteasy.version>
+        <jdk.version>9</jdk.version>
         <junit.version>4.11</junit.version>
-        <servlet.version>3.0.1</servlet.version>
-        <javax.el.version>2.2</javax.el.version>
-        <jstl.version>1.2</jstl.version>
-        <jackson.version>2.4.1.1</jackson.version>
-        <guava.version>20.0</guava.version>
+        <jackson.version>2.9.2</jackson.version>
         <log4j-api.version>2.7</log4j-api.version>
-        <paho.version>1.0.2</paho.version>
     </properties>
 
     <repositories>
@@ -53,39 +49,8 @@
         <dependencies>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>teletask-api-backend</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
                 <artifactId>teletask-api-config-spec</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>teletask-api-config-json</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>teletask-api-config-nbt-export</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>teletask-api-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <!--<dependency>-->
-            <!--<groupId>${project.groupId}</groupId>-->
-            <!--<artifactId>teletask-api-clientholder</artifactId>-->
-            <!--<version>${project.version}</version>-->
-            <!--</dependency>-->
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>teletask-api-rest</artifactId>
-                <version>${project.version}</version>
-                <classifier>classes</classifier>
             </dependency>
 
             <dependency>
@@ -99,66 +64,11 @@
                 <version>${jackson.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-jaxrs</artifactId>
-                <version>${resteasy.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.spec.javax.ws.rs</groupId>
-                        <artifactId>jboss-jaxrs-api_2.0_spec</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.jboss.spec.javax.annotation</groupId>
-                        <artifactId>jboss-annotations-api_1.2_spec</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-jackson2-provider</artifactId>
-                <version>${resteasy.version}</version>
-            </dependency>
             <!--<dependency>-->
-            <!--<groupId>org.jboss.resteasy</groupId>-->
-            <!--<artifactId>jaxrs-api</artifactId>-->
-            <!--<version>${resteasy.version}</version>-->
+                <!--<groupId>com.google.guava</groupId>-->
+                <!--<artifactId>guava</artifactId>-->
+                <!--<version>${guava.version}</version>-->
             <!--</dependency>-->
-            <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-servlet-initializer</artifactId>
-                <version>${resteasy.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.spec.javax.ws.rs</groupId>
-                        <artifactId>jboss-jaxrs-api_2.0_spec</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.ws.rs</groupId>
-                <artifactId>javax.ws.rs-api</artifactId>
-                <version>2.0.1</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.annotation</groupId>
-                <artifactId>javax.annotation-api</artifactId>
-                <version>1.3</version>
-            </dependency>
-            <dependency>
-                <groupId>javax</groupId>
-                <artifactId>javaee-web-api</artifactId>
-                <version>7.0</version>
-                <scope>provided</scope>
-            </dependency>
-
 
             <dependency>
                 <groupId>junit</groupId>
@@ -166,36 +76,6 @@
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
-
-            <dependency>
-                <groupId>javax.websocket</groupId>
-                <artifactId>javax.websocket-api</artifactId>
-                <version>1.0</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.paho</groupId>
-                <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-                <version>${paho.version}</version>
-            </dependency>
-            <!--<dependency>-->
-            <!--<groupId>org.dna.mqtt</groupId>-->
-            <!--<artifactId>moquette-broker</artifactId>-->
-            <!--<version>0.6</version>-->
-            <!--</dependency>-->
-
-            <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>2.5</version>
-            </dependency>
-
-            <!--<dependency>-->
-            <!--<groupId>org.glassfish.tyrus</groupId>-->
-            <!--<artifactId>tyrus-server</artifactId>-->
-            <!--<version>1.7</version>-->
-            <!--</dependency>-->
         </dependencies>
     </dependencyManagement>
 
@@ -205,7 +85,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
+                    <version>3.7.0</version>
                     <configuration>
                         <source>${jdk.version}</source>
                         <target>${jdk.version}</target>
@@ -249,13 +129,6 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-        </plugins>
     </build>
 
     <dependencies>

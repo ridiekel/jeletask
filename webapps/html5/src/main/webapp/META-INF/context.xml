@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Context path="/teletask" docBase="teletask" debug="0" reloadable="true" privileged="true">
-    <Realm className="org.apache.catalina.realm.UserDatabaseRealm" resourceName="UserDatabase"/>
-    <Logger className="org.apache.catalina.logger.FileLogger" prefix="localhost_teletask_log." suffix=".txt" timestamp="true"/>
-</Context>

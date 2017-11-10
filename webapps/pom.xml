@@ -16,8 +16,5 @@
 
     <modules>
         <module>rest</module>
-        <module>html5</module>
-        <module>angular</module>
-        <module>polymer</module>
     </modules>
 </project>
