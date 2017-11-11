@@ -9,7 +9,7 @@ import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.Command;
 import be.xhibit.teletask.model.spec.ComponentSpec;
 import be.xhibit.teletask.model.spec.Function;
-import com.google.common.primitives.Bytes;
+import be.xhibit.teletask.utilities.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

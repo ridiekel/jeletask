@@ -13,18 +13,17 @@ import be.xhibit.teletask.model.spec.ComponentSpec;
 import be.xhibit.teletask.model.spec.Function;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public abstract class MessageSupport {
     /**
@@ -133,7 +132,7 @@ public abstract class MessageSupport {
         table.append(System.lineSeparator()).append(seperatorLine);
 
         return System.lineSeparator() + "Command: " + this.getCommand() + System.lineSeparator() +
-                "Payload: " + System.lineSeparator() + "\t" + Joiner.on(System.lineSeparator() + "\t").join(this.getPayloadLogInfo()) + System.lineSeparator() +
+                "Payload: " + System.lineSeparator() + "\t" + Arrays.stream(this.getPayloadLogInfo()).collect(Collectors.joining(System.lineSeparator() + "\t")) + System.lineSeparator() +
                 "Length: " + message[1] + System.lineSeparator() +
                 "Checksum calculation steps: " + this.getMessageChecksumCalculationSteps(message) + " = " + message[message.length - 1] + System.lineSeparator() +
                 "Raw Bytes: " + ByteUtilities.bytesToHex(message) + System.lineSeparator() +
@@ -155,11 +154,11 @@ public abstract class MessageSupport {
         return builder.toString();
     }
 
-    private String getTableSeperatorLine(int size) {
-        return Strings.repeat("-", size);
+    private static String getTableSeperatorLine(int size) {
+        return IntStream.range(0, size).mapToObj(i -> "-").collect(Collectors.joining(""));
     }
 
-    private String getMessageAsTableContent(List<String> parts, StringBuilder builder) {
+    private String getMessageAsTableContent(Collection<String> parts, CharSequence builder) {
         String content = builder.toString();
         content = REMOVE_NAMES.matcher(content).replaceAll(" ");
         content = INSERT_PLACEHOLDERS.matcher(content).replaceAll("| %s");
@@ -182,10 +181,7 @@ public abstract class MessageSupport {
     }
 
     private List<String> getHexParts(byte[] message) {
-        return Splitter.on(' ')
-                .trimResults()
-                .omitEmptyStrings()
-                .splitToList(ByteUtilities.bytesToHex(message));
+        return ByteUtilities.bytesToHexList(message);
     }
 
     protected String getLogHeaderName(int index) {
@@ -195,12 +191,10 @@ public abstract class MessageSupport {
     protected String formatState(Function function, int number, String... states) {
         FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(function);
         ComponentSpec component = this.getClientConfig().getComponent(function, number);
-        Collection<String> log = new ArrayList<>();
-        for (String state : states) {
+        return Arrays.stream(states).map(state -> {
             byte[] bytes = functionConfig.getStateCalculator().convertSet(component, state);
-            log.add("State: " + state + " | " + functionConfig.getStateCalculator().getNumberConverter().convert(bytes) + " | " + (state == null ? null : ByteUtilities.bytesToHex(bytes)));
-        }
-        return Joiner.on(", ").join(log);
+            return "State: " + state + " | " + functionConfig.getStateCalculator().getNumberConverter().convert(bytes) + " | " + (state == null ? null : ByteUtilities.bytesToHex(bytes));
+        }).collect(Collectors.joining(", "));
     }
 
     protected MessageHandler getMessageHandler() {
@@ -212,11 +206,7 @@ public abstract class MessageSupport {
     }
 
     protected String formatOutput(int... numbers) {
-        Collection<String> outputs = new ArrayList<>();
-        for (int number : numbers) {
-            outputs.add("Output: " + number + " | " + ByteUtilities.bytesToHex(this.getMessageHandler().composeOutput(number)));
-        }
-        return Joiner.on(", ").join(outputs);
+        return Arrays.stream(numbers).mapToObj(number -> "Output: " + number + " | " + ByteUtilities.bytesToHex(this.getMessageHandler().composeOutput(number))).collect(Collectors.joining(", "));
     }
 
     /**

@@ -1,5 +1,8 @@
 package be.xhibit.teletask.client.builder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ByteUtilities {
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
@@ -15,6 +18,15 @@ public class ByteUtilities {
             hexChars[j * 3 + 2] = ' ';
         }
         return new String(hexChars).trim();
+    }
+
+    public static List<String> bytesToHexList(byte... bytes) {
+        List<String> hexValues = new ArrayList<>();
+        for (byte aByte : bytes) {
+            int v = aByte & 0xFF;
+            hexValues.add(new String(new char[]{HEX_ARRAY[v >>> 4], HEX_ARRAY[v & 0x0F]}));
+        }
+        return hexValues;
     }
 
 

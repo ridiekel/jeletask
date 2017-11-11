@@ -12,15 +12,10 @@ import be.xhibit.teletask.client.builder.message.messages.impl.LogMessage;
 import be.xhibit.teletask.client.builder.message.messages.impl.SetMessage;
 import be.xhibit.teletask.client.builder.message.strategy.KeepAliveStrategy;
 import be.xhibit.teletask.client.listener.StateChangeListener;
-import be.xhibit.teletask.client.mqtt.MqttPublisher;
-import be.xhibit.teletask.client.mqtt.MqttStateChangeListener;
 import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.ComponentSpec;
 import be.xhibit.teletask.model.spec.Function;
 import be.xhibit.teletask.server.TeletaskTestServer;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +27,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -189,10 +185,10 @@ public final class TeletaskClient implements TeletaskReceiver {
     }
 
     public void set(Function function, int number, String state) {
-        Preconditions.checkNotNull(state, "Given state should not be null");
-
         try {
-            this.execute(new SetMessage(this.getConfig(), function, number, state));
+            this.execute(new SetMessage(this.getConfig(), function, number,
+                    Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null")))
+            );
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -217,7 +213,7 @@ public final class TeletaskClient implements TeletaskReceiver {
     public void groupGet(Function function) {
         List<? extends ComponentSpec> components = this.getConfig().getComponents(function);
         if (components != null) {
-            this.groupGet(function, Ints.toArray(Lists.transform(components, (com.google.common.base.Function<ComponentSpec, Integer>) ComponentSpec::getNumber)));
+            this.groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray());
         }
     }
 
@@ -239,7 +235,7 @@ public final class TeletaskClient implements TeletaskReceiver {
     }
 
     public void get(Function function, int number) {
-        this.get(getComponent(function, number));
+        this.get(this.getComponent(function, number));
     }
 
     public void get(ComponentSpec component) {
@@ -336,8 +332,6 @@ public final class TeletaskClient implements TeletaskReceiver {
 
         host = this.startTestServer(host, port);
 
-        this.registerMqttPublisher();
-
         this.connect(host, port);
 
         this.startEventListener();
@@ -349,13 +343,6 @@ public final class TeletaskClient implements TeletaskReceiver {
         this.sendLogEventMessages("ON");
 
         return this;
-    }
-
-    private void registerMqttPublisher() {
-        if (this.mqttHost != null) {
-            MqttPublisher publisher = new MqttPublisher(this.mqttHost, this.mqttPort);
-            this.registerStateChangeListener(new MqttStateChangeListener(publisher));
-        }
     }
 
     private String startTestServer(String host, int port) {
@@ -470,13 +457,13 @@ public final class TeletaskClient implements TeletaskReceiver {
             if (message instanceof EventMessage) {
                 EventMessage eventMessage = (EventMessage) message;
                 this.handleReceiveEvent(LOG, this.getConfig(), eventMessage);
-                components.add(getComponent(eventMessage.getFunction(), eventMessage.getNumber()));
+                components.add(this.getComponent(eventMessage.getFunction(), eventMessage.getNumber()));
             }
         }
 
         this.stateChangeService.submit(() -> {
             if (!components.isEmpty()) {
-                for (StateChangeListener stateChangeListener : getStateChangeListeners()) {
+                for (StateChangeListener stateChangeListener : this.getStateChangeListeners()) {
                     stateChangeListener.receive(components);
                 }
             }

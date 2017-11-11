@@ -1,13 +1,13 @@
 package be.xhibit.teletask.client.builder.message.messages;
 
 import be.xhibit.teletask.client.builder.composer.MessageHandler;
+import be.xhibit.teletask.client.builder.composer.MessageHandler.OutputState;
 import be.xhibit.teletask.client.builder.message.messages.impl.EventMessage;
 import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.Command;
 import be.xhibit.teletask.model.spec.ComponentSpec;
 import be.xhibit.teletask.model.spec.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.primitives.Bytes;
+import be.xhibit.teletask.utilities.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
 
     @Override
     public List<EventMessage> respond(ClientConfigSpec config, MessageHandler messageHandler) {
-        Collection<MessageHandler.OutputState> states = new ArrayList<>();
+        Collection<OutputState> states = new ArrayList<>();
         for (int number : this.getNumbers()) {
 
             ComponentSpec component = config.getComponent(this.getFunction(), number);
@@ -59,12 +59,12 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
                     component.setState(messageHandler.getFunctionConfig(this.getFunction()).getStateCalculator().getDefaultState(component));
                 }
 
-                states.add(new MessageHandler.OutputState(number, component.getState()));
+                states.add(new OutputState(number, component.getState()));
             } else {
                 LOG.debug("Component {}:{} not found.", this.getFunction(), number);
             }
         }
-        return messageHandler.createResponseEventMessage(config, this.getFunction(), Iterables.toArray(states, MessageHandler.OutputState.class));
+        return messageHandler.createResponseEventMessage(config, this.getFunction(), states.stream().toArray(OutputState[]::new));
     }
 
 }

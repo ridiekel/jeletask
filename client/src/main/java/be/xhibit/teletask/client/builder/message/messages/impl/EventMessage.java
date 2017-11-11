@@ -6,8 +6,8 @@ import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.Command;
 import be.xhibit.teletask.model.spec.ComponentSpec;
 import be.xhibit.teletask.model.spec.Function;
+import be.xhibit.teletask.utilities.Bytes;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.primitives.Bytes;
 
 public class EventMessage extends FunctionBasedMessageSupport {
     private final int number;

@@ -11,8 +11,7 @@ import be.xhibit.teletask.client.builder.message.strategy.KeepAliveStrategy;
 import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.Command;
 import be.xhibit.teletask.model.spec.Function;
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Bytes;
+import be.xhibit.teletask.utilities.Bytes;
 
 import java.util.List;
 
@@ -85,7 +84,7 @@ public class MicrosMessageHandler extends MessageHandlerSupport {
 
         this.setLengthAndCheckSum(rawBytes);
 
-        return Lists.newArrayList(new EventMessage(config, rawBytes, function, outputState.getNumber(), outputState.getState()));
+        return List.of(new EventMessage(config, rawBytes, function, outputState.getNumber(), outputState.getState()));
     }
 
     private static class MicrosKeepAliveStrategy implements KeepAliveStrategy {

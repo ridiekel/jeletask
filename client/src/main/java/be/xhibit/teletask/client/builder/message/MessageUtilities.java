@@ -5,7 +5,7 @@ import be.xhibit.teletask.client.builder.ByteUtilities;
 import be.xhibit.teletask.client.builder.composer.MessageHandler;
 import be.xhibit.teletask.client.builder.message.messages.MessageSupport;
 import be.xhibit.teletask.model.spec.ClientConfigSpec;
-import com.google.common.primitives.Bytes;
+import be.xhibit.teletask.utilities.Bytes;
 import org.slf4j.Logger;
 
 import java.io.IOException;

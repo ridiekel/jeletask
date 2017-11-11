@@ -13,20 +13,21 @@ import be.xhibit.teletask.client.builder.message.messages.impl.SetMessage;
 import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.Command;
 import be.xhibit.teletask.model.spec.Function;
-import com.google.common.collect.ImmutableList;
+
+import java.util.List;
 
 public class MicrosCommandConfiguration extends ConfigurationSupport<Command, CommandConfigurable<?>, Integer> {
     public MicrosCommandConfiguration() {
-        super(ImmutableList.<CommandConfigurable<?>>builder()
-                .add(new MicrosSetCommandConfigurable())
-                .add(new MicrosGetCommandConfigurable())
-                .add(new LogCommandConfigurable(3, false, "Fnc", "Sate"))
-                .add(new MicrosEventCommandConfigurable())
-                .build());
+        super(List.of(
+                new MicrosSetCommandConfigurable(),
+                new MicrosGetCommandConfigurable(),
+                new LogCommandConfigurable(3, false, "Fnc", "Sate"),
+                new MicrosEventCommandConfigurable())
+        );
     }
 
     @Override
-    protected Integer getKey(CommandConfigurable configurable) {
+    protected Integer getKey(CommandConfigurable<?> configurable) {
         return configurable.getNumber();
     }
 

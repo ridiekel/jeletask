@@ -15,22 +15,23 @@ import be.xhibit.teletask.client.builder.message.messages.impl.SetMessage;
 import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.Command;
 import be.xhibit.teletask.model.spec.Function;
-import com.google.common.collect.ImmutableList;
+
+import java.util.List;
 
 public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command, CommandConfigurable<?>, Integer> {
     public MicrosPlusCommandConfiguration() {
-        super(ImmutableList.<CommandConfigurable<?>>builder()
-                .add(new MicrosPlusSetCommandConfigurable())
-                .add(new MicrosPlusGetCommandConfigurable())
-                .add(new GroupGetCommandConfigurable(9, true, "Central Unit", "Fnc", "Output Part 1", "Output Part 2"))
-                .add(new LogCommandConfigurable(3, false, "Fnc", "State"))
-                .add(new MicrosPlusEventCommandConfigurable())
-                .add(new KeepAliveCommandConfigurable(11, true))
-                .build());
+        super(List.of(
+                new MicrosPlusSetCommandConfigurable(),
+                new MicrosPlusGetCommandConfigurable(),
+                new GroupGetCommandConfigurable(9, true, "Central Unit", "Fnc", "Output Part 1", "Output Part 2"),
+                new LogCommandConfigurable(3, false, "Fnc", "State"),
+                new MicrosPlusEventCommandConfigurable(),
+                new KeepAliveCommandConfigurable(11, true)
+        ));
     }
 
     @Override
-    protected Integer getKey(CommandConfigurable configurable) {
+    protected Integer getKey(CommandConfigurable<?> configurable) {
         return configurable.getNumber();
     }
 

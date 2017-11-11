@@ -1,7 +1,6 @@
 package be.xhibit.teletask.client.builder.composer.config.statecalculator;
 
 import be.xhibit.teletask.model.spec.ComponentSpec;
-import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
@@ -10,10 +9,11 @@ public class SensorStateCalculator extends SimpleStateCalculator {
 
     public SensorStateCalculator(StateCalculator temperature, StateCalculator lux, StateCalculator humidity) {
         super(temperature.getNumberConverter());
-        this.sensorTypeCalculators = ImmutableMap.<String, StateCalculator>builder()
-                .put("TEMPERATURE", temperature)
-                .put("LIGHT", lux)
-                .put("HUMIDITY", humidity).build();
+        this.sensorTypeCalculators = Map.of(
+                "TEMPERATURE", temperature,
+                "LIGHT", lux,
+                "HUMIDITY", humidity
+        );
     }
 
     @Override

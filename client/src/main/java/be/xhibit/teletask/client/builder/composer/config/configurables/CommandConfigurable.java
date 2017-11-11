@@ -5,10 +5,13 @@ import be.xhibit.teletask.client.builder.composer.config.Configurable;
 import be.xhibit.teletask.client.builder.message.messages.MessageSupport;
 import be.xhibit.teletask.model.spec.ClientConfigSpec;
 import be.xhibit.teletask.model.spec.Command;
-import com.google.common.collect.ImmutableMap;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public abstract class CommandConfigurable<M extends MessageSupport> extends Configurable<Command> {
     private final Map<Integer, String> paramNames;
@@ -17,13 +20,8 @@ public abstract class CommandConfigurable<M extends MessageSupport> extends Conf
     public CommandConfigurable(Command command, int number, boolean needsCentralUnitParameter, String... paramNames) {
         super(number, command);
 
-        ImmutableMap.Builder<Integer, String> builder = ImmutableMap.builder();
-        for (int i = 0; i < paramNames.length; i++) {
-            String paramName = paramNames[i];
-            builder.put(i + 1, paramName);
-        }
-
-        this.paramNames = builder.build();
+        AtomicInteger index = new AtomicInteger(0);
+        this.paramNames = List.of(paramNames).stream().collect(Collectors.toMap(p -> index.getAndIncrement(), Function.identity()));
         this.needsCentralUnitParameter = needsCentralUnitParameter;
     }
 
