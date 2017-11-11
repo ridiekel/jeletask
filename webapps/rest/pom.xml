@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>be.xhibit</groupId>
+        <groupId>io.jeletask</groupId>
         <artifactId>teletask-api-webapps</artifactId>
         <version>1.0.9-SNAPSHOT</version>
     </parent>
