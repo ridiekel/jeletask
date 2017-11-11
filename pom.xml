@@ -144,9 +144,8 @@
     <developers>
         <developer>
             <name>Geroen Dierckx</name>
-            <email>teletask-api@b-lauw.be</email>
-            <organization>b-lauw.be</organization>
-            <organizationUrl>http://www.b-lauw.be</organizationUrl>
+            <email>jeletask@b-lauw.be</email>
+            <organizationUrl>https://github.com/ridiekel/jeletask</organizationUrl>
         </developer>
     </developers>
 
