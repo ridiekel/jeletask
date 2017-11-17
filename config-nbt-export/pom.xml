@@ -4,7 +4,7 @@
 
     <parent>
         <groupId>io.github.ridiekel</groupId>
-        <artifactId>jeletask-parent</artifactId>
+        <artifactId>jeletask</artifactId>
         <version>2.0.3-SNAPSHOT</version>
     </parent>
 
