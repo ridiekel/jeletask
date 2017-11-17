@@ -6,9 +6,10 @@
     <artifactId>jeletask</artifactId>
     <packaging>pom</packaging>
     <version>2.0.4-SNAPSHOT</version>
-    <name>Teletask API - Parent</name>
 
+    <name>Teletask API - Parent</name>
     <description>An API written in java for accessing Teletask central units.</description>
+    <url>https://github.com/ridiekel/jeletask</url>
 
     <modules>
         <module>config-spec</module>
@@ -97,16 +98,16 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>2.10.4</version>
                     <configuration>
-                        <skip>true</skip>
+                        <skip>false</skip>
                     </configuration>
-                    <!--<executions>-->
-                    <!--<execution>-->
-                    <!--<id>attach-javadocs</id>-->
-                    <!--<goals>-->
-                    <!--<goal>jar</goal>-->
-                    <!--</goals>-->
-                    <!--</execution>-->
-                    <!--</executions>-->
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
 
                 <plugin>
