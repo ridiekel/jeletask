@@ -44,21 +44,21 @@ import java.util.concurrent.TimeUnit;
  * <br>
  * <br>
  * FunctionSet(int Fnc, int Opt, int Number, int State)
- * > example to switch relays: FunctionSet(1, 0, 19, 1) -> switches relays 19 to on (=bureau).
+ * > example to switch relays: FunctionSet(1, 0, 19, 1) -&gt; switches relays 19 to on (=bureau).
  * <br>
  * - Fnc: Fnc ( RELAY, DIMMER, MOTOR, MTRUPDOWN, LOCMOOD, TIMEDMOOD, GENMOOD, FLAG, PROCES, REGIME, SERVICE, MESSAGE) = see "Constants" below / Functions.cs for full list.
  * - Opt: not required for RELAYS? value 0? (dependent on the function: see Options.cs for full list)
  * - Number:
- * for Fnc = FNC_RELAY, FNC_DIMMER Number = 1 to Maximum -> Number out the output relay
- * for Fnc = FNC_TPKEY -> Number = Touch panel number you want to simulate
- * All other Fnc -> Number = 0 to Maximum -1
+ * for Fnc = FNC_RELAY, FNC_DIMMER Number = 1 to Maximum -&gt; Number out the output relay
+ * for Fnc = FNC_TPKEY -&gt; Number = Touch panel number you want to simulate
+ * All other Fnc -&gt; Number = 0 to Maximum -1
  * - State:
- * for Fnc=FNC_DIMMER & FNC_MOTOR -> State = 0 to 255 (always use the result from function ConvPercToDimVal, may never be 3!!!)
+ * for Fnc=FNC_DIMMER & FNC_MOTOR -&gt; State = 0 to 255 (always use the result from function ConvPercToDimVal, may never be 3!!!)
  * for Fnc = FNC_TPKEY
- * -> State bit 3-0 = Key number (0 to 7)
- * -> State bit 7-8 = 00 Normal Short Press, 01 Key Depressed, 10 Key Released
+ * -&gt; State bit 3-0 = Key number (0 to 7)
+ * -&gt; State bit 7-8 = 00 Normal Short Press, 01 Key Depressed, 10 Key Released
  * for all other Fnc
- * -> State = 0 or 255 (or 1) = OFF or ON
+ * -&gt; State = 0 or 255 (or 1) = OFF or ON
  * <br>
  * Output: Return value:
  * - 0 = Message successfully transmitted
