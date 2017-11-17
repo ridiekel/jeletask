@@ -41,11 +41,11 @@ import java.util.concurrent.TimeUnit;
  * User: Bruno Braes, http://www.xhibit.be
  * Date: 7/09/12
  * Time: 15:40
- * <p/>
- * <p/>
+ * <br/>
+ * <br/>
  * FunctionSet(int Fnc, int Opt, int Number, int State)
  * > example to switch relays: FunctionSet(1, 0, 19, 1) -> switches relays 19 to on (=bureau).
- * <p/>
+ * <br/>
  * - Fnc: Fnc ( RELAY, DIMMER, MOTOR, MTRUPDOWN, LOCMOOD, TIMEDMOOD, GENMOOD, FLAG, PROCES, REGIME, SERVICE, MESSAGE) = see "Constants" below / Functions.cs for full list.
  * - Opt: not required for RELAYS? value 0? (dependent on the function: see Options.cs for full list)
  * - Number:
@@ -59,20 +59,20 @@ import java.util.concurrent.TimeUnit;
  * -> State bit 7-8 = 00 Normal Short Press, 01 Key Depressed, 10 Key Released
  * for all other Fnc
  * -> State = 0 or 255 (or 1) = OFF or ON
- * <p/>
+ * <br/>
  * Output: Return value:
  * - 0 = Message successfully transmitted
  * - 1 = Communication not opened
  * - 2 = No Answer
- * <p/>
+ * <br/>
  * All commands and messages in both directions will use the same frame getLogInfo:
  * STX (02h) + Length + Command Number + Parameter 1 + ... + Parameter n + ChkSm
- * <p/>
+ * <br/>
  * The length does not include the ChkSm-byte. The ChkSm is calculated on Command Number + Command Parameters + Length + STX.
  * After the ChkSm the central unit send an acknowledge byte 0A (hex). If no acknowledge byte is send the command is not handled.
- * <p/>
+ * <br/>
  * --------------------------
- * <p/>
+ * <br/>
  * Function Set
  * - Description: This command allows the CCT to set individual functions. See “methods” for detailed descriptions
  * - Command number: 01h
@@ -81,7 +81,7 @@ import java.util.concurrent.TimeUnit;
  * - Parameter 1 = Fnc
  * - Parameter 2 = Outp
  * - Parameter 3 = State
- * <p/>
+ * <br/>
  * Function Get
  * - Description: When the TDS receives this command it reports the level of the specified load. See methods for detailed descriptions
  * - Command number: 02h
@@ -89,7 +89,7 @@ import java.util.concurrent.TimeUnit;
  * - Direction: From CCT to TDS
  * - Parameter 1 = fnc
  * - Parameter 2 = Outp
- * <p/>
+ * <br/>
  * Function Log On/Off
  * - Description: When the TDS receives this command it (de-)activates it’s channel for reporting the function!
  * This function will open/close a channel for the function
@@ -99,11 +99,11 @@ import java.util.concurrent.TimeUnit;
  * - Direction: From CCT to TDS
  * - Parameter 1 = fnc
  * - Parameter 2 = state
- * <p/>
+ * <br/>
  * Lux values
  * To change from byte to lux = (10 (byte / 40)) - 1
  * To change from lux to byte = Log10(lux + 1) * 40
- * <p/>
+ * <br/>
  * Constants
  * The functions in the DLL use a parameter “Fnc” and can have following values
  * FNC_RELAY = 1 (control or get the status of a relay)
@@ -121,9 +121,9 @@ import java.util.concurrent.TimeUnit;
  * FNC_COND = 60 (get the status of a Condition)
  * FNC_TPKEY = 52 (simulate a key press on an interface)
  * FNC_GETSENSTARGET = 21 (get the status of a Sensor setting)
- * <p/>
+ * <br/>
  * If you are making your own interface you have to take care of the following:
- * <p/>
+ * <br/>
  * - With the LOG function you open a kind of 'channel' from the specific device type (ex. relays) from the central unit to your device.
  * This mean that when such a device has a change the central unit will sent automatically a "report" to you.
  * You only open the LOG for the devices you really need (ex. relays, dimmer, local moods, sensors)
