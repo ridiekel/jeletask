@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  * <br>
  * <br>
  * FunctionSet(int Fnc, int Opt, int Number, int State)
- * > example to switch relays: FunctionSet(1, 0, 19, 1) -&gt; switches relays 19 to on (=bureau).
+ * &gt; example to switch relays: FunctionSet(1, 0, 19, 1) -&gt; switches relays 19 to on (=bureau).
  * <br>
  * - Fnc: Fnc ( RELAY, DIMMER, MOTOR, MTRUPDOWN, LOCMOOD, TIMEDMOOD, GENMOOD, FLAG, PROCES, REGIME, SERVICE, MESSAGE) = see "Constants" below / Functions.cs for full list.
  * - Opt: not required for RELAYS? value 0? (dependent on the function: see Options.cs for full list)
@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * for Fnc = FNC_TPKEY -&gt; Number = Touch panel number you want to simulate
  * All other Fnc -&gt; Number = 0 to Maximum -1
  * - State:
- * for Fnc=FNC_DIMMER & FNC_MOTOR -&gt; State = 0 to 255 (always use the result from function ConvPercToDimVal, may never be 3!!!)
+ * for Fnc=FNC_DIMMER &amp; FNC_MOTOR -&gt; State = 0 to 255 (always use the result from function ConvPercToDimVal, may never be 3!!!)
  * for Fnc = FNC_TPKEY
  * -&gt; State bit 3-0 = Key number (0 to 7)
  * -&gt; State bit 7-8 = 00 Normal Short Press, 01 Key Depressed, 10 Key Released
