@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionBasedMessageSupport;
 import io.github.ridiekel.jeletask.model.spec.CentralUnit;
@@ -29,7 +28,6 @@ public class EventMessage extends FunctionBasedMessageSupport {
         return this.number;
     }
 
-    @JsonIgnore
     public byte[] getRawBytes() {
         return this.rawBytes;
     }

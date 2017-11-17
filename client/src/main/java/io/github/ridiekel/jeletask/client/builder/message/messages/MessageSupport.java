@@ -1,7 +1,5 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
@@ -221,12 +219,9 @@ public abstract class MessageSupport {
 
     @Override
     public String toString() {
-        try {
-            return new ObjectMapper().writer().writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            LOG.error("Exception ({}) caught in toString: {}", e.getClass().getName(), e.getMessage());
-        }
-        return super.toString();
+        return "MessageSupport{" + "clientConfig=" + this.clientConfig +
+                ", acknowledged=" + this.acknowledged +
+                '}';
     }
 
     public List<EventMessage> respond(CentralUnit config, MessageHandler messageHandler) {

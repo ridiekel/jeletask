@@ -1,10 +1,7 @@
 package io.github.ridiekel.jeletask.model.spec;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import java.util.List;
 
-@JsonSerialize(as=RoomSpec.class)
 public interface RoomSpec {
     int getId();
 

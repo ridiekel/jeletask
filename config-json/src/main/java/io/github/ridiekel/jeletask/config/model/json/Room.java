@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.config.model.json;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.model.spec.Function;
 import io.github.ridiekel.jeletask.model.spec.RoomSpec;
@@ -11,6 +12,7 @@ import java.util.Map;
 /**
  * POJO representation of a Room.  Holds all components which are controllable in that specific room.
  */
+@JsonSerialize(as=RoomSpec.class)
 public class Room implements RoomSpec {
     private int id;
     private int level;

@@ -1,10 +1,12 @@
 package io.github.ridiekel.jeletask.model.nbt;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ridiekel.jeletask.model.spec.RoomSpec;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@JsonSerialize(as=RoomSpec.class)
 public class Room implements RoomSpec {
     private final int id;
     private final String name;

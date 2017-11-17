@@ -1,8 +1,10 @@
 package io.github.ridiekel.jeletask.model.nbt;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
 
+@JsonSerialize(as=ComponentSpec.class)
 public abstract class ComponentSupport implements ComponentSpec {
     protected final int id;
     protected final Room room;

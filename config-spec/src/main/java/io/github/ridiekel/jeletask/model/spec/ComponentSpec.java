@@ -1,8 +1,5 @@
 package io.github.ridiekel.jeletask.model.spec;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-@JsonSerialize(as=ComponentSpec.class)
 public interface ComponentSpec {
     String getState();
 

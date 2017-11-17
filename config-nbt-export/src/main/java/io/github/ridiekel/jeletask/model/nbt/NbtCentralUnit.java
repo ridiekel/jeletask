@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.model.nbt;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.ridiekel.jeletask.model.spec.CentralUnit;
 import io.github.ridiekel.jeletask.model.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
@@ -168,6 +169,7 @@ public class NbtCentralUnit implements CentralUnit {
     }
 
     @Override
+    @JsonIgnore
     public List<ComponentSupport> getComponents(final Function function) {
         Map<Function, List<ComponentSupport>> map = this.getComponentsByFunction();
         List<ComponentSupport> componentSupports = map.get(function);
@@ -241,6 +243,7 @@ public class NbtCentralUnit implements CentralUnit {
     }
 
     @Override
+    @JsonIgnore
     public List<? extends ComponentSpec> getAllComponents() {
         return this.getComponents();
     }

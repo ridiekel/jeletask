@@ -1,11 +1,13 @@
 package io.github.ridiekel.jeletask.config.model.json;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.model.spec.Function;
 
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
  */
+@JsonSerialize(as=ComponentSpec.class)
 public class TDSComponent implements ComponentSpec {
     private String description;
     private Function function;

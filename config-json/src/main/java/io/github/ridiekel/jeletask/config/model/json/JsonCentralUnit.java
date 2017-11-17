@@ -1,6 +1,8 @@
 package io.github.ridiekel.jeletask.config.model.json;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ridiekel.jeletask.model.spec.CentralUnit;
 import io.github.ridiekel.jeletask.model.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
@@ -19,6 +21,7 @@ import java.util.Set;
  * POJO representation of the TDS config JSON file.
  */
 //@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonSerialize(as=CentralUnit.class)
 public class JsonCentralUnit implements CentralUnit {
     /**
      * Logger responsible for logging and debugging statements.
@@ -104,11 +107,13 @@ public class JsonCentralUnit implements CentralUnit {
     }
 
     @Override
+    @JsonIgnore
     public List<? extends ComponentSpec> getComponents(Function function) {
         return this.componentsTypes.get(function);
     }
 
     @Override
+    @JsonIgnore
     public List<? extends ComponentSpec> getAllComponents() {
         if (this.allComponents == null) {
             this.allComponents = new ArrayList<>();
