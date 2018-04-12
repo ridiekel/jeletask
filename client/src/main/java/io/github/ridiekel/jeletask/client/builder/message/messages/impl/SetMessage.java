@@ -50,7 +50,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
         ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
         String initialState = component.getState();
         Long start = System.currentTimeMillis();
-        while (!this.getState().equals(component.getState()) && (System.currentTimeMillis() - start) < 5000) {
+        while (!this.getState().equals(component.getState()) && (System.currentTimeMillis() - start) < 2000) {
             try {
                 Thread.sleep(10);
 
@@ -63,8 +63,8 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
                 LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
             }
         }
-        if (!this.getState().equals(component.getState())) {
-            String message = "Did not receive a state change for " + component.getFunction() + ":" + component.getNumber() + " ("+component.getDescription()+") within 5 seconds. Assuming failed to set state from '" + initialState + "' to '" + this.getState() + "'";
+        if (this.getFunction().shouldReceiveAcknowledge(this.getState()) && !this.getState().equals(component.getState())) {
+            String message = "Did not receive a state change for " + component.getFunction() + ":" + component.getNumber() + " ("+component.getDescription()+") within 2 seconds. Assuming failed to set state from '" + initialState + "' to '" + this.getState() + "'";
             LOG.warn(message);
             throw new RuntimeException(message);
         }
