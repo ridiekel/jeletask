@@ -19,7 +19,7 @@
     </modules>
 
     <properties>
-        <jdk.version>9</jdk.version>
+        <jdk.version>10</jdk.version>
         <junit.version>4.11</junit.version>
         <jackson.version>2.9.2</jackson.version>
         <log4j-api.version>2.7</log4j-api.version>

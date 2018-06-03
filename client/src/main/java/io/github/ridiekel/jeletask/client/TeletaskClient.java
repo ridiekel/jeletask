@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -239,17 +240,62 @@ public final class TeletaskClient implements TeletaskReceiver {
         }
     }
 
+    public TeletaskClient start() {
+        String host = this.getConfig().getHost();
+        int port = this.getConfig().getPort();
+
+        host = this.startTestServer(host, port);
+
+        this.connect(host, port);
+
+        this.startEventListener();
+
+        this.groupGet();
+
+        this.startKeepAlive();
+
+        this.sendLogEventMessages("ON");
+
+        return this;
+    }
+
+    public void restart() {
+        String host = this.getConfig().getHost();
+        int port = this.getConfig().getPort();
+
+        host = this.startTestServer(host, port);
+
+        this.connect(host, port);
+
+        this.sendLogEventMessages("ON");
+    }
+
     public void stop() {
         // close all log events to stop reporting
-        this.sendLogEventMessages("OFF");
-        this.stopEventListener();
-        this.stopStateChangeListeners();
-        this.stopKeepAliveService();
-        this.stopExecutorService();
-        this.closeInputStream();
-        this.closeOutputStream();
-        this.closeSocket();
-        this.stopTestServer();
+
+        Collection<Runnable> runnables = new ArrayList<>();
+
+        runnables.add(() -> this.sendLogEventMessages("OFF"));
+        runnables.add(this::stopEventListener);
+        runnables.add(this::stopStateChangeListeners);
+        runnables.add(this::stopKeepAliveService);
+        runnables.add(this::stopExecutorService);
+        runnables.add(this::closeInputStream);
+        runnables.add(this::closeOutputStream);
+        runnables.add(this::closeSocket);
+        runnables.add(this::stopTestServer);
+
+        this.runRunnables(runnables);
+    }
+
+    private void runRunnables(Collection<Runnable> runnables) {
+        runnables.forEach(r -> {
+            try {
+                r.run();
+            } catch (Exception e) {
+                LOG.error(String.format("Exception (%s) caught in stop: %s", e.getClass().getName(), e.getMessage()), e);
+            }
+        });
     }
 
     private void stopStateChangeListeners() {
@@ -317,25 +363,6 @@ public final class TeletaskClient implements TeletaskReceiver {
         } catch (InterruptedException e) {
             LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
         }
-    }
-
-    public TeletaskClient start() {
-        String host = this.getConfig().getHost();
-        int port = this.getConfig().getPort();
-
-        host = this.startTestServer(host, port);
-
-        this.connect(host, port);
-
-        this.startEventListener();
-
-        this.groupGet();
-
-        this.startKeepAlive();
-
-        this.sendLogEventMessages("ON");
-
-        return this;
     }
 
     private String startTestServer(String host, int port) {
