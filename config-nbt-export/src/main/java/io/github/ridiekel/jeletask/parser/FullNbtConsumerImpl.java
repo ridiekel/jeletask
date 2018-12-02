@@ -1,17 +1,6 @@
 package io.github.ridiekel.jeletask.parser;
 
-import io.github.ridiekel.jeletask.model.nbt.Condition;
-import io.github.ridiekel.jeletask.model.nbt.Dimmer;
-import io.github.ridiekel.jeletask.model.nbt.GeneralMood;
-import io.github.ridiekel.jeletask.model.nbt.Input;
-import io.github.ridiekel.jeletask.model.nbt.InputInterface;
-import io.github.ridiekel.jeletask.model.nbt.LocalMood;
-import io.github.ridiekel.jeletask.model.nbt.Motor;
-import io.github.ridiekel.jeletask.model.nbt.NbtCentralUnit;
-import io.github.ridiekel.jeletask.model.nbt.OutputInterface;
-import io.github.ridiekel.jeletask.model.nbt.Relay;
-import io.github.ridiekel.jeletask.model.nbt.Room;
-import io.github.ridiekel.jeletask.model.nbt.Sensor;
+import io.github.ridiekel.jeletask.model.nbt.*;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.model.spec.Function;
 import org.slf4j.Logger;
@@ -173,6 +162,15 @@ class FullNbtConsumerImpl implements NbtConsumer {
         LocalMood localMood = new LocalMood(Integer.valueOf(id), room, type, description);
         room.getLocalMoods().add(localMood);
         this.getCentralUnit().getComponents().add(localMood);
+    }
+
+    @Override
+    public void flag(String id, String roomName, String type, String description) {
+        this.getLogger().debug("flag: {}:{} (Room {}) - {}", type, id, roomName, description);
+        Room room = this.getCentralUnit().findRoom(roomName);
+        Flag flag = new Flag(Integer.valueOf(id), room, type, description);
+        room.getFlags().add(flag);
+        this.getCentralUnit().getComponents().add(flag);
     }
 
     private ComponentSpec getComponent(String actionType, String actionId) {

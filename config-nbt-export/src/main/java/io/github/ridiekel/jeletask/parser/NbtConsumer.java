@@ -29,6 +29,8 @@ public interface NbtConsumer {
 
     void localMood(String id, String roomName, String type, String description);
 
+    void flag(String id, String roomName, String type, String description);
+
     void motor(String id, String roomName, String type, String description);
 
     void generalMood(String id, String roomName, String type, String description);

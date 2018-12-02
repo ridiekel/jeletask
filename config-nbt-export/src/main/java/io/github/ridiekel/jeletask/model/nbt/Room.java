@@ -12,6 +12,7 @@ public class Room implements RoomSpec {
     private final String name;
     private List<Relay> relays;
     private List<LocalMood> localMoods;
+    private List<Flag> flags;
     private List<Motor> motors;
     private List<GeneralMood> generalMoods;
     private List<Dimmer> dimmers;
@@ -33,10 +34,17 @@ public class Room implements RoomSpec {
         return this.name;
     }
 
+    public List<Flag> getFlags() {
+        if (flags == null) {
+            flags = new ArrayList<>();
+        }
+        return flags;
+    }
+
     @Override
     public List<Relay> getRelays() {
         if (this.relays == null) {
-            this.setRelays(new ArrayList<Relay>());
+            this.setRelays(new ArrayList<>());
         }
         return this.relays;
     }
@@ -44,7 +52,7 @@ public class Room implements RoomSpec {
     @Override
     public List<LocalMood> getLocalMoods() {
         if (this.localMoods == null) {
-            this.setLocalMoods(new ArrayList<LocalMood>());
+            this.setLocalMoods(new ArrayList<>());
         }
         return this.localMoods;
     }
@@ -52,7 +60,7 @@ public class Room implements RoomSpec {
     @Override
     public List<Motor> getMotors() {
         if (this.motors == null) {
-            this.setMotors(new ArrayList<Motor>());
+            this.setMotors(new ArrayList<>());
         }
         return this.motors;
     }
@@ -60,7 +68,7 @@ public class Room implements RoomSpec {
     @Override
     public List<GeneralMood> getGeneralMoods() {
         if (this.generalMoods == null) {
-            this.setGeneralMoods(new ArrayList<GeneralMood>());
+            this.setGeneralMoods(new ArrayList<>());
         }
         return this.generalMoods;
     }
@@ -68,7 +76,7 @@ public class Room implements RoomSpec {
     @Override
     public List<Dimmer> getDimmers() {
         if (this.dimmers == null) {
-            this.setDimmers(new ArrayList<Dimmer>());
+            this.setDimmers(new ArrayList<>());
         }
         return this.dimmers;
     }
@@ -76,7 +84,7 @@ public class Room implements RoomSpec {
     @Override
     public List<Condition> getConditions() {
         if (this.conditions == null) {
-            this.setConditions(new ArrayList<Condition>());
+            this.setConditions(new ArrayList<>());
         }
         return this.conditions;
     }
@@ -84,7 +92,7 @@ public class Room implements RoomSpec {
     @Override
     public List<Sensor> getSensors() {
         if (this.sensors == null) {
-            this.setSensors(new ArrayList<Sensor>());
+            this.setSensors(new ArrayList<>());
         }
         return this.sensors;
     }

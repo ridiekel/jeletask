@@ -2,25 +2,9 @@ package io.github.ridiekel.jeletask.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ridiekel.jeletask.model.nbt.NbtCentralUnit;
-import io.github.ridiekel.jeletask.parser.handler.CentralUnitLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.ConditionLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.DimmerLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.GeneralMoodLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.InputInterfaceLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.InputLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.LineHandler;
-import io.github.ridiekel.jeletask.parser.handler.LocalMoodLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.MotorLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.OutputInterfaceLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.RelayLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.RoomLineHandler;
-import io.github.ridiekel.jeletask.parser.handler.SensorLineHandler;
+import io.github.ridiekel.jeletask.parser.handler.*;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
@@ -30,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.util.Map.*;
+import static java.util.Map.entry;
 
 public class NbtFile {
     private static final NbtFile INSTANCE = new NbtFile();
@@ -46,6 +30,7 @@ public class NbtFile {
             entry(MotorLineHandler.getInstance().getStartPattern(), MotorLineHandler.getInstance()),
             entry(GeneralMoodLineHandler.getInstance().getStartPattern(), GeneralMoodLineHandler.getInstance()),
             entry(DimmerLineHandler.getInstance().getStartPattern(), DimmerLineHandler.getInstance()),
+            entry(FlagsLineHandler.getInstance().getStartPattern(), FlagsLineHandler.getInstance()),
             entry(ConditionLineHandler.getInstance().getStartPattern(), ConditionLineHandler.getInstance()),
             entry(SensorLineHandler.getInstance().getStartPattern(), SensorLineHandler.getInstance())
     );
@@ -95,7 +80,7 @@ public class NbtFile {
     public static void main(String[] args) throws IOException {
 //        FullProprietaryModelConsumerImpl consumer = new FullProprietaryModelConsumerImpl();
         InterestingNbtConsumerImpl consumer = new InterestingNbtConsumerImpl();
-        getInstance().visit(consumer, new FileInputStream("/home/ridiekel/Projects/git/Teletask-api/backend/config-nbt-export/src/main/resources/centrale.ttt"));
+        getInstance().visit(consumer, new FileInputStream("/home/geroen/Projects/git/home/jeletask/config-nbt-export/src/main/resources/centrale.ttt"));
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.writerWithDefaultPrettyPrinter().writeValue(System.out, consumer.getCentralUnit());
     }
