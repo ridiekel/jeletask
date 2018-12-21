@@ -19,19 +19,9 @@ import io.github.ridiekel.jeletask.server.TeletaskTestServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -264,6 +254,10 @@ public final class TeletaskClient implements TeletaskReceiver {
         int port = this.getConfig().getPort();
 
         host = this.startTestServer(host, port);
+
+        this.closeInputStream();
+        this.closeOutputStream();
+        this.closeSocket();
 
         this.connect(host, port);
 
