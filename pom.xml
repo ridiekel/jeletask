@@ -5,7 +5,7 @@
     <groupId>io.github.ridiekel</groupId>
     <artifactId>jeletask</artifactId>
     <packaging>pom</packaging>
-    <version>2.0.20-SNAPSHOT</version>
+    <version>2.0.21-SNAPSHOT</version>
 
     <name>Teletask API - Parent</name>
     <description>An API written in java for accessing Teletask central units.</description>
