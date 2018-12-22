@@ -26,6 +26,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Created by IntelliJ IDEA.
@@ -162,23 +164,27 @@ public final class TeletaskClient implements TeletaskReceiver {
         this.stateChangeListeners.add(listener);
     }
 
-    public void set(ComponentSpec component, String state) {
-        if (!component.getState().equals(state)) {
-            this.set(component.getFunction(), component.getNumber(), state);
+    public void set(ComponentSpec component, String state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        if (Objects.isNull(component.getState()) || Objects.equals(component.getState(), "null")) {
+            this.get(component,
+                    (f, n, s) -> LOG.info("State for {} / {} was somehow null, we reset the state to: {}", component.getFunction(), component.getNumber(), component.getState()),
+                    (f, n, s, e) -> {
+                    });
         }
-    }
-
-    public void set(Function function, int number, String state) {
-        try {
-            this.execute(new SetMessage(this.getConfig(), function, number,
-                    Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null")))
+        if (!Objects.equals(component.getState(), state)) {
+            this.execute(
+                    new SetMessage(this.getConfig(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                    m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                    (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
             );
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
         }
     }
 
-    public void groupGet(final Function function, final int... numbers) {
+    public void set(Function function, int number, String state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
+        this.set(this.getComponent(function, number), state, onSucccess, onFailed);
+    }
+
+    public void groupGet(Function function, int... numbers) {
         try {
             this.getExecutorService().submit(() -> {
                 try {
@@ -218,16 +224,16 @@ public final class TeletaskClient implements TeletaskReceiver {
         this.sendLogEventMessage(Function.SENSOR, state);
     }
 
-    public void get(Function function, int number) {
-        this.get(this.getComponent(function, number));
+    public void get(Function function, int number, SuccessConsumer onSucccess, FailureConsumer onFailed) {
+        this.get(this.getComponent(function, number), onSucccess, onFailed);
     }
 
-    public void get(ComponentSpec component) {
-        try {
-            this.execute(new GetMessage(this.getConfig(), component.getFunction(), component.getNumber()));
-        } catch (ExecutionException e) {
-            LOG.error("Exception ({}) caught in get: {}", e.getClass().getName(), e.getMessage(), e);
-        }
+    public void get(ComponentSpec component, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        this.execute(
+                new GetMessage(this.getConfig(), component.getFunction(), component.getNumber()),
+                m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+        );
     }
 
     public TeletaskClient start() {
@@ -282,68 +288,6 @@ public final class TeletaskClient implements TeletaskReceiver {
         this.runRunnables(runnables);
     }
 
-    private void runRunnables(Collection<Runnable> runnables) {
-        runnables.forEach(r -> {
-            try {
-                r.run();
-            } catch (Exception e) {
-                LOG.error(String.format("Exception (%s) caught in stop: %s", e.getClass().getName(), e.getMessage()), e);
-            }
-        });
-    }
-
-    private void stopStateChangeListeners() {
-        this.getStateChangeListeners().forEach(StateChangeListener::stop);
-        this.stateChangeService.shutdown();
-    }
-
-    private void stopTestServer() {
-        if (this.getTeletaskTestServer() != null) {
-            this.getTeletaskTestServer().stop();
-        }
-    }
-
-    private void stopKeepAliveService() {
-        this.getKeepAliveTimer().cancel();
-    }
-
-    private void stopEventListener() {
-        this.getEventListenerTimer().cancel();
-    }
-
-    private void closeSocket() {
-        try {
-            this.socket.close();
-        } catch (IOException e) {
-            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
-        }
-    }
-
-    private void closeOutputStream() {
-        try {
-            this.getOutputStream().close();
-        } catch (IOException e) {
-            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
-        }
-    }
-
-    private void closeInputStream() {
-        try {
-            this.getInputStream().close();
-        } catch (IOException e) {
-            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
-        }
-    }
-
-    private void stopExecutorService() {
-        try {
-            this.getExecutorService().shutdown();
-            this.getExecutorService().awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
-        }
-    }
-
     @Override
     public CentralUnit getConfig() {
         return this.config;
@@ -351,11 +295,30 @@ public final class TeletaskClient implements TeletaskReceiver {
 
     // ################################################ PRIVATE API FUNCTIONS
 
-    private void execute(MessageSupport message) throws ExecutionException {
+    private <M extends MessageSupport> void execute(
+            M message,
+            Consumer<M> onSucccess,
+            BiConsumer<M, Exception> onFailed) {
         try {
-            this.getExecutorService().submit(new MessageExecutor(message, this)).get();
-        } catch (InterruptedException e) {
+            this.getExecutorService()
+                    .submit(() -> {
+                        try {
+                            new MessageExecutor(message, this).run();
+                            onSucccess.accept(message);
+                        } catch (Exception e) {
+                            try {
+                                this.restart();
+                                new MessageExecutor(message, this).run();
+                                onSucccess.accept(message);
+                            } catch (Exception e1) {
+                                onFailed.accept(message, e);
+                            }
+                        }
+                    })
+                    .get();
+        } catch (InterruptedException | ExecutionException e) {
             LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
+            onFailed.accept(message, e);
         }
     }
 
@@ -423,11 +386,8 @@ public final class TeletaskClient implements TeletaskReceiver {
     }
 
     private void sendLogEventMessage(Function function, String state) {
-        try {
-            this.execute(new LogMessage(this.getConfig(), function, state));
-        } catch (ExecutionException e) {
-            LOG.error("Exception ({}) caught in sendLogEventMessage: {}", e.getClass().getName(), e.getMessage(), e);
-        }
+        this.execute(new LogMessage(this.getConfig(), function, state), (m) -> {
+        }, (m, e) -> LOG.error("Exception ({}) caught in sendLogEventMessage: {}", e.getClass().getName(), e.getMessage(), e));
     }
 
     /**
@@ -470,7 +430,7 @@ public final class TeletaskClient implements TeletaskReceiver {
         for (MessageSupport message : messages) {
             if (message instanceof EventMessage) {
                 EventMessage eventMessage = (EventMessage) message;
-                this.handleReceiveEvent(LOG, this.getConfig(), eventMessage);
+                this.handleReceiveEvent(this.getConfig(), eventMessage);
                 components.add(this.getComponent(eventMessage.getFunction(), eventMessage.getNumber()));
             }
         }
@@ -489,19 +449,19 @@ public final class TeletaskClient implements TeletaskReceiver {
     }
 
 
-    public void handleReceiveEvent(Logger logger, CentralUnit config, EventMessage eventMessage) {
+    private void handleReceiveEvent(CentralUnit config, EventMessage eventMessage) {
         ComponentSpec component = config.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
         if (component != null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Event: \nRoom: {}\nComponent: {}\nCurrent State: {} {}", component.getRoomName(), component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Event: \nRoom: {}\nComponent: {}\nCurrent State: {} {}", component.getRoomName(), component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
             }
             String state = eventMessage.getState();
             if (component.getFunction() != Function.MOTOR || !Objects.equals("STOP", state)) {
                 component.setState(state);
             }
         } else {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Event: \nComponent: not found in configuration {}", eventMessage.getLogInfo(eventMessage.getRawBytes()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Event: \nComponent: not found in configuration {}", eventMessage.getLogInfo(eventMessage.getRawBytes()));
             }
         }
     }
@@ -531,23 +491,85 @@ public final class TeletaskClient implements TeletaskReceiver {
         }
     }
 
-    public Timer getKeepAliveTimer() {
+    private Timer getKeepAliveTimer() {
         return this.keepAliveTimer;
     }
 
-    public Timer getEventListenerTimer() {
+    private Timer getEventListenerTimer() {
         return this.eventListenerTimer;
     }
 
-    public List<StateChangeListener> getStateChangeListeners() {
+    private List<StateChangeListener> getStateChangeListeners() {
         return this.stateChangeListeners;
     }
 
-    public EventMessageListener getEventMessageListener() {
+    private EventMessageListener getEventMessageListener() {
         return this.eventMessageListener;
     }
 
     private void setEventMessageListener(EventMessageListener eventMessageListener) {
         this.eventMessageListener = eventMessageListener;
+    }
+
+    private void runRunnables(Iterable<Runnable> runnables) {
+        runnables.forEach(r -> {
+            try {
+                r.run();
+            } catch (Exception e) {
+                LOG.error(String.format("Exception (%s) caught in stop: %s", e.getClass().getName(), e.getMessage()), e);
+            }
+        });
+    }
+
+    private void stopStateChangeListeners() {
+        this.getStateChangeListeners().forEach(StateChangeListener::stop);
+        this.stateChangeService.shutdown();
+    }
+
+    private void stopTestServer() {
+        if (this.getTeletaskTestServer() != null) {
+            this.getTeletaskTestServer().stop();
+        }
+    }
+
+    private void stopKeepAliveService() {
+        this.getKeepAliveTimer().cancel();
+    }
+
+    private void stopEventListener() {
+        this.getEventListenerTimer().cancel();
+    }
+
+    private void closeSocket() {
+        try {
+            this.socket.close();
+        } catch (IOException e) {
+            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
+        }
+    }
+
+    private void closeOutputStream() {
+        try {
+            this.getOutputStream().close();
+        } catch (IOException e) {
+            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
+        }
+    }
+
+    private void closeInputStream() {
+        try {
+            this.getInputStream().close();
+        } catch (IOException e) {
+            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
+        }
+    }
+
+    private void stopExecutorService() {
+        try {
+            this.getExecutorService().shutdown();
+            this.getExecutorService().awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
+        }
     }
 }
