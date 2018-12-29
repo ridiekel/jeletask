@@ -202,7 +202,7 @@ public final class TeletaskClient implements TeletaskReceiver {
 
     public void groupGet(Function function) {
         List<? extends ComponentSpec> components = this.getConfig().getComponents(function);
-        if (components != null) {
+        if (components != null && !components.isEmpty()) {
             this.groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray());
         }
     }
