@@ -65,6 +65,9 @@ public abstract class ComponentSupport implements ComponentSpec {
     public String toString() {
         return this.getClass().getSimpleName() + "{" +
                 "id=" + this.id +
+                ", function=" + this.getFunction() +
+                ", type=" + this.type +
+                ", state=" + this.state +
                 ", description='" + this.description + '\'' +
                 '}';
     }

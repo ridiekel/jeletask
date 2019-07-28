@@ -1,10 +1,16 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
 
+import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class SensorStateCalculator extends SimpleStateCalculator {
+    private static final Logger LOG = LoggerFactory.getLogger(SensorStateCalculator.class);
+
     private final Map<String, StateCalculator> sensorTypeCalculators;
 
     public SensorStateCalculator(StateCalculator temperature, StateCalculator lux, StateCalculator humidity) {
@@ -32,6 +38,34 @@ public class SensorStateCalculator extends SimpleStateCalculator {
     }
 
     private StateCalculator getStateCalculator(ComponentSpec component) {
-        return this.sensorTypeCalculators.get(component.getType());
+        return Optional.ofNullable(this.sensorTypeCalculators.get(component.getType())).orElseGet(() -> {
+            LOG.warn(String.format("State calculator not found for component:\n\n        %s\n", component));
+            return new StateCalculator() {
+                @Override
+                public String convertGet(ComponentSpec component, byte[] value) {
+                    return null;
+                }
+
+                @Override
+                public byte[] convertSet(ComponentSpec component, String value) {
+                    return new byte[0];
+                }
+
+                @Override
+                public NumberConverter getNumberConverter() {
+                    return null;
+                }
+
+                @Override
+                public boolean isValidState(String state) {
+                    return false;
+                }
+
+                @Override
+                public String getDefaultState(ComponentSpec component) {
+                    return null;
+                }
+            };
+        });
     }
 }

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+. ~/.sdkman/bin/sdkman-init.sh
+
+sdk use java 11.0.4-amzn
 
 mvn release:clean release:prepare release:perform --batch-mode
