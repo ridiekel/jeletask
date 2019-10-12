@@ -132,6 +132,7 @@ public final class TeletaskClient implements TeletaskReceiver {
      * Logger responsible for logging and debugging statements.
      */
     private static final Logger LOG = LoggerFactory.getLogger(TeletaskClient.class);
+    public static final int MAX_RETRY = 3;
 
     private Socket socket;
     private OutputStream outputStream;
@@ -291,6 +292,25 @@ public final class TeletaskClient implements TeletaskReceiver {
     @Override
     public CentralUnit getConfig() {
         return this.config;
+    }
+
+    public void send(byte[] message, java.util.function.Function<byte[], String> logMessage) {
+        this.send(message, logMessage, 1);
+    }
+
+    public void send(byte[] message, java.util.function.Function<byte[], String> logMessage, int attempts) {
+        if (attempts <= MAX_RETRY) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Sending: {}", logMessage.apply(message));
+            }
+            try {
+                MessageUtilities.send(this.getOutputStream(), message);
+            } catch (IOException e) {
+                LOG.warn("Exception ({}) caught in send (attempt {}): {}", e.getClass().getName(), attempts, e.getMessage());
+                this.restart();
+                this.send(message, logMessage, ++attempts);
+            }
+        }
     }
 
     // ################################################ PRIVATE API FUNCTIONS

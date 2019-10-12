@@ -14,8 +14,6 @@ import io.github.ridiekel.jeletask.model.spec.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -32,7 +30,7 @@ public abstract class MessageSupport {
     private static final Pattern REMOVE_NAMES = Pattern.compile("[^\\|]");
     private static final Pattern INSERT_PLACEHOLDERS = Pattern.compile("\\|   ");
     public static final int ACK_WAIT_TIME = 1000;
-    public static final int MAX_RETRY = 5;
+    public static final int MAX_RETRY = 3;
 
     private final CentralUnit clientConfig;
 
@@ -53,7 +51,7 @@ public abstract class MessageSupport {
                 byte[] message = messageHandler.compose(this.getCommand(), this.getPayload());
 
                 try {
-                    this.send(client.getOutputStream(), message);
+                    client.send(message, this::getLogInfo);
 
                     this.waitForAcknowledge(client, counter);
                 } catch (Exception e) {
@@ -93,13 +91,6 @@ public abstract class MessageSupport {
                 throw new RuntimeException("Could not get the message to execute within the given amount of time.");
             }
         }
-    }
-
-    protected void send(OutputStream outputStream, byte[] message) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Sending: {}", this.getLogInfo(message));
-        }
-        MessageUtilities.send(outputStream, message);
     }
 
     protected boolean isValid() {
