@@ -223,6 +223,7 @@ public final class TeletaskClient implements TeletaskReceiver {
         this.sendLogEventMessage(Function.DIMMER, state);
         this.sendLogEventMessage(Function.COND, state);
         this.sendLogEventMessage(Function.SENSOR, state);
+        this.sendLogEventMessage(Function.FLAG, state);
     }
 
     public void get(Function function, int number, SuccessConsumer onSucccess, FailureConsumer onFailed) {
@@ -301,7 +302,7 @@ public final class TeletaskClient implements TeletaskReceiver {
     public void send(byte[] message, java.util.function.Function<byte[], String> logMessage, int attempts) {
         if (attempts <= MAX_RETRY) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Sending: {}", logMessage.apply(message));
+                LOG.debug(logMessage.apply(message));
             }
             try {
                 MessageUtilities.send(this.getOutputStream(), message);
@@ -473,7 +474,9 @@ public final class TeletaskClient implements TeletaskReceiver {
         ComponentSpec component = config.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
         if (component != null) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Event: \nRoom: {}\nComponent: {}\nCurrent State: {} {}", component.getRoomName(), component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
+                LOG.debug("Event - Component: {}, Current State: {} - {}", component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
+            } else if (LOG.isTraceEnabled()) {
+                LOG.trace("Event: \nComponent: {}\nCurrent State: {} {}", component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
             }
             String state = eventMessage.getState();
             if (component.getFunction() != Function.MOTOR || !Objects.equals("STOP", state)) {

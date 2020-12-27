@@ -31,8 +31,8 @@ public class JsonCentralUnit implements CentralUnit {
     private String host;
     private int port;
     private Map<Function, List<TDSComponent>> componentsTypes;
-    private List<Room> rooms;
     private List<TDSComponent> allComponents;
+    private CentralUnitType type;
 
     /**
      * Default constructor.
@@ -72,21 +72,20 @@ public class JsonCentralUnit implements CentralUnit {
         this.componentsTypes = componentsTypes;
     }
 
-    public List<Room> getRooms() {
-        return this.rooms;
-    }
-
-    public void setRooms(List<Room> rooms) {
-        this.rooms = rooms;
-    }
-
     @Override
     public CentralUnitType getCentralUnitType() {
-        //TODO: Get from json config file
-        return CentralUnitType.MICROS;
+        return type;
     }
 
-// ================================ HELPER METHODS
+    public CentralUnitType getType() {
+        return type;
+    }
+
+    public void setType(CentralUnitType type) {
+        this.type = type;
+    }
+
+    // ================================ HELPER METHODS
 
     @Override
     public TDSComponent getComponent(Function function, int number) {
@@ -124,43 +123,6 @@ public class JsonCentralUnit implements CentralUnit {
         return this.allComponents;
     }
 
-    public List<Room> getRooms(int level) {
-
-        //components.get()  ///TODO: refactor: access by index not OK, should be based on number, therefore iterate, or store as HashMap.
-        List<Room> roomsOnLevel = new ArrayList<>();
-        for (Room room : this.rooms) {
-            if (room.getLevel() == level) {
-                //returnValue = room;
-                roomsOnLevel.add(room);
-            }
-        }
-
-        return roomsOnLevel;
-    }
-
-    /**
-     * Convenience method.
-     * Until a better Jackson ObjectMapper implementation, loop through all rooms and replace component number by actual object reference.
-     */
-    public void initRooms() {
-        for (Room room : this.rooms) {
-            Set<Function> functions = room.getComponentTypes().keySet();
-            for (Function function : functions) {
-                List<Integer> componentTypes = room.getComponentTypes().get(function);
-                for (Integer componentNumber : componentTypes) {
-                    TDSComponent component = this.getComponent(function, componentNumber);
-                    Map<Function, List<TDSComponent>> components = room.getComponents();
-                    List<TDSComponent> tdsComponents = components.get(function);
-                    if (tdsComponents == null || tdsComponents.size() <= 0) {
-                        tdsComponents = new ArrayList<>();
-                        components.put(function, tdsComponents);
-                    }
-                    tdsComponents.add(component);
-                }
-            }
-        }
-    }
-
     public static JsonCentralUnit read(InputStream jsonData) throws IOException {
 
         //create ObjectMapper instance
@@ -169,9 +131,6 @@ public class JsonCentralUnit implements CentralUnit {
         //convert json string to object
         JsonCentralUnit clientConfig = objectMapper.readValue(jsonData, JsonCentralUnit.class);
         LOG.debug("JSON Config loaded: TDS HOST: {}:{}", clientConfig.getHost(), clientConfig.getPort());
-
-        // until a better Jackson ObjectMapper implementation, loop through all rooms and replace component number by actual object reference
-        clientConfig.initRooms();
 
         LOG.debug("JsonCentralUnit initialized.");
 

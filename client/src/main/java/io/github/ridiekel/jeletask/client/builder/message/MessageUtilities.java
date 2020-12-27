@@ -50,13 +50,13 @@ public final class MessageUtilities {
     }
 
     private static byte[] extractMessages(Logger logger, TeletaskReceiver teletaskReceiver, Collection<MessageSupport> responses, byte[] data, MessageSupport currentlyRunningMessage) throws Exception {
-        logger.debug("Receive - Raw bytes: {}", ByteUtilities.bytesToHex(data));
+        logger.trace("Receive - Raw bytes: {}", ByteUtilities.bytesToHex(data));
         MessageHandler messageHandler = teletaskReceiver.getMessageHandler();
         CentralUnit config = teletaskReceiver.getConfig();
         byte[] overflow = new byte[0];
         for (int i = 0; i < data.length; i++) {
             byte b = data[i];
-            logger.debug("Receive - Processing byte: {}", ByteUtilities.bytesToHex(b));
+            logger.trace("Receive - Processing byte: {}", ByteUtilities.bytesToHex(b));
             if (b == messageHandler.getStxValue()) {
                 int eventLengthInclChkSum = data[i + 1] + 1; // +1 for checksum
                 byte[] event = new byte[eventLengthInclChkSum];
@@ -66,13 +66,13 @@ public final class MessageUtilities {
                     System.arraycopy(data, i, event, 0, data.length - i);
                     i = data.length - 1;
 
-                    logger.debug("Receive - Overflowing following byte[]: {}", ByteUtilities.bytesToHex(overflow));
+                    logger.trace("Receive - Overflowing following byte[]: {}", ByteUtilities.bytesToHex(overflow));
                 } else {
                     System.arraycopy(data, i, event, 0, eventLengthInclChkSum);
 
                     i += eventLengthInclChkSum - 1;
 
-                    logger.debug("Receive - Found message bytes: {}", ByteUtilities.bytesToHex(event));
+                    logger.trace("Receive - Found message bytes: {}", ByteUtilities.bytesToHex(event));
                     try {
                         MessageSupport parse = messageHandler.parse(config, event);
                         if (parse != null) {
@@ -83,7 +83,7 @@ public final class MessageUtilities {
                     }
                 }
             } else if (b == messageHandler.getAcknowledgeValue()) {
-                logger.debug("Received acknowledge");
+                logger.trace("Received acknowledge");
                 if (currentlyRunningMessage != null) {
                     currentlyRunningMessage.acknowledge();
                 } else {

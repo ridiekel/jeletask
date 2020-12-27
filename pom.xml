@@ -5,7 +5,7 @@
     <groupId>io.github.ridiekel</groupId>
     <artifactId>jeletask</artifactId>
     <packaging>pom</packaging>
-    <version>2.1.3-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
 
     <name>Teletask API - Parent</name>
     <description>An API written in java for accessing Teletask central units.</description>
@@ -14,7 +14,6 @@
     <modules>
         <module>config-spec</module>
         <module>config-json</module>
-        <module>config-nbt-export</module>
         <module>client</module>
     </modules>
 

@@ -9,8 +9,6 @@ public interface ComponentSpec {
 
     int getNumber();
 
-    String getRoomName();
-
     String getDescription();
 
     String getType();

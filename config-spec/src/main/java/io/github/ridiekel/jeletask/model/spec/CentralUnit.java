@@ -14,6 +14,4 @@ public interface CentralUnit {
     List<? extends ComponentSpec> getAllComponents();
 
     CentralUnitType getCentralUnitType();
-
-    List<? extends RoomSpec> getRooms();
 }

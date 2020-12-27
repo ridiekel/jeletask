@@ -32,7 +32,7 @@ public abstract class ConfigurationSupport<T, C extends Configurable<T>, K> {
         byte[] stateBytes = stateCalculator.getNumberConverter().read(payload, startIndex);
         String state = stateCalculator.convertGet(component, stateBytes);
 
-        LOG.debug("Parsed state {} to {}", ByteUtilities.bytesToHex(stateBytes), state);
+        LOG.trace("Parsed state {} to {}", ByteUtilities.bytesToHex(stateBytes), state);
 
         if (state == null) {
             throw new IllegalStateException("Got state '" + ByteUtilities.bytesToHex(stateBytes) + "' for " + function + ":" + number + ", which resolved to <null> using '" + stateCalculator.getClass().getSimpleName() + "'");

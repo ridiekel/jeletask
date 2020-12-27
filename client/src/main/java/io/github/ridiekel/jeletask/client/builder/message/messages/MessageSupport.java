@@ -120,13 +120,20 @@ public abstract class MessageSupport {
         table.append(System.lineSeparator()).append(hexLine);
         table.append(System.lineSeparator()).append(seperatorLine);
 
-        return System.lineSeparator() + "Command: " + this.getCommand() + System.lineSeparator() +
-                "Payload: " + System.lineSeparator() + "\t" + Arrays.stream(this.getPayloadLogInfo()).collect(Collectors.joining(System.lineSeparator() + "\t")) + System.lineSeparator() +
-                "Length: " + message[1] + System.lineSeparator() +
-                "Checksum calculation steps: " + this.getMessageChecksumCalculationSteps(message) + " = " + message[message.length - 1] + System.lineSeparator() +
-                "Raw Bytes: " + ByteUtilities.bytesToHex(message) + System.lineSeparator() +
-                seperatorLine + System.lineSeparator() +
-                table.toString();
+        String line = null;
+        if (LOG.isTraceEnabled()) {
+            line = System.lineSeparator() + "Command: " + this.getCommand() + System.lineSeparator() +
+                    "Payload: " + System.lineSeparator() + "\t" + Arrays.stream(this.getPayloadLogInfo()).collect(Collectors.joining(System.lineSeparator() + "\t")) + System.lineSeparator() +
+                    "Length: " + message[1] + System.lineSeparator() +
+                    "Checksum calculation steps: " + this.getMessageChecksumCalculationSteps(message) + " = " + message[message.length - 1] + System.lineSeparator() +
+                    "Raw Bytes: " + ByteUtilities.bytesToHex(message) + System.lineSeparator() +
+                    seperatorLine + System.lineSeparator() +
+                    table.toString();
+        } else {
+            line = "Command: " + this.getCommand() + ", " +
+                    "Payload: " + String.join(", ", this.getPayloadLogInfo());
+        }
+        return line;
     }
 
     protected abstract String[] getPayloadLogInfo();
