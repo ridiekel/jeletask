@@ -5,7 +5,7 @@
     <groupId>io.github.ridiekel</groupId>
     <artifactId>jeletask</artifactId>
     <packaging>pom</packaging>
-    <version>3.0.3</version>
+    <version>3.0.4-SNAPSHOT</version>
 
     <name>Teletask API - Parent</name>
     <description>An API written in java for accessing Teletask central units.</description>
@@ -214,7 +214,7 @@
         <connection>scm:git:git@github.com:ridiekel/jeletask.git</connection>
         <developerConnection>scm:git:git@github.com:ridiekel/jeletask.git</developerConnection>
         <url>http://github.com/ridiekel/jeletask/tree/master</url>
-        <tag>jeletask-3.0.3</tag>
+        <tag>jeletask-3.0.0-SNAPSHOT</tag>
     </scm>
 
     <developers>
