@@ -34,7 +34,7 @@ public final class MessageUtilities {
             if ((System.currentTimeMillis() - startTime) > 5000) {
                 throw new RuntimeException("Did not receive data in a timely fashion. This means either: \n\t- You sent wrong data to the server and hence did not get an acknowledge.\n\t- Or you requested information from the server that was not available to the server");
             }
-            int available = inputStream.available();
+            int available = inputStream == null ? -1 : inputStream.available();
             if (available > 0) {
                 byte[] read = new byte[available];
                 inputStream.read(read, 0, available);
@@ -78,8 +78,10 @@ public final class MessageUtilities {
                         if (parse != null) {
                             responses.add(parse);
                         }
+                    } catch (CentralUnit.ComponentNotFoundInConfigException e) {
+                        logger.debug("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage());
                     } catch (Exception e) {
-                        logger.error("Exception ({}) caught in readLogResponse: {}", e.getClass().getName(), e.getMessage(), e);
+                        logger.error("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage(), e);
                     }
                 }
             } else if (b == messageHandler.getAcknowledgeValue()) {

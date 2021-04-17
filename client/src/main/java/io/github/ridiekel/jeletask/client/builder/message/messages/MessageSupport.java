@@ -1,6 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages;
 
-import io.github.ridiekel.jeletask.client.TeletaskClient;
+import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
@@ -11,12 +11,14 @@ import io.github.ridiekel.jeletask.model.spec.CentralUnit;
 import io.github.ridiekel.jeletask.model.spec.Command;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.model.spec.Function;
+import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,7 +32,6 @@ public abstract class MessageSupport {
     private static final Pattern REMOVE_NAMES = Pattern.compile("[^\\|]");
     private static final Pattern INSERT_PLACEHOLDERS = Pattern.compile("\\|   ");
     public static final int ACK_WAIT_TIME = 1000;
-    public static final int MAX_RETRY = 3;
 
     private final CentralUnit clientConfig;
 
@@ -40,23 +41,15 @@ public abstract class MessageSupport {
         this.clientConfig = clientConfig;
     }
 
-    public void execute(TeletaskClient client) {
-        this.execute(client, 1);
-    }
-
-    private void execute(TeletaskClient client, int counter) {
+    public void execute(TeletaskClientImpl client) throws AcknowledgeException {
         MessageHandler messageHandler = this.getMessageHandler();
         if (this.isValid()) {
             if (messageHandler.knows(this.getCommand())) {
                 byte[] message = messageHandler.compose(this.getCommand(), this.getPayload());
 
-                try {
-                    client.send(message, this::getLogInfo);
+                client.send(message, this::getLogInfo);
 
-                    this.waitForAcknowledge(client, counter);
-                } catch (Exception e) {
-                    LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
-                }
+                this.waitForAcknowledge(client);
             } else {
                 LOG.warn("Message handler '{}' does not know of command '{}'", this.getMessageHandler().getClass().getSimpleName(), this.getCommand());
             }
@@ -65,31 +58,22 @@ public abstract class MessageSupport {
         }
     }
 
-    private void waitForAcknowledge(TeletaskClient client, int counter) {
-        long start = System.currentTimeMillis();
-        while (!this.isAcknowledged() && (System.currentTimeMillis() - start) < ACK_WAIT_TIME) {
-            try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
-            }
-            try {
-                client.handleReceiveEvents(MessageUtilities.receive(LOG, client, this));
-            } catch (Exception e) {
-                LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
-            }
-        }
-
-        if (!this.isAcknowledged()) {
-            LOG.warn("Did not receive an acknowledgement within " + ACK_WAIT_TIME + " milliseconds.");
-            if (counter < MAX_RETRY) {
-                counter++;
-                LOG.warn("Retrying: attempt {} of {}", counter, MAX_RETRY);
-                this.execute(client, counter);
-            } else {
-                LOG.error("We tried {} times to execute this message and never received an acknowledge from the central unit. Something is wrong", MAX_RETRY);
-                throw new RuntimeException("Could not get the message to execute within the given amount of time.");
-            }
+    private void waitForAcknowledge(TeletaskClientImpl client) throws AcknowledgeException {
+        try {
+            Awaitility.await(String.format("Acknowlegde - %s", this.getId()))
+                    .pollInterval(10, TimeUnit.MILLISECONDS)
+                    .atMost(ACK_WAIT_TIME, TimeUnit.MILLISECONDS)
+                    .pollInSameThread()
+                    .until(() -> {
+                        try {
+                            client.handleReceiveEvents(MessageUtilities.receive(LOG, client, this));
+                        } catch (Exception e) {
+                            LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
+                        }
+                        return this.isAcknowledged();
+                    });
+        } catch (Exception e) {
+            throw new AcknowledgeException(String.format("%s - Did not receive acknowledge from the Teletask Central Unit within %s ms", this.getId(), ACK_WAIT_TIME), e);
         }
     }
 
@@ -233,4 +217,6 @@ public abstract class MessageSupport {
     public void acknowledge() {
         this.acknowledged = true;
     }
+
+    protected abstract String getId();
 }

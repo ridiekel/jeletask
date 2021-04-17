@@ -21,4 +21,8 @@ public class GroupGetMessage extends GetMessageSupport {
         return name == null ? this.getMessageHandler().getOutputLogHeaderName(index) : name;
     }
 
+    @Override
+    protected String getId() {
+        return "GROUP" + super.getId();
+    }
 }

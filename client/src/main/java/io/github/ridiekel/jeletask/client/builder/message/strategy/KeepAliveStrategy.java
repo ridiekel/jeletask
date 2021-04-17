@@ -1,9 +1,9 @@
 package io.github.ridiekel.jeletask.client.builder.message.strategy;
 
-import io.github.ridiekel.jeletask.client.TeletaskClient;
+import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 
 public interface KeepAliveStrategy {
-    int getIntervalMinutes();
+    int getIntervalMillis();
 
-    void execute(TeletaskClient client) throws Exception;
+    void execute(TeletaskClientImpl client);
 }

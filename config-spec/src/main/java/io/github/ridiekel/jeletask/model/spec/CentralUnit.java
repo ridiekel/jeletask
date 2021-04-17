@@ -14,4 +14,10 @@ public interface CentralUnit {
     List<? extends ComponentSpec> getAllComponents();
 
     CentralUnitType getCentralUnitType();
+
+    final class ComponentNotFoundInConfigException extends RuntimeException {
+        public ComponentNotFoundInConfigException(String message) {
+            super(message);
+        }
+    }
 }

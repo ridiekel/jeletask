@@ -14,4 +14,9 @@ public abstract class FunctionBasedMessageSupport extends MessageSupport {
     public Function getFunction() {
         return this.function;
     }
+
+    @Override
+    protected String getId() {
+        return this.function.name();
+    }
 }

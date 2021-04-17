@@ -17,11 +17,6 @@ public class LuxStateCalculator extends SimpleStateCalculator {
         return String.valueOf(Math.round(luxValue));
     }
 
-    public static void main(String[] args) {
-        String s = new LuxStateCalculator(NumberConverter.UNSIGNED_BYTE).convertGet(null, new byte[]{(byte) 0x80});
-        System.out.println("s = " + s);
-    }
-
     @Override
     public byte[] convertSet(ComponentSpec component, String value) {
         Long longValue = Long.valueOf(value);

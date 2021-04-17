@@ -52,4 +52,8 @@ public class EventMessage extends FunctionBasedMessageSupport {
         return new String[]{this.formatFunction(this.getFunction()), this.formatOutput(this.getNumber()), this.formatState(this.getFunction(), this.getNumber(), this.getState())};
     }
 
+    @Override
+    protected String getId() {
+        return "EVENT " + super.getId() + "(" + this.number + ")";
+    }
 }

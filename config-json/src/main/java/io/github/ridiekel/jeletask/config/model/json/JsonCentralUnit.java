@@ -15,13 +15,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * POJO representation of the TDS config JSON file.
  */
 //@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonSerialize(as=CentralUnit.class)
+@JsonSerialize(as = CentralUnit.class)
 public class JsonCentralUnit implements CentralUnit {
     /**
      * Logger responsible for logging and debugging statements.
@@ -89,20 +88,7 @@ public class JsonCentralUnit implements CentralUnit {
 
     @Override
     public TDSComponent getComponent(Function function, int number) {
-        TDSComponent returnValue = null;
-
-        List<TDSComponent> components = this.componentsTypes.get(function);
-
-        //components.get()  ///TODO: refactor: access by index not OK, should be based on number, therefore iterate, or store as HashMap.
-        for (TDSComponent component : components) {
-            if (component.getNumber() == number) {
-                component.setFunction(function);
-                returnValue = component;
-                break;
-            }
-        }
-
-        return returnValue;
+        return this.componentsTypes.computeIfAbsent(function, k -> new ArrayList<>()).stream().filter(c -> c.getNumber() == number).peek(c -> c.setFunction(function)).findAny().orElseThrow(() -> new ComponentNotFoundInConfigException(function + "(" + number + ") Not Found!"));
     }
 
     @Override

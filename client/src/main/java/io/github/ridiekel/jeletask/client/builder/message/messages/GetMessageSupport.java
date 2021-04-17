@@ -11,8 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
     /**
@@ -54,7 +56,7 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
             ComponentSpec component = config.getComponent(this.getFunction(), number);
 
             if (component != null) {
-                if(component.getState() == null) {
+                if (component.getState() == null) {
                     component.setState(messageHandler.getFunctionConfig(this.getFunction()).getStateCalculator().getDefaultState(component));
                 }
 
@@ -66,4 +68,8 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
         return messageHandler.createResponseEventMessage(config, this.getFunction(), states.stream().toArray(MessageHandler.OutputState[]::new));
     }
 
+    @Override
+    protected String getId() {
+        return "GET " + super.getId() + "(" + Arrays.stream(this.numbers).mapToObj(String::valueOf).collect(Collectors.joining(",")) + ")";
+    }
 }

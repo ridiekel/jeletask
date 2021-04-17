@@ -24,4 +24,8 @@ public class KeepAliveMessage extends MessageSupport {
         return new String[]{"None"};
     }
 
+    @Override
+    protected String getId() {
+        return "KEEPALIVE";
+    }
 }

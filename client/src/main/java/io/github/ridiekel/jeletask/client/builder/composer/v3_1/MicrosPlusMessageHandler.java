@@ -1,6 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.composer.v3_1;
 
-import io.github.ridiekel.jeletask.client.TeletaskClient;
+import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerSupport;
 import io.github.ridiekel.jeletask.client.builder.message.executor.MessageExecutor;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
@@ -120,19 +120,19 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
 
     private static class MicrosPlusKeepAliveStrategy implements KeepAliveStrategy {
         @Override
-        public int getIntervalMinutes() {
-            return 3;
+        public int getIntervalMillis() {
+            return 5000;
         }
 
         @Override
-        public void execute(TeletaskClient client) throws Exception {
+        public void execute(TeletaskClientImpl client) {
             new MessageExecutor(new KeepAliveMessage(client.getConfig()), client).run();
         }
     }
 
     private static class MicrosPlusGroupGetStrategy implements GroupGetStrategy {
         @Override
-        public void execute(TeletaskClient client, Function function, int... numbers) throws Exception {
+        public void execute(TeletaskClientImpl client, Function function, int... numbers) {
             new MessageExecutor(new GroupGetMessage(client.getConfig(), function, numbers), client).run();
         }
     }

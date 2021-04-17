@@ -1,6 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.composer.v2_8;
 
-import io.github.ridiekel.jeletask.client.TeletaskClient;
+import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerSupport;
 import io.github.ridiekel.jeletask.client.builder.message.executor.MessageExecutor;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
@@ -89,19 +89,19 @@ public class MicrosMessageHandler extends MessageHandlerSupport {
 
     private static class MicrosKeepAliveStrategy implements KeepAliveStrategy {
         @Override
-        public int getIntervalMinutes() {
-            return 30;
+        public int getIntervalMillis() {
+            return 30000;
         }
 
         @Override
-        public void execute(TeletaskClient client) throws Exception {
+        public void execute(TeletaskClientImpl client) {
             new MessageExecutor(new LogMessage(client.getConfig(), Function.MOTOR, "ON"), client).run();
         }
     }
 
     private static class MicrosGroupGetStrategy implements GroupGetStrategy {
         @Override
-        public void execute(TeletaskClient client, Function function, int... numbers) throws Exception {
+        public void execute(TeletaskClientImpl client, Function function, int... numbers) {
             // For some reason the microsplus does not always send an event after requesting the state of a component.
             // As a workaround, we keep trying until we get the state of all components.
             // Sleeping between get messages seems to decrease the amount of failures.
@@ -110,7 +110,11 @@ public class MicrosMessageHandler extends MessageHandlerSupport {
                 for (int number : numbers) {
                     if (client.getConfig().getComponent(function, number).getState() == null) {
                         new MessageExecutor(new GetMessage(client.getConfig(), function, number), client).run();
-                        Thread.sleep(150);
+                        try {
+                            Thread.sleep(150);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }

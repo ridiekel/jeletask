@@ -39,4 +39,9 @@ public class LogMessage extends FunctionStateBasedMessageSupport {
     protected boolean isValid() {
         return true;
     }
+
+    @Override
+    protected String getId() {
+        return "LOG " + super.getId();
+    }
 }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.model.spec.Function;
 
+import java.util.Objects;
+
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
  */
@@ -46,6 +48,9 @@ public class TDSComponent implements ComponentSpec {
 
     @Override
     public String getState() {
+        if (Objects.equals(this.state, "null")) { //TODO: Check why this sometimes happens
+            this.state = null;
+        }
         return this.state;
     }
 

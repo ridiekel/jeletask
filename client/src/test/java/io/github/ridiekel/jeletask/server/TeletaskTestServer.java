@@ -1,7 +1,7 @@
 package io.github.ridiekel.jeletask.server;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
-import io.github.ridiekel.jeletask.client.TeletaskClient;
+import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
@@ -27,14 +27,14 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
     private static final Logger LOG = LoggerFactory.getLogger(TeletaskTestServer.class);
 
     private final int port;
-    private final TeletaskClient client;
+    private final TeletaskClientImpl client;
     private ServerSocket server;
     private Socket socket;
     private InputStream inputStream;
     private OutputStream outputStream;
     private final Timer timer = new Timer();
 
-    public TeletaskTestServer(int port, TeletaskClient client) {
+    public TeletaskTestServer(int port, TeletaskClientImpl client) {
         this.port = port;
         this.client = client;
     }
@@ -93,7 +93,7 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
         return this.port;
     }
 
-    public TeletaskClient getClient() {
+    public TeletaskClientImpl getClient() {
         return this.client;
     }
 
