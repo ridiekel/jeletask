@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * POJO representation of the TDS config JSON file.
@@ -102,8 +103,8 @@ public class JsonCentralUnit implements CentralUnit {
     public List<? extends ComponentSpec> getAllComponents() {
         if (this.allComponents == null) {
             this.allComponents = new ArrayList<>();
-            for (List<TDSComponent> components : componentsTypes.values()) {
-                this.allComponents.addAll(components);
+            for (Map.Entry<Function, List<TDSComponent>> components : componentsTypes.entrySet()) {
+                this.allComponents.addAll(components.getValue().stream().peek(v->v.setFunction(components.getKey())).collect(Collectors.toList()));
             }
         }
         return this.allComponents;
