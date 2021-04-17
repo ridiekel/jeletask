@@ -31,7 +31,7 @@ public abstract class MessageSupport {
 
     private static final Pattern REMOVE_NAMES = Pattern.compile("[^\\|]");
     private static final Pattern INSERT_PLACEHOLDERS = Pattern.compile("\\|   ");
-    public static final int ACK_WAIT_TIME = 1000;
+    public static final int ACK_WAIT_TIME = 2000;
 
     private final CentralUnit clientConfig;
 
@@ -47,9 +47,15 @@ public abstract class MessageSupport {
             if (messageHandler.knows(this.getCommand())) {
                 byte[] message = messageHandler.compose(this.getCommand(), this.getPayload());
 
+                LOG.trace("Sending message: {}", this);
+
                 client.send(message, this::getLogInfo);
 
+                LOG.trace("Message sent: {}", this);
+
                 this.waitForAcknowledge(client);
+
+                LOG.trace("Message acknowledged: {}", this);
             } else {
                 LOG.warn("Message handler '{}' does not know of command '{}'", this.getMessageHandler().getClass().getSimpleName(), this.getCommand());
             }

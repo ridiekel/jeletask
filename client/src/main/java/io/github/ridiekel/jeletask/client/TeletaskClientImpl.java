@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -149,7 +150,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 //            throw new CommunicationException("Failed to start within time", e);
 //        }
 
-        this.getIoService().submit(() -> {
+        this.getIoService().execute(() -> {
             this.groupGet();
 
             this.sendLogEventMessages("ON");
@@ -183,7 +184,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         this.connectAndWait();
 
-        this.getIoService().submit(() -> {
+        this.getIoService().execute(() -> {
             this.groupGet();
 
             this.sendLogEventMessages("ON");
@@ -269,8 +270,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             BiConsumer<M, Exception> onFailed) {
         try {
             this.getIoService()
-                    .submit(new MessageExecutor(message, this))
-                    .get();
+                    .execute(new MessageExecutor(message, this));
             onSucccess.accept(message);
         } catch (Exception e) {
             LOG.debug("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage());
@@ -284,7 +284,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.eventListenerTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                TeletaskClientImpl.this.ioService.submit(TeletaskClientImpl.this.getEventMessageListener());
+                TeletaskClientImpl.this.ioService.execute(TeletaskClientImpl.this.getEventMessageListener());
             }
         }, 0, 20);
     }
@@ -419,7 +419,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         @Override
         public void run() {
             if (started.get()) {
-                TeletaskClientImpl.this.getIoService().submit(() -> {
+                TeletaskClientImpl.this.getIoService().execute(() -> {
                     try {
                         KeepAliveService.this.keepAliveStrategy.execute(TeletaskClientImpl.this);
                     } catch (Exception e) {
@@ -522,19 +522,13 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         @Override
         public void run() {
-            TeletaskClientImpl.this.getMessageHandler().getGroupGetStrategy().execute(TeletaskClientImpl.this, function, numbers);
+            getIoService().execute(() -> {
+                TeletaskClientImpl.this.getMessageHandler().getGroupGetStrategy().execute(TeletaskClientImpl.this, function, numbers);
+            });
         }
     }
 
     private void startIoService() {
-        this.ioService = new ThreadPoolExecutor(1, 1,
-                0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(),
-                r -> new Thread(r, "io")) {
-            @Override
-            public Future<?> submit(Runnable task) {
-                return super.submit(task);
-            }
-        };
+        this.ioService = Executors.newSingleThreadExecutor(r -> new Thread(r, "io"));
     }
 }
