@@ -232,6 +232,13 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         }
     }
 
+    @Override
+    public void groupGet() {
+        for (Function function : Function.values()) {
+            this.groupGet(function);
+        }
+    }
+
     // ################################################ PRIVATE API FUNCTIONS
 
     public void groupGet(Function function, int... numbers) {
@@ -242,12 +249,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         List<? extends ComponentSpec> components = this.getConfig().getComponents(function);
         if (components != null && !components.isEmpty()) {
             this.groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray());
-        }
-    }
-
-    public void groupGet() {
-        for (Function function : Function.values()) {
-            this.groupGet(function);
         }
     }
 

@@ -23,4 +23,6 @@ public interface TeletaskClient {
     void stop();
 
     CentralUnit getConfig();
+
+    void groupGet();
 }
