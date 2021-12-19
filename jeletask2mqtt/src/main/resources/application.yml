@@ -1,0 +1,18 @@
+teletask:
+  host: "localhost"
+  port: 1234
+  id: "MAN_${teletask.host}_${teletask.port}"
+  configFile: "/teletask2mqtt/config.json"
+  version: "@gateway.version@"
+  mqtt:
+    host: "localhost"
+    port: 1883
+    username: ""
+    password: ""
+    clientId: "teletask2mqtt"
+    prefix: "teletask2mqtt"
+    discovery_prefix: "homeassistant"
+
+spring:
+  application:
+    name: teletask2mqtt

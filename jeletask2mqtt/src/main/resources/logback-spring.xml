@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="Console"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %green(%d{ISO8601}) %highlight(%-5level) %yellow(%-20logger{0}): %msg%n%throwable
+            </Pattern>
+        </layout>
+    </appender>
+
+    <!-- LOG everything at INFO level -->
+    <root level="info">
+        <appender-ref ref="Console" />
+    </root>
+
+    <!-- LOG "com.baeldung*" at TRACE level -->
+    <logger name="io.github.ridiekel.jeletask" level="info" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
+    <logger name="io.github.ridiekel.jeletask.mqtt" level="info" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
+
+</configuration>

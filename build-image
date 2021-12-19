@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+
+docker run -it --rm \
+  -v "$PWD":/src \
+  -v "/var/run/docker.sock:/var/run/docker.sock" \
+  -v "$HOME/.m2":/root/.m2 \
+  -w /src \
+  maven:latest \
+  mvn clean install spring-boot:build-image -Dspring-boot.build-image.imageName=ridiekel/jeletask2mqtt
+
+docker run -it --rm \
+  -v "$PWD":/src \
+  -v "$HOME/.m2":/root/.m2 \
+  -w /src \
+  maven:latest \
+  mvn clean
