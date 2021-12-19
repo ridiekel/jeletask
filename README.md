@@ -20,26 +20,6 @@ Initially only setting and getting RELAYS, MOTOR, GENMOOD, LOCMOOD, COND, FLAG i
 
 The purpose of this library is to actually be able to put a REST or other API on top of this.
 
-# Building
-
-The build uses docker, you can build with following command:
-
-```shell
-docker run -it --rm \
-    -v "$PWD":/src \
-    -v "/var/run/docker.sock:/var/run/docker.sock" \
-    -v "$HOME/.m2":/root/.m2 \
-    -w /src \
-    maven:latest \
-    mvn clean install spring-boot:build-image -Dspring-boot.build-image.imageName=ridiekel/jeletask2mqtt
-```
-
-Or when on linux, just run:
-
-```shell
-./build-image
-```
-
 # Configuring
 
 Create a configuration json file following this example.
@@ -127,7 +107,7 @@ If teletask has not changed their binary API, it should be compatible.
 
 ## Docker run
 
-When the image is built, you should be able to run using following minimal command:
+You should be able to run using following minimal command:
 
 ```shell
 docker run --name jeletask2mqtt \
@@ -136,7 +116,7 @@ docker run --name jeletask2mqtt \
   -e TELETASK_PORT="<teletask_port>" \
   -e TELETASK_ID="<teletask_id>" \
   -e TELETASK_MQTT_HOST="<mqtt_host>" \
-  ridiekel/jeletask2mqtt
+  ridiekel/jeletask2mqtt:latest
 ```
 
 # Messages
@@ -172,4 +152,23 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
     -m "OFF"
+```
+# Building
+
+The build uses docker, you can build with following command:
+
+```shell
+docker run -it --rm \
+    -v "$PWD":/src \
+    -v "/var/run/docker.sock:/var/run/docker.sock" \
+    -v "$HOME/.m2":/root/.m2 \
+    -w /src \
+    maven:latest \
+    mvn clean install spring-boot:build-image -Dspring-boot.build-image.imageName=ridiekel/jeletask2mqtt
+```
+
+Or when on linux, just run:
+
+```shell
+./build-image
 ```
