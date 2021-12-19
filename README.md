@@ -152,17 +152,22 @@ sudo apt install -y mosquitto-clients
 ### Listen to events
 
 ```
-mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/state
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/state
 ```
 
 ### Change the state
 
 #### Turning on
 ```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set -m "ON"
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -m "ON"
 ```
 
 #### Turning off
 ```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set -m "OFF"
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -m "OFF"
 ```
