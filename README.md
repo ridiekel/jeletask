@@ -42,7 +42,9 @@ Or when on linux, just run:
 
 # Configuring
 
-Create a configuration json file following this example:
+Create a configuration json file following this example.
+At this time I can only test with MICROS_PLUS. If you hace a PICOS, you can test with type: MICROS_PLUS.
+If teletask has not changed their binary API, it should be compatible.
 
 ```json
 {
