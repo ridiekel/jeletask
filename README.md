@@ -23,7 +23,7 @@ The purpose of this library is to actually be able to put a REST or other API on
 # Configuring
 
 Create a configuration json file following this example.
-At this time I can only test with MICROS_PLUS. If you hace a PICOS, you can test with type: MICROS_PLUS.
+At this time I can only test with MICROS_PLUS. If you have a PICOS, you can test with type: MICROS_PLUS.
 If teletask has not changed their binary API, it should be compatible.
 
 ```json
