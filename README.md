@@ -2,23 +2,12 @@
 
 An open source java API for Teletask domotics.
 
-This project is a fork from the xhibit version that became inactive (https://github.com/xhibit/Teletask-api).
-
 It is the purpose to create an API for software developers or domotics enthusiasts, who are interested in generating their own control environment for the TELETASK domotics systems, so you can create your own user interface and connected solutions and services.
 
 If you own a Teletask MICROS or MICROS+, you have access to the free (or paid in case of the MICROS+) DLL32 LIBRARY (TDS15132).  
 However, if you're a java programmer like myself, you don't want to use a windows dll :-).
 
-The API also supports the MICROS+, but you'll have to buy a licence to be able to make TCP calls.
-
-For the MICROS you can buy a RS232 > LAN converter (TDS10118) so you can access the MICROS server through regular IP.
-
-Started discussing the possibilities on the Teletask forum
-...and ended up programming a java interface based on IP Sockets, exposed by a basic java API.
-
-Initially only setting and getting RELAYS, MOTOR, GENMOOD, LOCMOOD, COND, FLAG is supported.
-
-The purpose of this library is to actually be able to put a REST or other API on top of this.
+The API supports the MICROS+ (maybe also PICOS, but untested), but you'll have to buy a licence to be able to make TCP calls.
 
 # Configuring
 
@@ -153,22 +142,127 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
     -m "OFF"
 ```
-# Building
 
-The build uses docker, you can build with following command:
+## Local Mood
 
-```shell
-docker run -it --rm \
-    -v "$PWD":/src \
-    -v "/var/run/docker.sock:/var/run/docker.sock" \
-    -v "$HOME/.m2":/root/.m2 \
-    -w /src \
-    maven:latest \
-    mvn clean install spring-boot:build-image -Dspring-boot.build-image.imageName=ridiekel/jeletask2mqtt
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/state
 ```
 
-Or when on linux, just run:
+### Change the state
 
-```shell
-./build-image
+#### Turning on
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -m "ON"
+```
+
+#### Turning off
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -m "OFF"
+```
+
+## General Mood
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/state
+```
+
+### Change the state
+
+#### Turning on
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -m "ON"
+```
+
+#### Turning off
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -m "OFF"
+```
+
+## Dimmer
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/state
+```
+
+### Change the state
+
+#### Turning on
+
+For turning on you can use `ON` (goes to 100%) of any integer value between `0` and `100`
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m "60"
+```
+
+#### Turning off
+
+For turning off, you can use either `OFF` or `0`
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m "OFF"
+```
+
+## Motor
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/state
+```
+
+### Change the state
+
+#### Controlling
+
+You can send either `UP`, `DOWN` or `STOP` to the motor function.
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m "65"
+```
+
+## Flag
+
+You can only listen to flags.
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/state
+```
+
+## Sensor
+
+You can only listen to sensor values.
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
 ```
