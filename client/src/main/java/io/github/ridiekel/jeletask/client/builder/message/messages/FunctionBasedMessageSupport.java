@@ -1,7 +1,7 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages;
 
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 public abstract class FunctionBasedMessageSupport extends MessageSupport {
     private final Function function;

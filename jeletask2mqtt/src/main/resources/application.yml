@@ -16,3 +16,8 @@ teletask:
 spring:
   application:
     name: teletask2mqtt
+
+logging:
+  level:
+    io.github.ridiekel.jeletask: INFO
+    io.github.ridiekel.jeletask.mqtt: INFO

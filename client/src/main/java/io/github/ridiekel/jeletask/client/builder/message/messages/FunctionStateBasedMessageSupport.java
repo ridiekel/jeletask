@@ -1,8 +1,8 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 public abstract class FunctionStateBasedMessageSupport extends FunctionBasedMessageSupport {
     private final String state;

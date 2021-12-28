@@ -1,7 +1,7 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant;
 
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 
 public class HAConfigParameters {
     private final CentralUnit centralUnit;

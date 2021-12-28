@@ -1,16 +1,12 @@
-package io.github.ridiekel.jeletask.config.model.json;
+package io.github.ridiekel.jeletask.client.spec;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
-import io.github.ridiekel.jeletask.model.spec.Function;
 
 import java.util.Objects;
 
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
  */
-@JsonSerialize(as=ComponentSpec.class)
-public class TDSComponent implements ComponentSpec {
+public class ComponentSpec  {
     private String description;
     private Function function;
     private int number;
@@ -21,7 +17,7 @@ public class TDSComponent implements ComponentSpec {
      * Default constructor.
      * The default constructor is used by Jackson.  In order not to have null values, some fields are initialised to empty strings.
      */
-    public TDSComponent() {
+    public ComponentSpec() {
         this.description = "";
     }
 
@@ -31,13 +27,12 @@ public class TDSComponent implements ComponentSpec {
      * @param state The current status of the component, for example 0 indicating off for a "relay".
      * @param number The component number you wish to manipulate.
      */
-    public TDSComponent(Function function, String state, int number) {
+    public ComponentSpec(Function function, String state, int number) {
         this.function = function;
         this.state = state;
         this.number = number;
     }
 
-    @Override
     public int getNumber() {
         return this.number;
     }
@@ -46,7 +41,6 @@ public class TDSComponent implements ComponentSpec {
         this.number = number;
     }
 
-    @Override
     public String getState() {
         if (Objects.equals(this.state, "null")) { //TODO: Check why this sometimes happens
             this.state = null;
@@ -54,12 +48,10 @@ public class TDSComponent implements ComponentSpec {
         return this.state;
     }
 
-    @Override
     public void setState(String state) {
         this.state = state;
     }
 
-    @Override
     public Function getFunction() {
         return this.function;
     }
@@ -68,7 +60,6 @@ public class TDSComponent implements ComponentSpec {
         this.function = function;
     }
 
-    @Override
     public String getDescription() {
         return this.description;
     }

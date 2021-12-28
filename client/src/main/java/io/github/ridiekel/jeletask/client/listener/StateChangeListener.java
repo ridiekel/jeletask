@@ -1,6 +1,6 @@
 package io.github.ridiekel.jeletask.client.listener;
 
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package io.github.ridiekel.jeletask;
 
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 
 import java.io.InputStream;
 

@@ -2,7 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.configurables
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.Configurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 public class FunctionConfigurable extends Configurable<Function> {
     private final StateCalculator stateCalculator;

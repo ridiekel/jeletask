@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.model.spec;
+package io.github.ridiekel.jeletask.client.spec;
 
 import java.io.Serializable;
 

@@ -8,10 +8,10 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GroupGet
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.KeepAliveMessage;
 import io.github.ridiekel.jeletask.client.builder.message.strategy.GroupGetStrategy;
 import io.github.ridiekel.jeletask.client.builder.message.strategy.KeepAliveStrategy;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.Command;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.Command;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 
 import java.nio.ByteBuffer;

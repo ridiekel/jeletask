@@ -3,9 +3,9 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.configurables
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.CommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.LogMessage;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.Command;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.Command;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 public class LogCommandConfigurable extends CommandConfigurable<LogMessage> {
     public LogCommandConfigurable(int number, boolean needsCentralUnitParameter, String... paramNames) {

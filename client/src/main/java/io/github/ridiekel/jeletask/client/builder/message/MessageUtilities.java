@@ -4,7 +4,7 @@ import io.github.ridiekel.jeletask.TeletaskReceiver;
 import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.slf4j.Logger;
 

@@ -1,9 +1,9 @@
 package io.github.ridiekel.jeletask.client;
 
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 public interface TeletaskClient {
     void registerStateChangeListener(StateChangeListener listener);

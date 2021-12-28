@@ -1,7 +1,7 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 
 public class DimmerStateCalculator extends PercentageStateCalculator {
     public DimmerStateCalculator(NumberConverter numberConverter) {

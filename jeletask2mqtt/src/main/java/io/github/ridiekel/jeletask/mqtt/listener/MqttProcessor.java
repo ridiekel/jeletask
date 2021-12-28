@@ -1,14 +1,14 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
+import io.github.ridiekel.jeletask.client.TeletaskClient;
+import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAReadWriteConfig;
-import io.github.ridiekel.jeletask.client.TeletaskClient;
-import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
-import io.github.ridiekel.jeletask.model.spec.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -21,9 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

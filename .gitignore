@@ -4,3 +4,4 @@ target/
 *.war
 logs/
 *.log
+run

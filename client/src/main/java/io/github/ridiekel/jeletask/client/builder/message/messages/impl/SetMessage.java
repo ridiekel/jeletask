@@ -7,10 +7,10 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.AcknowledgeException;
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionStateBasedMessageSupport;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.Command;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.Command;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

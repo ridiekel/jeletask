@@ -2,9 +2,9 @@ package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
 import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionStateBasedMessageSupport;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.Command;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.Command;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;

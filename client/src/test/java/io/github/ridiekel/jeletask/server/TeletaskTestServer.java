@@ -7,7 +7,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

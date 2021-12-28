@@ -5,7 +5,6 @@ import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.executor.MessageExecutor;
-import io.github.ridiekel.jeletask.client.builder.message.messages.AcknowledgeException;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
@@ -13,15 +12,13 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.LogMessa
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
 import io.github.ridiekel.jeletask.client.builder.message.strategy.KeepAliveStrategy;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.ComponentSpec;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.Function;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,9 +32,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -125,10 +119,13 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     @Override
     public TeletaskClient start() {
+        LOG.info("Starting IO service...");
         this.startIoService();
 
+        LOG.info("Connecting to central unit...");
         connectAndWait();
 
+        LOG.info("Starting event listener...");
         this.startEventListener();
 
 //        try {
@@ -150,12 +147,14 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 //            throw new CommunicationException("Failed to start within time", e);
 //        }
 
+        LOG.info("Performing group get...");
         this.getIoService().execute(() -> {
             this.groupGet();
 
             this.sendLogEventMessages("ON");
         });
 
+        LOG.info("Starting keepalive...");
         this.startKeepAlive();
 
         this.started.set(true);
@@ -169,7 +168,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         Awaitility.await("Connect")
                 .pollInSameThread()
-                .pollInterval(2, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(2, TimeUnit.MINUTES)
                 .until(() -> this.connect(host, port));
     }

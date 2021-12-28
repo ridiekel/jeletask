@@ -1,6 +1,6 @@
 package io.github.ridiekel.jeletask.client;
 
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 @FunctionalInterface
 public interface SuccessConsumer {

@@ -1,10 +1,9 @@
 package io.github.ridiekel.jeletask.mqtt;
 
-import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
-import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
-import io.github.ridiekel.jeletask.config.model.json.JsonCentralUnit;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -48,7 +47,7 @@ public class TeletaskService {
 
     private CentralUnit createCentralUnit() {
         try (InputStream inputStream = Files.newInputStream(Paths.get(this.configuration.getConfigFile()))) {
-            JsonCentralUnit read = JsonCentralUnit.read(inputStream);
+            CentralUnit read = CentralUnit.read(inputStream);
 
             String host = this.getConfiguration().getHost();
             int port = this.getConfiguration().getPort();

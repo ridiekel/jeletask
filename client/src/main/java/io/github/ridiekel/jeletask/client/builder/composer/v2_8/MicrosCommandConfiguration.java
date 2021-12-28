@@ -10,9 +10,9 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
-import io.github.ridiekel.jeletask.model.spec.CentralUnit;
-import io.github.ridiekel.jeletask.model.spec.Command;
-import io.github.ridiekel.jeletask.model.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.Command;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
 import java.util.List;
 

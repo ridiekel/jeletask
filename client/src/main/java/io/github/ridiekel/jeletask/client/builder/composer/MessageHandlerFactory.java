@@ -2,7 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer;
 
 import io.github.ridiekel.jeletask.client.builder.composer.v2_8.MicrosMessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.v3_1.MicrosPlusMessageHandler;
-import io.github.ridiekel.jeletask.model.spec.CentralUnitType;
+import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 
 import java.util.Map;
 
