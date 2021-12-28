@@ -19,8 +19,11 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.ansi.AnsiColor;
+import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,7 +38,17 @@ public class MqttProcessor implements StateChangeListener {
     public static final int TIMEOUT = 30;
 
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9_-]");
-    private static final Pattern SPACES = Pattern.compile("\\s+");
+    private static final Map<String, String> WHAT_LOG_PATTERNS = Map.of(
+            "EVENT", whatPattern(AnsiColor.YELLOW),
+            "COMMAND", whatPattern(AnsiColor.MAGENTA),
+            "CREATE", whatPattern(AnsiColor.CYAN),
+            "DELETE", whatPattern(AnsiColor.BLUE)
+    );
+
+    private static String whatPattern(AnsiColor color) {
+        return AnsiOutput.toString(color, "[%s] - %s", AnsiColor.DEFAULT, " - %s");
+    }
+
     private final TeletaskClient teletaskClient;
 
     private MqttClient client;
@@ -130,7 +143,7 @@ public class MqttProcessor implements StateChangeListener {
         //<discovery_prefix>/<component>/[<node_id>/]<object_id>/config
         LOG.info("Publishing config...");
         this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
-                this.publish("DELETE", c, this.createConfigTopic(c), "", LOG::debug);
+            this.publish("DELETE", c, this.createConfigTopic(c), "", LOG::debug);
         });
         this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
             this.toConfig(c).ifPresent(config -> {
@@ -227,7 +240,7 @@ public class MqttProcessor implements StateChangeListener {
             this.connect();
 
             LOG.debug(String.format("[%s] - %s - publishing topic '%s' -> %s", getWhat(what), getLoggingStringForComponent(componentSpec), topic, message));
-            level.accept(String.format("[%s] - %s - %s", getWhat(what), getLoggingStringForComponent(componentSpec), message));
+            level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), getLoggingStringForComponent(componentSpec), payloadToLogWithColors(message)));
             this.client.publish(topic, mqttMessage);
         } catch (Exception e) {
             LOG.warn(e.getMessage());
@@ -335,7 +348,7 @@ public class MqttProcessor implements StateChangeListener {
                     String state = stateTranslateSet(function, mqttMessage.toString());
 
                     String componentLog = getLoggingStringForComponent(MqttProcessor.this.teletaskClient.getConfig().getComponent(function, number));
-                    LOG.info(String.format("[%s] - %s - %s", getWhat("COMMAND"), componentLog, new String(mqttMessage.getPayload())));
+                    LOG.info(String.format(WHAT_LOG_PATTERNS.get("COMMAND"), getWhat("COMMAND"), componentLog, payloadToLogWithColors(new String(mqttMessage.getPayload()))));
 
                     MqttProcessor.this.teletaskClient.set(function, number, state,
                             (f, n, s) -> LOG.debug(String.format("[%s] MQTT topic '%s' changed state for: %s / %s -> %s", componentLog, topic, f, n, s)),
@@ -347,6 +360,21 @@ public class MqttProcessor implements StateChangeListener {
             }
         }
     }
+
+    private String payloadToLogWithColors(String payload) {
+        return AnsiOutput.toString(PAYLOAD_LOG_COLORS.getOrDefault(payload, AnsiColor.DEFAULT), payload, AnsiColor.DEFAULT);
+    }
+
+    private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();
+    static {
+        PAYLOAD_LOG_COLORS.put("ON", AnsiColor.GREEN);
+        PAYLOAD_LOG_COLORS.put("OFF", AnsiColor.RED);
+        PAYLOAD_LOG_COLORS.put("0", AnsiColor.RED);
+        for (int i = 1; i <= 100; i++) {
+            PAYLOAD_LOG_COLORS.put(String.valueOf(i), AnsiColor.GREEN);
+        }
+    }
+
 
     private void restartTeletask() {
         LOG.info("Restarting teletask connection due to exception in arriving message...");

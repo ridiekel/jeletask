@@ -291,7 +291,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private boolean connect(String host, int port) {
         boolean connected = false;
 
-        // Connect method
         LOG.debug("Connecting to {}:{}", host, port);
 
         try {
