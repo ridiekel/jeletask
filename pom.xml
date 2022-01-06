@@ -12,7 +12,7 @@
     <groupId>io.github.ridiekel</groupId>
     <artifactId>jeletask</artifactId>
     <packaging>pom</packaging>
-    <version>3.2.0</version>
+    <version>3.2.1</version>
 
     <name>Teletask API - Parent</name>
     <description>An API written in java for accessing Teletask central units.</description>
@@ -21,6 +21,8 @@
     <modules>
         <module>client</module>
         <module>jeletask2mqtt</module>
+        <module>jeletask2mqtt-normal</module>
+        <module>jeletask2mqtt-native</module>
     </modules>
 
     <properties>
@@ -34,17 +36,13 @@
         <dependencies>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>jeletask-config-spec</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>jeletask-config-json</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
                 <artifactId>jeletask-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>jeletask2mqtt</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

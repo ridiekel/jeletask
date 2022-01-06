@@ -7,39 +7,22 @@
         <version>3.2.1</version>
     </parent>
 
-    <artifactId>jeletask2mqtt</artifactId>
+    <artifactId>jeletask2mqtt-normal</artifactId>
     <packaging>jar</packaging>
 
     <properties>
         <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gateway.version>${project.version}</gateway.version>
-        <exec.mainClass>io.github.ridiekel.jeletask.mqtt.Teletask2Mqtt</exec.mainClass>
+        <exec.mainClass>io.github.ridiekel.jeletask.mqtt.Teletask2MqttNormal</exec.mainClass>
         <java.version>17</java.version>
+        <spring-boot.build-image.imageName>ridiekel/jeletask2mqtt:${project.version}</spring-boot.build-image.imageName>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.github.ridiekel</groupId>
-            <artifactId>jeletask-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.paho</groupId>
-            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-            <version>1.2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
+            <artifactId>jeletask2mqtt</artifactId>
         </dependency>
     </dependencies>
 
@@ -64,8 +47,19 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <executable>true</executable>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-cli</id>
+                        <goals>
+                            <goal>build-image</goal>
+                        </goals>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
