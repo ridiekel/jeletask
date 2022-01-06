@@ -98,6 +98,17 @@ If teletask has not changed their binary API, it should be compatible.
 
 ## Docker run
 
+### Versions
+
+Different versions (tags) are provided.
+Depending on your needs, you will need a different version (tag)
+
+| Tag           | Description                                                                                                                                 |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| latest        | The latest version of the application. This is an image built for multiple architectures. At the time of writing amd64/arm64/armv7.         |
+| latest-native | The latest version, but built with spring boot native. This is only available for amd64, but should boot a lot faster on that architecture. |
+
+
 You should be able to run using following minimal command:
 
 ```shell
