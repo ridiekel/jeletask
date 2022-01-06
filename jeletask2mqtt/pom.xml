@@ -16,7 +16,6 @@
         <gateway.version>${project.version}</gateway.version>
         <exec.mainClass>io.github.ridiekel.jeletask.mqtt.Teletask2Mqtt</exec.mainClass>
         <java.version>17</java.version>
-        <spring-native.version>0.11.1</spring-native.version>
         <spring-boot.build-image.imageName>ridiekel/jeletask2mqtt</spring-boot.build-image.imageName>
     </properties>
 
@@ -24,16 +23,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.experimental</groupId>
-            <artifactId>spring-native</artifactId>
-            <version>${spring-native.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -80,7 +69,20 @@
             <id>graalvm</id>
             <properties>
                 <spring-boot.build-image.imageName>ridiekel/jeletask2mqtt:${project.version}-graalvm</spring-boot.build-image.imageName>
+                <spring-native.version>0.11.1</spring-native.version>
             </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-configuration-processor</artifactId>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.experimental</groupId>
+                    <artifactId>spring-native</artifactId>
+                    <version>${spring-native.version}</version>
+                </dependency>
+            </dependencies>
             <build>
                 <plugins>
                     <plugin>

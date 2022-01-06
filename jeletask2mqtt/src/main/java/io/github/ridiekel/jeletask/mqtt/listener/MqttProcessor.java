@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -77,6 +78,8 @@ public class MqttProcessor implements StateChangeListener {
         LOG.info(String.format("username: '%s'", Optional.ofNullable(username).orElse("<not specified>")));
         LOG.info(String.format("clientId: '%s'", clientId));
         LOG.info(String.format("prefix: '%s'", this.prefix));
+        LOG.info(String.format("Remote stop topic: '%s'", this.remoteStopTopic()));
+        LOG.info(String.format("Remote refresh states topic: '%s'", this.remoteRefreshTopic()));
 
         this.connOpts = new MqttConnectOptions();
         this.connOpts.setMaxInflight(100000);
@@ -87,6 +90,7 @@ public class MqttProcessor implements StateChangeListener {
 
         this.connect(clientId, host, port);
     }
+
 
     private static String resolveTeletaskIdentifier(TeletaskService service, CentralUnit centralUnit) {
         return removeInvalid(service.getConfiguration().getId(), removeInvalid(centralUnit.getHost() + "_" + centralUnit.getPort(), "impossible"));
@@ -114,7 +118,8 @@ public class MqttProcessor implements StateChangeListener {
         });
     }
 
-    private void refreshStates() {
+    @Scheduled(fixedRate = 30, timeUnit = TimeUnit.MINUTES)
+    public void refreshStates() {
         LOG.info("Refreshing states...");
         this.teletaskClient.groupGet();
     }
@@ -122,6 +127,22 @@ public class MqttProcessor implements StateChangeListener {
     private void subscribe() throws MqttException {
         LOG.info("Subscribing to topics...");
         this.client.subscribe(this.prefix + "/" + this.teletaskIdentifier + "/+/+/set", 0, new ChangeStateMqttCallback());
+        this.client.subscribe(remoteStopTopic(), 0, (topic, message) -> {
+            LOG.debug("Stopping the service: {}", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>"));
+            System.exit(0);
+        });
+        this.client.subscribe(remoteRefreshTopic(), 0, (topic, message) -> {
+            LOG.debug("Refreshing states: {}", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>"));
+            refreshStates();
+        });
+    }
+
+    private String remoteStopTopic() {
+        return this.prefix + "/" + this.teletaskIdentifier + "/stop";
+    }
+
+    private String remoteRefreshTopic() {
+        return this.prefix + "/" + this.teletaskIdentifier + "/refresh";
     }
 
     private synchronized void connect() {
@@ -366,6 +387,7 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();
+
     static {
         PAYLOAD_LOG_COLORS.put("ON", AnsiColor.GREEN);
         PAYLOAD_LOG_COLORS.put("OFF", AnsiColor.RED);

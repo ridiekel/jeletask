@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.nativex.hint.ResourceHint;
 import org.springframework.nativex.hint.TypeHint;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.LinkedHashMap;
 
@@ -19,6 +20,7 @@ import java.util.LinkedHashMap;
 })
 @SpringBootApplication
 @EnableConfigurationProperties(Teletask2MqttConfiguration.class)
+@EnableScheduling
 public class Teletask2Mqtt {
     private static final Logger LOG = LoggerFactory.getLogger(Teletask2Mqtt.class);
 
