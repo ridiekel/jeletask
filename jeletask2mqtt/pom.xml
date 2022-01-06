@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.ridiekel</groupId>
         <artifactId>jeletask</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.5</version>
     </parent>
 
     <artifactId>jeletask2mqtt</artifactId>
@@ -16,8 +16,8 @@
         <gateway.version>${project.version}</gateway.version>
         <exec.mainClass>io.github.ridiekel.jeletask.mqtt.Teletask2Mqtt</exec.mainClass>
         <java.version>17</java.version>
-        <skipDocker>false</skipDocker>
         <spring-native.version>0.11.1</spring-native.version>
+        <spring-boot.build-image.imageName>ridiekel/jeletask2mqtt</spring-boot.build-image.imageName>
     </properties>
 
     <dependencies>
@@ -53,11 +53,6 @@
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>commons-io</groupId>-->
-<!--            <artifactId>commons-io</artifactId>-->
-<!--            <version>2.11.0</version>-->
-<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -77,35 +72,64 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.springframework.experimental</groupId>
-                <artifactId>spring-aot-maven-plugin</artifactId>
-                <version>${spring-native.version}</version>
-                <executions>
-                    <execution>
-                        <id>generate</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <executable>true</executable>
-                    <image>
-                        <builder>paketobuildpacks/builder:tiny</builder>
-                        <env>
-                            <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
-<!--                            <BP_NATIVE_IMAGE_BUILD_ARGUMENTS>-H:IncludeResources=.*/mqttv3/.*properties$</BP_NATIVE_IMAGE_BUILD_ARGUMENTS>-->
-                        </env>
-                    </image>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>graalvm</id>
+            <properties>
+                <spring-boot.build-image.imageName>ridiekel/jeletask2mqtt:${project.version}-graalvm</spring-boot.build-image.imageName>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.experimental</groupId>
+                        <artifactId>spring-aot-maven-plugin</artifactId>
+                        <version>${spring-native.version}</version>
+                        <executions>
+                            <execution>
+                                <id>generate</id>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <executable>true</executable>
+                            <layers>
+                                <enabled>true</enabled>
+                            </layers>
+                            <image>
+                                <builder>paketobuildpacks/builder:tiny</builder>
+                                <env>
+                                    <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+                                </env>
+                            </image>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>multiarch</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <executable>true</executable>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <repositories>
         <repository>

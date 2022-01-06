@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+if ! docker run -it --rm \
+       -v "$PWD":/src \
+       -v "/var/run/docker.sock:/var/run/docker.sock" \
+       -v "$HOME/.m2":/root/.m2 \
+       -w /src \
+       maven:latest \
+       mvn versions:set; then
+    echo "Setting version failed!"
+    exit 255
+fi
+
+VERSION=$(grep "version>" jeletask2mqtt/pom.xml | head -1|cut -d'>' -f 2|cut -d'<' -f 1)
+
+if ! docker run -it --rm \
+       -v "$PWD":/src \
+       -v "/var/run/docker.sock:/var/run/docker.sock" \
+       -v "$HOME/.m2":/root/.m2 \
+       -w /src \
+       maven:latest \
+       mvn clean install -Pgraalvm spring-boot:build-image; then
+    echo "Graalvm build failed!"
+    exit 255
+fi
+
+if ! docker run -it --rm \
+       -v "$PWD":/src \
+       -v "/var/run/docker.sock:/var/run/docker.sock" \
+       -v "$HOME/.m2":/root/.m2 \
+       -w /src \
+       maven:latest \
+       mvn clean install -Pmultiarch; then
+    echo "Multi arch build failed!"
+    exit 255
+fi
+
+(cd "jeletask2mqtt" && docker buildx build --push -t ridiekel/jeletask2mqtt:latest -t "ridiekel/jeletask2mqtt:$VERSION" --platform linux/arm/v7,linux/amd64,linux/arm64 .)
+
+docker push "ridiekel/jeletask2mqtt:$VERSION-graalvm"
+docker tag "ridiekel/jeletask2mqtt:$VERSION-graalvm" ridiekel/jeletask2mqtt:latest-graalvm
+docker push ridiekel/jeletask2mqtt:latest-graalvm
