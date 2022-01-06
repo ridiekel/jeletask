@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM openjdk:17-jdk-alpine
+FROM --platform=$BUILDPLATFORM openjdk:17-jdk-slim
 RUN addgroup -S teletask2mqtt && adduser -S teletask2mqtt -G teletask2mqtt
 USER teletask2mqtt:teletask2mqtt
 ARG JAR_FILE=target/*.jar

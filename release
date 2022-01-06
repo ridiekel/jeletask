@@ -35,7 +35,7 @@ if ! docker run -it --rm \
     exit 255
 fi
 
-(cd "jeletask2mqtt-normal" && docker buildx build --push -t ridiekel/jeletask2mqtt:latest -t "ridiekel/jeletask2mqtt:$VERSION" --platform linux/arm/v7,linux/amd64,linux/arm64 .)
+(cd "jeletask2mqtt-normal" && docker buildx build --push -t ridiekel/jeletask2mqtt:latest -t "ridiekel/jeletask2mqtt:$VERSION" --platform linux/amd64,linux/arm64 .)
 
 docker push "ridiekel/jeletask2mqtt:$VERSION-native"
 docker tag "ridiekel/jeletask2mqtt:$VERSION-native" ridiekel/jeletask2mqtt:latest-native
