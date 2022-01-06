@@ -105,7 +105,8 @@ Depending on your needs, you will need a different version (tag)
 
 | Tag           | Description                                                                                                                                 |
 |---------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| latest        | The latest version of the application. This is an image built for multiple architectures. At the time of writing amd64/arm64/armv7.         |
+| latest-amd64  | The latest version of the application. Built for amd64 arhitecture.                                                                         |
+| latest-arm64  | The latest version of the application. Built for arm64 architecture llike raspberry pi 4.                                                   |
 | latest-native | The latest version, but built with spring boot native. This is only available for amd64, but should boot a lot faster on that architecture. |
 
 

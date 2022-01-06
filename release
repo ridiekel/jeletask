@@ -35,7 +35,36 @@ if ! docker run -it --rm \
     exit 255
 fi
 
-(cd "jeletask2mqtt-normal" && docker buildx build --push -t ridiekel/jeletask2mqtt:latest -t "ridiekel/jeletask2mqtt:$VERSION" --platform linux/amd64,linux/arm64 .)
+TMP_BUILD_DIR=/tmp/jeletaskbuild
+
+rm -rf ${TMP_BUILD_DIR}
+mkdir -p ${TMP_BUILD_DIR}/target
+cp jeletask2mqtt-normal/target/jeletask2mqtt-normal-*.jar ${TMP_BUILD_DIR}/target
+
+
+export BUILDPLATFORM=linux/arm64/v8
+envsubst '${BUILDPLATFORM}' < jeletask2mqtt-normal/Dockerfile > ${TMP_BUILD_DIR}/Dockerfile
+
+echo "---------------------------------------------------------------------"
+cat ${TMP_BUILD_DIR}/Dockerfile
+echo "---------------------------------------------------------------------"
+
+(cd "${TMP_BUILD_DIR}" && docker buildx build --push \
+  -t ridiekel/jeletask2mqtt:latest-arm64 \
+  -t "ridiekel/jeletask2mqtt:$VERSION-arm64" \
+  --platform "${BUILDPLATFORM}" .)
+
+export BUILDPLATFORM=linux/amd64
+envsubst '${BUILDPLATFORM}' < jeletask2mqtt-normal/Dockerfile > ${TMP_BUILD_DIR}/Dockerfile
+
+echo "---------------------------------------------------------------------"
+cat ${TMP_BUILD_DIR}/Dockerfile
+echo "---------------------------------------------------------------------"
+
+(cd "${TMP_BUILD_DIR}" && docker buildx build --push \
+  -t ridiekel/jeletask2mqtt:latest-amd64 \
+  -t "ridiekel/jeletask2mqtt:$VERSION-amd64" \
+  --platform "${BUILDPLATFORM}" .)
 
 docker push "ridiekel/jeletask2mqtt:$VERSION-native"
 docker tag "ridiekel/jeletask2mqtt:$VERSION-native" ridiekel/jeletask2mqtt:latest-native
