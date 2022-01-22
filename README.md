@@ -9,7 +9,7 @@ However, if you're a java programmer like myself, you don't want to use a window
 
 The API supports the MICROS+ (maybe also PICOS, but untested), but you'll have to buy a licence to be able to make TCP calls.
 
-You can find the latest sources in github at: https://github.com/ridiekel/jeletask
+You can find the latest docker images at: https://hub.docker.com/r/ridiekel/jeletask2mqtt
 
 # Configuring
 
