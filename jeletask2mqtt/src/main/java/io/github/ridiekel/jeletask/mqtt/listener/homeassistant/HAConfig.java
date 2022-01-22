@@ -25,6 +25,7 @@ public class HAConfig<T extends HAConfig<T>> {
         this.baseTopic(parameters.getBaseTopic())
                 .stateTopic("~/state")
                 .uniqueId(uniqueId)
+                .objectId(uniqueId)
                 .name(parameters.getComponentSpec().getDescription())
                 .manufacturer("teletask")
                 .deviceIdentifier(parameters.getIdentifier())
@@ -56,6 +57,10 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.put("unique_id", value);
     }
 
+    public final T objectId(String value) {
+        return this.put("object_id", value);
+    }
+
     public final T name(String value) {
         return this.put("name", value);
     }
@@ -83,7 +88,7 @@ public class HAConfig<T extends HAConfig<T>> {
     }
 
     private static String id(HAConfigParameters parameters) {
-        String id = parameters.getIdentifier() + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
+        String id = "teletask-" + parameters.getIdentifier() + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
         return removeInvalid(id, "_");
     }
 

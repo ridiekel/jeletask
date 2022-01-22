@@ -295,6 +295,8 @@ Auto configuration should work with relays.
 Other types are not yet supported, work in progress.
 Pleas log an issue when having trouble with auto configuration in HA.
 
+The bridge creates 1 device with id ```teletask-<TELETASK_ID>```, and adds entities with the following entity id pattern: ```light.teletask_<TELETASK_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
+
 ## Additional config
 
 ### Relay
@@ -303,6 +305,7 @@ The default type of a relay is ```light```, but can be overridden.
 Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 
 ```json
+...
 "RELAY": [
   {
     "number": 1,
@@ -318,6 +321,7 @@ Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
     "description": "Living room - ceiling lights"
   }
 ]
+...
 ```
 
 ## Config message
