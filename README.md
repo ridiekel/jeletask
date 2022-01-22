@@ -17,9 +17,10 @@ Create a configuration json file following this example.
 At this time I can only test with MICROS_PLUS. Please log an issue when you are having trouble with the other types of central unit. 
 If teletask has not changed their binary API, it should be compatible.
 
+The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS```, ```MICROS_PLUS```
 ```json
 {
-  "type": "MICROS_PLUS", //Can be either PICOS, NANOS, MICROS, MICROS_PLUS
+  "type": "MICROS_PLUS",
   "componentsTypes": {
     "RELAY": [
       {
