@@ -305,7 +305,6 @@ The default type of a relay is ```light```, but can be overridden.
 Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 
 ```json
-...
 "RELAY": [
   {
     "number": 1,
@@ -321,7 +320,6 @@ Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
     "description": "Living room - ceiling lights"
   }
 ]
-...
 ```
 
 ## Config message
