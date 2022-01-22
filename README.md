@@ -14,21 +14,26 @@ You can find the latest sources in github at: https://github.com/ridiekel/jeleta
 # Configuring
 
 Create a configuration json file following this example.
-At this time I can only test with MICROS_PLUS. If you have a PICOS, you can test with type: MICROS_PLUS.
+At this time I can only test with MICROS_PLUS. Please log an issue when you are having trouble with the other types of central unit. 
 If teletask has not changed their binary API, it should be compatible.
 
 ```json
 {
-  "type": "MICROS_PLUS",
+  "type": "MICROS_PLUS", //Can be either PICOS, NANOS, MICROS, MICROS_PLUS
   "componentsTypes": {
     "RELAY": [
       {
         "number": 1,
-        "description": "Ceiling lights"
+        "description": "Power outlet",
+        "type": "switch" 
       },
       {
         "number": 23,
-        "description": "Closet lights"
+        "description": "Living Room - Closet lights"
+      },
+      {
+        "number": 36,
+        "description": "Living room - ceiling lights"
       }
     ],
     "SENSOR": [
@@ -90,11 +95,13 @@ If teletask has not changed their binary API, it should be compatible.
 | TELETASK_ID                    | Required |               | The id used in mqtt messages of the central unit |     
 | TELETASK_MQTT_HOST             | Required |               | The host of your MQTT broker                     |     
 | TELETASK_MQTT_PORT             | Optional | 1883          | The port of your MQTT broker                     |     
-| TELETASK_MQTT_USERNAME         | Optional |               | The MQTT broker username                         |
-| TELETASK_MQTT_PASSWORD         | Optional |               | The MQTT broker password                         |
+| TELETASK_MQTT_USERNAME         | Optional | <empty>       | The MQTT broker username                         |
+| TELETASK_MQTT_PASSWORD         | Optional | <empty>       | The MQTT broker password                         |
 | TELETASK_MQTT_CLIENTID         | Optional | teletask2mqtt | The client id used for connecting to MQTT        |
 | TELETASK_MQTT_PREFIX           | Optional | teletask2mqtt | The MQTT message topic prefix                    |
 | TELETASK_MQTT_DISCOVERY_PREFIX | Optional | homeassistant | The MQTT home assistant discovery prefix         |
+| TELETASK_LOG_HACONFIG_ENABLED  | Optional | false         | (Advanced) Log the homeassistant config messages |
+| TELETASK_LOG_TOPIC_ENABLED     | Optional | false         | (Advanced) Add the topic name to the log message |
 
 ## Docker run
 
@@ -279,4 +286,78 @@ You can only listen to sensor values.
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+```
+
+# HomeAssistant
+
+Auto configuration should work with relays. 
+Other types are not yet supported, work in progress.
+Pleas log an issue when having trouble with auto configuration in HA.
+
+## Additional config
+
+### Relay
+
+The default type of a relay is ```light```, but can be overridden. 
+Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
+
+```json
+"RELAY": [
+  {
+    "number": 1,
+    "description": "Power outlet",
+    "type": "switch" 
+  },
+  {
+    "number": 23,
+    "description": "Living Room - Closet lights"
+  },
+  {
+    "number": 36,
+    "description": "Living room - ceiling lights"
+  }
+]
+```
+
+## Config message
+
+The config message is published to topic: ```<TELETASK_MQTT_DISCOVERY_PREFIX>/<HA_COMPONENT_TYPE>/<TELETASK_ID>/<FUNCTION_TYPE>_<COMPONENT_NUMBER>/config```
+
+```json
+{
+  "device": {
+    "identifiers": [
+      "<TELETASK_ID>"
+    ],
+    "manufacturer": "teletask",
+    "name": "teletask-<TELETASK_ID>",
+    "model": "<Your model type>"
+  },
+  "~": "<TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1",
+  "state_topic": "~/state",
+  "unique_id": "<TELETASK_ID>-<FUNCTION_TYPE>-<COMPONENT_NUMBER>",
+  "name": "<COMPONENT_DESCRIPTION>",
+  "command_topic": "~/set"
+}
+```
+## Example
+
+Topic: ```homeassistant/light/my_teletask/relay_36/config```
+
+```json
+{
+  "device": {
+    "identifiers": [
+      "my_teletask"
+    ],
+    "manufacturer": "teletask",
+    "name": "teletask-my_teletask",
+    "model": "Micros Plus"
+  },
+  "~": "teletask2mqtt/my_teletask/relay/1",
+  "state_topic": "~/state",
+  "unique_id": "my_teletask-relay-36",
+  "name": "Living room - ceiling lights",
+  "command_topic": "~/set"
+}
 ```

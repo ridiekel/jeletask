@@ -27,7 +27,7 @@ public class CentralUnit  {
     private String host;
     private int port;
     private Map<Function, List<ComponentSpec>> componentsTypes = new LinkedHashMap<>();
-    private List<ComponentSpec> allComponents = new ArrayList<>();
+    private List<ComponentSpec> allComponents;
     private CentralUnitType type;
 
     /**
@@ -96,7 +96,7 @@ public class CentralUnit  {
         if (this.allComponents == null) {
             this.allComponents = new ArrayList<>();
             for (Map.Entry<Function, List<ComponentSpec>> components : componentsTypes.entrySet()) {
-                this.allComponents.addAll(components.getValue().stream().peek(v->v.setFunction(components.getKey())).collect(Collectors.toList()));
+                this.allComponents.addAll(components.getValue().stream().peek(v -> v.setFunction(components.getKey())).toList());
             }
         }
         return this.allComponents;

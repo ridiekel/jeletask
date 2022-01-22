@@ -28,10 +28,8 @@ public class HAConfig<T extends HAConfig<T>> {
                 .name(parameters.getComponentSpec().getDescription())
                 .manufacturer("teletask")
                 .deviceIdentifier(parameters.getIdentifier())
-                .deviceName("Teletask")
-//                .deviceIdentifier(parameters.getIdentifier() + "." + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "." + parameters.getComponentSpec().getNumber())
-//                .deviceName("teletask." + parameters.getComponentSpec().getDescription().toLowerCase())
-                .model(parameters.getCentralUnit().getCentralUnitType().toString());
+                .deviceName(String.format("teletask-%s", parameters.getIdentifier()))
+                .model(parameters.getCentralUnit().getCentralUnitType().getDisplayName());
     }
 
     public final T baseTopic(String value) {

@@ -9,7 +9,9 @@ import java.util.Map;
 public class MessageHandlerFactory {
     private static final Map<CentralUnitType, MessageHandler> COMPOSERS = Map.of(
             CentralUnitType.MICROS, new MicrosMessageHandler(),
-            CentralUnitType.MICROS_PLUS, new MicrosPlusMessageHandler()
+            CentralUnitType.MICROS_PLUS, new MicrosPlusMessageHandler(),
+            CentralUnitType.PICOS, new MicrosPlusMessageHandler(),
+            CentralUnitType.NANOS, new MicrosPlusMessageHandler()
     );
 
     private MessageHandlerFactory() {

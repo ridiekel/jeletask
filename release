@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+mkdir -p /tmp/.m2
+
 if ! docker run -it --rm \
        -v "$PWD":/src \
        -v "/var/run/docker.sock:/var/run/docker.sock" \
-       -v "$HOME/.m2":/root/.m2 \
+       -v "/tmp/.m2":/root/.m2 \
        -w /src \
        maven:latest \
        mvn versions:set; then
@@ -16,7 +18,7 @@ VERSION=$(grep "version>" jeletask2mqtt/pom.xml | head -1|cut -d'>' -f 2|cut -d'
 if ! docker run -it --rm \
        -v "$PWD":/src \
        -v "/var/run/docker.sock:/var/run/docker.sock" \
-       -v "$HOME/.m2":/root/.m2 \
+       -v "/tmp/.m2":/root/.m2 \
        -w /src \
        maven:latest \
        mvn clean install spring-boot:build-image; then
@@ -27,7 +29,7 @@ fi
 if ! docker run -it --rm \
        -v "$PWD":/src \
        -v "/var/run/docker.sock:/var/run/docker.sock" \
-       -v "$HOME/.m2":/root/.m2 \
+       -v "/tmp/.m2":/root/.m2 \
        -w /src \
        maven:latest \
        mvn clean install; then

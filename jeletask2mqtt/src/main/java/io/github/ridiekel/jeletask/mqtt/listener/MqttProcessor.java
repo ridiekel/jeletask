@@ -161,25 +161,41 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     private void publishConfig() {
-        //<discovery_prefix>/<component>/[<node_id>/]<object_id>/config
         LOG.info("Publishing config...");
         this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
             this.publish("DELETE", c, this.createConfigTopic(c), "", LOG::debug);
         });
         this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
             this.toConfig(c).ifPresent(config -> {
-                this.publish("CREATE", c, createConfigTopic(c), config, LOG::debug);
+                this.publish("CREATE", c, createConfigTopic(c), config, this.service.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug);
             });
         });
     }
 
     private String createConfigTopic(ComponentSpec c) {
-        return String.format("%s/%s/%s/%s_%s/config",
-                Optional.ofNullable(this.service.getConfiguration().getMqtt().getDiscoveryPrefix()).orElse("homeassistant"),
-                Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getType(c)).orElse("light"),
-                this.teletaskIdentifier,
-                c.getFunction().toString().toLowerCase(),
-                c.getNumber());
+        //<discovery_prefix>/<component>/[<node_id>/]<object_id>/config
+        return String.format("%s/%s/%s/%s/config",
+                haDiscoveryPrefix(),
+                haComponent(c),
+                haNodeId(),
+                haObjectId(c)
+        );
+    }
+
+    private String haObjectId(ComponentSpec c) {
+        return c.getFunction().toString().toLowerCase() + "_" + c.getNumber();
+    }
+
+    private String haNodeId() {
+        return this.teletaskIdentifier;
+    }
+
+    private String haComponent(ComponentSpec c) {
+        return Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getType(c)).orElse("light");
+    }
+
+    private String haDiscoveryPrefix() {
+        return Optional.ofNullable(this.service.getConfiguration().getMqtt().getDiscoveryPrefix()).orElse("homeassistant");
     }
 
     private Optional<String> toConfig(ComponentSpec component) {
@@ -261,7 +277,7 @@ public class MqttProcessor implements StateChangeListener {
             this.connect();
 
             LOG.debug(String.format("[%s] - %s - publishing topic '%s' -> %s", getWhat(what), getLoggingStringForComponent(componentSpec), topic, message));
-            level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), getLoggingStringForComponent(componentSpec), payloadToLogWithColors(message)));
+            level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), getLoggingStringForComponent(componentSpec), topicToLogWithColors(topic) + payloadToLogWithColors(message)));
             this.client.publish(topic, mqttMessage);
         } catch (Exception e) {
             LOG.warn(e.getMessage());
@@ -384,6 +400,10 @@ public class MqttProcessor implements StateChangeListener {
 
     private String payloadToLogWithColors(String payload) {
         return AnsiOutput.toString(PAYLOAD_LOG_COLORS.getOrDefault(payload, AnsiColor.DEFAULT), payload, AnsiColor.DEFAULT);
+    }
+
+    private String topicToLogWithColors(String topic) {
+        return this.service.getConfiguration().getLog().isTopicEnabled() ? AnsiOutput.toString(AnsiColor.MAGENTA, "[" + StringUtils.rightPad(topic, 60) + "] - ", AnsiColor.DEFAULT) : "";
     }
 
     private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();

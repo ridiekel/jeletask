@@ -12,6 +12,7 @@ public class Teletask2MqttConfiguration {
     private String host;
     private String id;
     private int port;
+    private LoggingConfiguration log;
 
     public String getId() {
         return id;
@@ -59,6 +60,17 @@ public class Teletask2MqttConfiguration {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public LoggingConfiguration getLog() {
+        if (this.log == null) {
+            this.log = new LoggingConfiguration();
+        }
+        return this.log;
+    }
+
+    public void setLog(LoggingConfiguration log) {
+        this.log = log;
     }
 
     public static class MqttConfiguration {
@@ -124,6 +136,27 @@ public class Teletask2MqttConfiguration {
 
         public void setDiscoveryPrefix(String discoveryPrefix) {
             this.discoveryPrefix = discoveryPrefix;
+        }
+    }
+
+    public static class LoggingConfiguration {
+        private boolean haconfigEnabled = false;
+        private boolean topicEnabled = false;
+
+        public boolean isHaconfigEnabled() {
+            return haconfigEnabled;
+        }
+
+        public void setHaconfigEnabled(boolean haconfigEnabled) {
+            this.haconfigEnabled = haconfigEnabled;
+        }
+
+        public boolean isTopicEnabled() {
+            return topicEnabled;
+        }
+
+        public void setTopicEnabled(boolean topicEnabled) {
+            this.topicEnabled = topicEnabled;
         }
     }
 

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+mkdir -p /tmp/.m2
+
 docker run -it --rm \
   -v "$PWD":/src \
-  -v "$HOME/.m2":/root/.m2 \
+  -v "/tmp/.m2":/root/.m2 \
   -w /src \
   maven:latest \
   mvn clean

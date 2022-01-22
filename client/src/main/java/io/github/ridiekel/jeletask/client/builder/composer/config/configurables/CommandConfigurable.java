@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class CommandConfigurable<M extends MessageSupport> extends Configurable<Command> {
     private final Map<Integer, String> paramNames;
@@ -21,7 +22,7 @@ public abstract class CommandConfigurable<M extends MessageSupport> extends Conf
         super(number, command);
 
         AtomicInteger index = new AtomicInteger(0);
-        this.paramNames = List.of(paramNames).stream().collect(Collectors.toMap(p -> index.getAndIncrement(), Function.identity()));
+        this.paramNames = Stream.of(paramNames).collect(Collectors.toMap(p -> index.getAndIncrement(), Function.identity()));
         this.needsCentralUnitParameter = needsCentralUnitParameter;
     }
 
