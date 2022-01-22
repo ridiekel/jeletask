@@ -297,6 +297,12 @@ Pleas log an issue when having trouble with auto configuration in HA.
 
 The bridge creates 1 device with id ```teletask-<TELETASK_ID>```, and adds entities with the following entity id pattern: ```light.teletask_<TELETASK_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
 
+Examples: 
+```
+switch.teletask_my_teletask_relay_1
+light.teletask_my_teletask_relay_36
+```
+
 ## Additional config
 
 ### Relay
