@@ -154,7 +154,7 @@ public class MqttProcessor implements StateChangeListener {
             }
 
             Awaitility.await().pollDelay(100, TimeUnit.MILLISECONDS).atMost(TIMEOUT, TimeUnit.SECONDS).until(() -> {
-                LOG.info("Waiting for connection...");
+                LOG.info("Waiting for mqtt connection...");
                 return this.client.isConnected();
             });
         }

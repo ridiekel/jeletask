@@ -117,6 +117,7 @@ Depending on your needs, you will need a different version (tag)
 | latest-arm64  | The latest version of the application. Built for arm64 architecture llike raspberry pi 4.                                                   |
 | latest-native | The latest version, but built with spring boot native. This is only available for amd64, but should boot a lot faster on that architecture. |
 
+### Command line
 
 You should be able to run using following minimal command:
 
@@ -128,6 +129,42 @@ docker run --name jeletask2mqtt \
   -e TELETASK_ID="<teletask_id>" \
   -e TELETASK_MQTT_HOST="<mqtt_host>" \
   ridiekel/jeletask2mqtt:latest
+```
+
+### Docker compose
+
+```yaml
+version: '3.8'
+services:
+  mqtt:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    volumes:
+      - $HOME/.jeletask/mosquitto/data:/mosquitto/data
+      - $HOME/.jeletask/mosquitto/logs:/mosquitto/logs
+    ports:
+      - "1883:1883"
+    networks:
+      - jeletask
+    command: "mosquitto -c /mosquitto-no-auth.conf" #Needed for unauthenticated mqtt broker with listen address 0.0.0.0
+
+  jeletask2mqtt:
+    image: ridiekel/jeletask2mqtt:latest-native
+    restart: unless-stopped
+    volumes:
+      - $HOME/.jeletask/teletask2mqtt/config.json:/teletask2mqtt/config.json
+    environment:
+      TELETASK_HOST: 192.168.0.123
+      TELETASK_PORT: 55957
+      TELETASK_ID: my_teletask
+      TELETASK_MQTT_HOST: mqtt
+    depends_on:
+      - mqtt
+    networks:
+      - jeletask
+
+networks:
+  jeletask:
 ```
 
 # Messages

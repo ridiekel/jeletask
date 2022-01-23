@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  mqtt:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    volumes:
+      - $HOME/.jeletask/mosquitto/data:/mosquitto/data
+      - $HOME/.jeletask/mosquitto/logs:/mosquitto/logs
+    ports:
+      - "1883:1883"
+    networks:
+      - jeletask
+    command: "mosquitto -c /mosquitto-no-auth.conf" #Needed for unauthenticated mqtt broker with listen address 0.0.0.0
+
+  jeletask2mqtt:
+    image: ridiekel/jeletask2mqtt:latest-native
+    restart: unless-stopped
+    volumes:
+      - $HOME/.jeletask/teletask2mqtt/config.json:/teletask2mqtt/config.json
+    environment:
+      TELETASK_HOST: 192.168.0.123
+      TELETASK_PORT: 55957
+      TELETASK_ID: my_teletask
+      TELETASK_MQTT_HOST: mqtt
+    depends_on:
+      - mqtt
+    networks:
+      - jeletask
+
+networks:
+  jeletask:
