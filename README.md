@@ -7,7 +7,9 @@ It is the purpose to create an API for software developers or domotics enthusias
 If you own a Teletask MICROS or MICROS+, you have access to the free (or paid in case of the MICROS+) DLL32 LIBRARY (TDS15132).  
 However, if you're a java programmer like myself, you don't want to use a windows dll :-).
 
-The API supports the MICROS+ (maybe also PICOS, but untested), but you'll have to buy a licence to be able to make TCP calls.
+Teletask documentation on how their API works can be found here: https://teletask.be/media/3109/tds15132-library.pdf
+
+The program supports the MICROS+ (maybe also PICOS, but untested), but you'll have to buy a licence to be able to make TCP calls.
 
 You can find the latest docker images at: https://hub.docker.com/r/ridiekel/jeletask2mqtt
 
@@ -328,7 +330,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 # HomeAssistant
 
-Auto configuration should work with relays. 
+Auto configuration should work with relays and dimmers. 
 Other types are not yet supported, work in progress.
 Pleas log an issue when having trouble with auto configuration in HA.
 

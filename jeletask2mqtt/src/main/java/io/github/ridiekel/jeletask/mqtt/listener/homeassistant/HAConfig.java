@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class HAConfig<T extends HAConfig<T>> {
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9_-]");
@@ -26,7 +27,7 @@ public class HAConfig<T extends HAConfig<T>> {
                 .stateTopic("~/state")
                 .uniqueId(uniqueId)
                 .objectId(uniqueId)
-                .name(parameters.getComponentSpec().getDescription())
+                .name(parameters.getComponentSpec().getDescription() + 3)
                 .manufacturer("teletask")
                 .deviceIdentifier(parameters.getIdentifier())
                 .deviceName(String.format("teletask-%s", parameters.getIdentifier()))
@@ -79,6 +80,34 @@ public class HAConfig<T extends HAConfig<T>> {
 
     private T put(ObjectNode node, String key, String value) {
         node.put(key, value);
+        return this.self();
+    }
+
+    public T putBoolean(String key, boolean value) {
+        return this.putBoolean(this.config, key, value);
+    }
+
+    private T putBoolean(ObjectNode node, String key, boolean value) {
+        node.put(key, value);
+        return this.self();
+    }
+
+    public T putInt(String key, int value) {
+        return this.putInt(this.config, key, value);
+    }
+
+    private T putInt(ObjectNode node, String key, int value) {
+        node.put(key, value);
+        return this.self();
+    }
+
+    public T putArray(String key, String... value) {
+        return this.putArray(this.config, key, value);
+    }
+
+    private T putArray(ObjectNode node, String key, String... value) {
+        ArrayNode array = node.putArray(key);
+        Stream.of(value).forEach(array::add);
         return this.self();
     }
 

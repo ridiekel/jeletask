@@ -8,7 +8,8 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAReadWriteConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HADimmerConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HARelayConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -163,9 +164,6 @@ public class MqttProcessor implements StateChangeListener {
     private void publishConfig() {
         LOG.info("Publishing config...");
         this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
-            this.publish("DELETE", c, this.createConfigTopic(c), "", LOG::debug);
-        });
-        this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
             this.toConfig(c).ifPresent(config -> {
                 this.publish("CREATE", c, createConfigTopic(c), config, this.service.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug);
             });
@@ -206,9 +204,7 @@ public class MqttProcessor implements StateChangeListener {
             Map.entry(Function.COND, f("binary_sensor", p -> {
                 return null;
             })),
-            Map.entry(Function.DIMMER, f("light", p -> {
-                return null;
-            })),
+            Map.entry(Function.DIMMER, f("light", HADimmerConfig::new)),
             Map.entry(Function.FLAG, f("binary_sensor", p -> {
                 return null;
             })),
@@ -221,7 +217,7 @@ public class MqttProcessor implements StateChangeListener {
             Map.entry(Function.MOTOR, f("cover", p -> {
                 return null;
             })),
-            Map.entry(Function.RELAY, f("light", HAReadWriteConfig::new)),
+            Map.entry(Function.RELAY, f("light", HARelayConfig::new)),
             Map.entry(Function.SENSOR, f("sensor", p -> {
                 return null;
             })),
@@ -341,7 +337,7 @@ public class MqttProcessor implements StateChangeListener {
                 newState = String.valueOf((int) Float.parseFloat(state));
             }
         } catch (Exception e) {
-            LOG.debug(String.format("Could not translate dimmer state '%s' received from mqtt server", state));
+            LOG.warn(String.format("Could not translate dimmer state '%s' received from mqtt server", state));
         }
         return newState;
     }
@@ -377,12 +373,13 @@ public class MqttProcessor implements StateChangeListener {
         @Override
         public void messageArrived(String topic, MqttMessage mqttMessage) {
             LOG.debug(String.format("MQTT message arrived '%s': '%s'", topic, new String(mqttMessage.getPayload())));
+            String message = mqttMessage.toString();
             try {
                 Matcher matcher = this.teletaskComponentPattern.matcher(topic);
                 if (matcher.find()) {
                     Function function = Function.valueOf(matcher.group(1).toUpperCase());
                     int number = Integer.parseInt(matcher.group(2));
-                    String state = stateTranslateSet(function, mqttMessage.toString());
+                    String state = stateTranslateSet(function, message);
 
                     String componentLog = getLoggingStringForComponent(MqttProcessor.this.teletaskClient.getConfig().getComponent(function, number));
                     LOG.info(String.format(WHAT_LOG_PATTERNS.get("COMMAND"), getWhat("COMMAND"), componentLog, payloadToLogWithColors(new String(mqttMessage.getPayload()))));
@@ -392,7 +389,7 @@ public class MqttProcessor implements StateChangeListener {
                             (f, n, s, e) -> LOG.warn(String.format("[%s] MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
                 }
             } catch (Exception e) {
-                LOG.warn(String.format("MQTT topic '%s' could not change state to: %s", topic, mqttMessage.toString()), e);
+                LOG.warn(String.format("MQTT topic '%s' could not change state to: %s", topic, message), e);
                 MqttProcessor.this.restartTeletask();
             }
         }
