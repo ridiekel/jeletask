@@ -27,7 +27,7 @@ public class HAConfig<T extends HAConfig<T>> {
                 .stateTopic("~/state")
                 .uniqueId(uniqueId)
                 .objectId(uniqueId)
-                .name(parameters.getComponentSpec().getDescription() + 3)
+                .name(parameters.getComponentSpec().getDescription())
                 .manufacturer("teletask")
                 .deviceIdentifier(parameters.getIdentifier())
                 .deviceName(String.format("teletask-%s", parameters.getIdentifier()))
