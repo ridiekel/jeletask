@@ -78,6 +78,7 @@ public class MqttProcessor implements StateChangeListener {
         LOG.info(String.format("port: '%s'", port));
         LOG.info(String.format("username: '%s'", Optional.ofNullable(username).orElse("<not specified>")));
         LOG.info(String.format("clientId: '%s'", clientId));
+        LOG.info(String.format("retained: '%s'", this.service.getConfiguration().getMqtt().isRetained()));
         LOG.info(String.format("prefix: '%s'", this.prefix));
         LOG.info(String.format("Remote stop topic: '%s'", this.remoteStopTopic()));
         LOG.info(String.format("Remote refresh states topic: '%s'", this.remoteRefreshTopic()));
@@ -269,6 +270,7 @@ public class MqttProcessor implements StateChangeListener {
         try {
             MqttMessage mqttMessage = new MqttMessage(message.getBytes());
             mqttMessage.setQos(0);
+            mqttMessage.setRetained(this.service.getConfiguration().getMqtt().isRetained());
 
             this.connect();
 
