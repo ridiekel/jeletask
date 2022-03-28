@@ -91,20 +91,21 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS```, ```MICROS_P
 ## Environment variables
 
 
-| Variable                       | Type     | Default value | Description                                      |
-|--------------------------------|----------|---------------|--------------------------------------------------|
-| TELETASK_HOST                  | Required |               | The ip address or hostname of your central unit  |
-| TELETASK_PORT                  | Required |               | The port of your central unit, probably 55957    |
-| TELETASK_ID                    | Required |               | The id used in mqtt messages of the central unit |     
-| TELETASK_MQTT_HOST             | Required |               | The host of your MQTT broker                     |     
-| TELETASK_MQTT_PORT             | Optional | 1883          | The port of your MQTT broker                     |     
-| TELETASK_MQTT_USERNAME         | Optional | <empty>       | The MQTT broker username                         |
-| TELETASK_MQTT_PASSWORD         | Optional | <empty>       | The MQTT broker password                         |
-| TELETASK_MQTT_CLIENTID         | Optional | teletask2mqtt | The client id used for connecting to MQTT        |
-| TELETASK_MQTT_PREFIX           | Optional | teletask2mqtt | The MQTT message topic prefix                    |
-| TELETASK_MQTT_DISCOVERY_PREFIX | Optional | homeassistant | The MQTT home assistant discovery prefix         |
-| TELETASK_LOG_HACONFIG_ENABLED  | Optional | false         | (Advanced) Log the homeassistant config messages |
-| TELETASK_LOG_TOPIC_ENABLED     | Optional | false         | (Advanced) Add the topic name to the log message |
+| Variable                       | Type     | Default value | Description                                                            |
+|--------------------------------|----------|---------------|------------------------------------------------------------------------|
+| TELETASK_HOST                  | Required |               | The ip address or hostname of your central unit                        |
+| TELETASK_PORT                  | Required |               | The port of your central unit, probably 55957                          |
+| TELETASK_ID                    | Required |               | The id used in mqtt messages of the central unit                       |     
+| TELETASK_MQTT_HOST             | Required |               | The host of your MQTT broker                                           |     
+| TELETASK_MQTT_PORT             | Optional | 1883          | The port of your MQTT broker                                           |     
+| TELETASK_MQTT_USERNAME         | Optional | <empty>       | The MQTT broker username                                               |
+| TELETASK_MQTT_PASSWORD         | Optional | <empty>       | The MQTT broker password                                               |
+| TELETASK_MQTT_CLIENTID         | Optional | teletask2mqtt | The client id used for connecting to MQTT                              |
+| TELETASK_MQTT_PREFIX           | Optional | teletask2mqtt | The MQTT message topic prefix                                          |
+| TELETASK_MQTT_RETAINED         | Optional | false         | Indicates whether or not the messages should be retained by the broker |
+| TELETASK_MQTT_DISCOVERY_PREFIX | Optional | homeassistant | The MQTT home assistant discovery prefix                               |
+| TELETASK_LOG_HACONFIG_ENABLED  | Optional | false         | (Advanced) Log the homeassistant config messages                       |
+| TELETASK_LOG_TOPIC_ENABLED     | Optional | false         | (Advanced) Add the topic name to the log message                       |
 
 ## Docker run
 

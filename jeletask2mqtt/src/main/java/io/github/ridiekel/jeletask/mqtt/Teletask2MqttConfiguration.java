@@ -80,7 +80,16 @@ public class Teletask2MqttConfiguration {
         private String username;
         private String password;
         private String prefix;
+        private boolean retained = false;
         private String discoveryPrefix;
+
+        public boolean isRetained() {
+            return retained;
+        }
+
+        public void setRetained(boolean retained) {
+            this.retained = retained;
+        }
 
         public String getHost() {
             return this.host;
