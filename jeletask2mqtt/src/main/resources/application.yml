@@ -9,6 +9,7 @@ teletask:
     port: 1883
     username: ""
     password: ""
+    retained: "false"
     clientId: "teletask2mqtt"
     prefix: "teletask2mqtt"
     discovery_prefix: "homeassistant"
