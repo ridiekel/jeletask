@@ -362,7 +362,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             try {
                 TeletaskClientImpl.this.handleReceiveEvents(MessageUtilities.receive(LOG, TeletaskClientImpl.this));
             } catch (Exception e) {
-                LOG.trace("Exception ({}) caught in EventMessageListener: {}", e.getClass().getName(), e.getMessage());
+                LOG.trace(String.format("Exception (%s) caught in EventMessageListener: %s", e.getClass().getName(), e.getMessage()), e);
             }
         }
     }

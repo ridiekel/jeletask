@@ -38,7 +38,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
         ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
         this.functionBytes = new byte[]{(byte) functionConfig.getNumber()};
         this.outputBytes = MessageHandlerFactory.getMessageHandler(this.getClientConfig().getCentralUnitType()).composeOutput(this.getNumber());
-        this.stateBytes = functionConfig.getStateCalculator().convertSetState(this.getState());
+        this.stateBytes = functionConfig.getStateCalculator(component).convertSetState(this.getState());
     }
 
     public int getNumber() {
@@ -85,7 +85,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
         return new String[]{
                 this.formatFunction(this.getFunction()),
                 this.formatOutput(this.getNumber()),
-                this.formatState(this.getFunction(), this.getNumber(), this.getState())
+                this.formatState(this.stateBytes, this.getState())
         };
     }
 
@@ -97,5 +97,11 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
     @Override
     protected String getId() {
         return "SET " + super.getId() + "(" + this.number + ")";
+    }
+
+    @Override
+    protected boolean isValid() {
+        FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
+        return functionConfig.isValidState(this.getClientConfig().getComponent(this.getFunction(), this.getNumber()), this.getState());
     }
 }

@@ -57,7 +57,7 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
 
             if (component != null) {
                 if (component.getState() == null) {
-                    component.setState(messageHandler.getFunctionConfig(this.getFunction()).getStateCalculator().getDefaultState(component));
+                    component.setState(messageHandler.getFunctionConfig(this.getFunction()).getStateCalculator(component).getDefaultState(component));
                 }
 
                 states.add(new MessageHandler.OutputState(number, component.getState()));
@@ -65,7 +65,7 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
                 LOG.debug("Component {}:{} not found.", this.getFunction(), number);
             }
         }
-        return messageHandler.createResponseEventMessage(config, this.getFunction(), states.stream().toArray(MessageHandler.OutputState[]::new));
+        return messageHandler.createResponseEventMessage(config, this.getFunction(), states.toArray(MessageHandler.OutputState[]::new));
     }
 
     @Override

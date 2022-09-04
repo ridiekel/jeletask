@@ -8,17 +8,21 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class EventMessage extends FunctionBasedMessageSupport {
     private final int number;
     private final ComponentState state;
     private final byte[] rawBytes;
 
+    private final byte[] stateBytes;
+
     public EventMessage(CentralUnit clientConfig, byte[] rawBytes, Function function, int number, ComponentState state) {
         super(clientConfig, function);
         this.rawBytes = rawBytes;
         this.number = number;
         this.state = state;
+        this.stateBytes = ArrayUtils.subarray(rawBytes, 8, rawBytes.length-1);
     }
 
     public ComponentState getState() {
@@ -36,11 +40,9 @@ public class EventMessage extends FunctionBasedMessageSupport {
     @Override
     protected byte[] getPayload() {
         FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
-        ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
         byte[] function = {(byte) functionConfig.getNumber()};
         byte[] output = this.getMessageHandler().composeOutput(this.getNumber());
-        byte[] state = functionConfig.getStateCalculator().convertSetState(this.getState());
-        return Bytes.concat(function, output, state);
+        return Bytes.concat(function, output);
     }
 
     @Override
@@ -50,7 +52,7 @@ public class EventMessage extends FunctionBasedMessageSupport {
 
     @Override
     protected String[] getPayloadLogInfo() {
-        return new String[]{this.formatFunction(this.getFunction()), this.formatOutput(this.getNumber()), this.formatState(this.getFunction(), this.getNumber(), this.getState())};
+        return new String[]{this.formatFunction(this.getFunction()), this.formatOutput(this.getNumber()), this.formatState(this.stateBytes, this.getState())};
     }
 
     @Override

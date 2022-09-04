@@ -3,12 +3,10 @@ package io.github.ridiekel.jeletask.client.builder.message.messages;
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
-import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
-import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
@@ -175,13 +173,8 @@ public abstract class MessageSupport {
         return this.getMessageHandler().getCommandConfig(this.getCommand()).getParamNames().get(index);
     }
 
-    protected String formatState(Function function, int number, ComponentState... states) {
-        FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(function);
-        ComponentSpec component = this.getClientConfig().getComponent(function, number);
-        return Arrays.stream(states).map(state -> {
-            byte[] bytes = functionConfig.getStateCalculator().convertSetState(state);
-            return "State: " + state + " | " + functionConfig.getStateCalculator().getNumberConverter().convert(bytes) + " | " + (state == null ? null : Bytes.bytesToHex(bytes));
-        }).collect(Collectors.joining(", "));
+    protected String formatState(byte[] stateBytes, ComponentState... states) {
+        return Arrays.stream(states).map(state -> "State: " + state + " | " + (state == null ? null : Bytes.bytesToHex(stateBytes))).collect(Collectors.joining(", "));
     }
 
     protected MessageHandler getMessageHandler() {

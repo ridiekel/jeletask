@@ -38,16 +38,10 @@ public class MotorStateCalculator extends MappingStateCalculator {
 
     @Override
     public ComponentState convertGet(byte[] dataBytes) {
-        System.out.println("*/**************** dataBytes = " + dataBytes.length);
-
-        System.out.println("DataBytes = " + Bytes.bytesToHex(dataBytes));
-        System.out.println("State Bytes = " + Bytes.bytesToHex(dataBytes));
-
         ComponentState state = new ComponentState(MOTOR_STATE_CALCULATOR.convertGet(new byte[]{dataBytes[1]}).getState());
         state.setDirection(super.convertGet(dataBytes).getState());
         state.setProtection(PROTECTION_STATE_CALCULATOR.convertGet(new byte[]{dataBytes[2]}).getState());
         state.setPosition(NumberConverter.UNSIGNED_BYTE.convert(new byte[]{dataBytes[3]}));
-
         return state;
     }
 

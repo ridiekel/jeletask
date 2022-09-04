@@ -14,11 +14,11 @@ public class FunctionConfigurable extends Configurable<Function> {
         this.stateCalculator = stateCalculator;
     }
 
-    public StateCalculator getStateCalculator() {
-        return this.stateCalculator;
+    public StateCalculator getStateCalculator(ComponentSpec componentSpec) {
+        return this.stateCalculator.forComponent(componentSpec);
     }
 
-    public boolean isValidState(ComponentState state) {
-        return this.getStateCalculator().isValidState(state);
+    public boolean isValidState(ComponentSpec component, ComponentState state) {
+        return this.getStateCalculator(component).isValidState(state);
     }
 }

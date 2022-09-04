@@ -18,10 +18,4 @@ public abstract class FunctionStateBasedMessageSupport extends FunctionBasedMess
     public ComponentState getState() {
         return this.state;
     }
-
-    @Override
-    protected boolean isValid() {
-        FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
-        return functionConfig.isValidState(this.getState());
-    }
 }
