@@ -1,6 +1,8 @@
 package io.github.ridiekel.jeletask.client.spec;
 
 
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+
 import java.util.Objects;
 
 /**
@@ -10,7 +12,7 @@ public class ComponentSpec  {
     private String description;
     private Function function;
     private int number;
-    private String state;
+    private ComponentState state;
     private String type;
 
     /**
@@ -27,7 +29,7 @@ public class ComponentSpec  {
      * @param state The current status of the component, for example 0 indicating off for a "relay".
      * @param number The component number you wish to manipulate.
      */
-    public ComponentSpec(Function function, String state, int number) {
+    public ComponentSpec(Function function, ComponentState state, int number) {
         this.function = function;
         this.state = state;
         this.number = number;
@@ -41,14 +43,14 @@ public class ComponentSpec  {
         this.number = number;
     }
 
-    public String getState() {
+    public ComponentState getState() {
         if (Objects.equals(this.state, "null")) { //TODO: Check why this sometimes happens
             this.state = null;
         }
         return this.state;
     }
 
-    public void setState(String state) {
+    public void setState(ComponentState state) {
         this.state = state;
     }
 

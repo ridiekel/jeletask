@@ -1,7 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages;
 
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
-import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
@@ -11,6 +10,8 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +117,7 @@ public abstract class MessageSupport {
                     "Payload: " + System.lineSeparator() + "\t" + Arrays.stream(this.getPayloadLogInfo()).collect(Collectors.joining(System.lineSeparator() + "\t")) + System.lineSeparator() +
                     "Length: " + message[1] + System.lineSeparator() +
                     "Checksum calculation steps: " + this.getMessageChecksumCalculationSteps(message) + " = " + message[message.length - 1] + System.lineSeparator() +
-                    "Raw Bytes: " + ByteUtilities.bytesToHex(message) + System.lineSeparator() +
+                    "Raw Bytes: " + Bytes.bytesToHex(message) + System.lineSeparator() +
                     seperatorLine + System.lineSeparator() +
                     table.toString();
         } else {
@@ -155,10 +156,10 @@ public abstract class MessageSupport {
     private StringBuilder getHeader(Collection<String> parts) {
         StringBuilder builder = new StringBuilder(500);
         builder.append("| STX | Length | Command | ");
-        for (int i = 1; i <= parts.size() - 4; i++) {
+        for (int i = 0; i < parts.size() - 4; i++) {
             String logHeaderName = this.getLogHeaderName(i);
             if (logHeaderName == null) {
-                logHeaderName = "Parameter " + i;
+                logHeaderName = "Param " + i;
             }
             builder.append(logHeaderName).append(" | ");
         }
@@ -167,19 +168,19 @@ public abstract class MessageSupport {
     }
 
     private List<String> getHexParts(byte[] message) {
-        return ByteUtilities.bytesToHexList(message);
+        return Bytes.bytesToHexList(message);
     }
 
     protected String getLogHeaderName(int index) {
         return this.getMessageHandler().getCommandConfig(this.getCommand()).getParamNames().get(index);
     }
 
-    protected String formatState(Function function, int number, String... states) {
+    protected String formatState(Function function, int number, ComponentState... states) {
         FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(function);
         ComponentSpec component = this.getClientConfig().getComponent(function, number);
         return Arrays.stream(states).map(state -> {
-            byte[] bytes = functionConfig.getStateCalculator().convertSet(component, state);
-            return "State: " + state + " | " + functionConfig.getStateCalculator().getNumberConverter().convert(bytes) + " | " + (state == null ? null : ByteUtilities.bytesToHex(bytes));
+            byte[] bytes = functionConfig.getStateCalculator().convertSetState(state);
+            return "State: " + state + " | " + functionConfig.getStateCalculator().getNumberConverter().convert(bytes) + " | " + (state == null ? null : Bytes.bytesToHex(bytes));
         }).collect(Collectors.joining(", "));
     }
 
@@ -188,11 +189,11 @@ public abstract class MessageSupport {
     }
 
     protected String formatFunction(Function function) {
-        return "Function: " + function + " | " + this.getMessageHandler().getFunctionConfig(function).getNumber() + " | " + ByteUtilities.bytesToHex((byte) this.getMessageHandler().getFunctionConfig(function).getNumber());
+        return "Function: " + function + " | " + this.getMessageHandler().getFunctionConfig(function).getNumber() + " | " + Bytes.bytesToHex((byte) this.getMessageHandler().getFunctionConfig(function).getNumber());
     }
 
     protected String formatOutput(int... numbers) {
-        return Arrays.stream(numbers).mapToObj(number -> "Output: " + number + " | " + ByteUtilities.bytesToHex(this.getMessageHandler().composeOutput(number))).collect(Collectors.joining(", "));
+        return Arrays.stream(numbers).mapToObj(number -> "Output: " + number + " | " + Bytes.bytesToHex(this.getMessageHandler().composeOutput(number))).collect(Collectors.joining(", "));
     }
 
     /**

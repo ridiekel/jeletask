@@ -1,5 +1,7 @@
 package io.github.ridiekel.jeletask.client.spec;
 
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+
 import java.io.Serializable;
 
 /**
@@ -8,7 +10,7 @@ import java.io.Serializable;
 public enum Function {
     RELAY("relay", state -> true),
     DIMMER("dimmer", state -> true),
-    MOTOR("motor on/off", state -> !"STOP".equals(state.toUpperCase())),
+    MOTOR("motor on/off", state -> !"STOP".equalsIgnoreCase(state.getState())),
     LOCMOOD("local mood", state -> true),
     TIMEDMOOD("timed mood", state -> true),
     GENMOOD("general mood", state -> true),
@@ -24,7 +26,7 @@ public enum Function {
         this.shouldReceiveAcknowledge = shouldReceiveAcknowledge;
     }
 
-    public boolean shouldReceiveAcknowledge(String state) {
+    public boolean shouldReceiveAcknowledge(ComponentState state) {
         return this.shouldReceiveAcknowledge.test(state);
     }
 
@@ -34,6 +36,6 @@ public enum Function {
 
     @FunctionalInterface
     public interface ShouldReceiveAcknowledge extends Serializable {
-        boolean test(String state);
+        boolean test(ComponentState state);
     }
 }

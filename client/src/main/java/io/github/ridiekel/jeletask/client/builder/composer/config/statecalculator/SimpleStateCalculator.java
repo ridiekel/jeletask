@@ -2,6 +2,8 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+import io.github.ridiekel.jeletask.utilities.Bytes;
 
 public class SimpleStateCalculator implements StateCalculator {
     private final NumberConverter numberConverter;
@@ -11,14 +13,14 @@ public class SimpleStateCalculator implements StateCalculator {
     }
 
     @Override
-    public String convertGet(ComponentSpec component, byte[] value) {
-        Number number = this.numberConverter.convert(value);
-        return String.valueOf(number.intValue() == -1 ? 255 : number);
+    public ComponentState convertGet(byte[] dataBytes) {
+        Number number = this.numberConverter.convert(dataBytes);
+        return new ComponentState(number.intValue() == -1 ? 255 : number);
     }
 
     @Override
-    public byte[] convertSet(ComponentSpec component, String value) {
-        return value == null ? null : this.numberConverter.convert(value);
+    public byte[] convertSetState(ComponentState value) {
+        return value == null ? null : this.numberConverter.convert(value.getState());
     }
 
     @Override
@@ -27,12 +29,12 @@ public class SimpleStateCalculator implements StateCalculator {
     }
 
     @Override
-    public boolean isValidState(String state) {
+    public boolean isValidState(ComponentState state) {
         return true;
     }
 
     @Override
-    public String getDefaultState(ComponentSpec component) {
-        return "0";
+    public ComponentState getDefaultState(ComponentSpec component) {
+        return new ComponentState("0");
     }
 }

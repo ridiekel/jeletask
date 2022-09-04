@@ -2,17 +2,20 @@ package io.github.ridiekel.jeletask.client.builder.message.messages;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 public abstract class FunctionStateBasedMessageSupport extends FunctionBasedMessageSupport {
-    private final String state;
+    private final ComponentState state;
 
-    protected FunctionStateBasedMessageSupport(CentralUnit clientConfig, Function function, String state) {
+    protected FunctionStateBasedMessageSupport(CentralUnit clientConfig, Function function, ComponentState state) {
         super(clientConfig, function);
-        this.state = state.toUpperCase();
+        this.state = state;
+        this.state.setState(this.state.getState().toUpperCase());
     }
 
-    public String getState() {
+    public ComponentState getState() {
         return this.state;
     }
 

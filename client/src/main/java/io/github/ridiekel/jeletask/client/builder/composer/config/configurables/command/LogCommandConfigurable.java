@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.LogMessa
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 public class LogCommandConfigurable extends CommandConfigurable<LogMessage> {
     public LogCommandConfigurable(int number, boolean needsCentralUnitParameter, String... paramNames) {
@@ -15,6 +16,6 @@ public class LogCommandConfigurable extends CommandConfigurable<LogMessage> {
     @Override
     public LogMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
         Function function = messageHandler.getFunction(payload[0]);
-        return new LogMessage(config, function, payload[1] == 0 ? "OFF" : "ON");
+        return new LogMessage(config, function, new ComponentState(payload[1] == 0 ? "OFF" : "ON"));
     }
 }

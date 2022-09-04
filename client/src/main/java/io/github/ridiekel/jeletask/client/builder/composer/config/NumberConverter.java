@@ -61,7 +61,11 @@ public enum NumberConverter {
     }
 
     public Number convert(byte[] bytes) {
-        return this.converter.toNumber(ByteBuffer.wrap(bytes));
+        byte[] toConvert = bytes;
+        if (bytes.length > this.byteSize) {
+            toConvert = this.read(bytes, 0);
+        }
+        return this.converter.toNumber(ByteBuffer.wrap(toConvert));
     }
 
     public byte[] convert(Number number) {
@@ -70,6 +74,10 @@ public enum NumberConverter {
 
     public byte[] convert(String value) {
         return this.convert(this.converter.convert(value));
+    }
+
+    public int getByteSize() {
+        return byteSize;
     }
 
     private interface Converter {

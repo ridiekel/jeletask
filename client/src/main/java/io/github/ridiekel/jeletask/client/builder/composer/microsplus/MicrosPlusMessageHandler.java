@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.client.builder.composer.v3_1;
+package io.github.ridiekel.jeletask.client.builder.composer.microsplus;
 
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerSupport;
@@ -12,6 +12,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 
 import java.nio.ByteBuffer;
@@ -66,7 +67,7 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
         int number = ByteBuffer.wrap(new byte[]{message[++counter], message[++counter]}).getShort();
         ++counter; // This is the ErrorState, not used at this time
 
-        String state = this.parseState(message, ++counter, config, function, number);
+        ComponentState state = this.parseState(message, ++counter, config, function, number);
 
         return new EventMessage(config, message, function, number, state);
     }
@@ -96,7 +97,7 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
         List<EventMessage> eventMessages = new ArrayList<>();
 
         for (OutputState number : numbers) {
-            byte[] numberBytes = this.composeOutput(number.getNumber());
+            byte[] numberBytes = this.composeOutput(number.number());
 
             byte[] rawBytes = new byte[]{(byte) this.getStxValue(), 0};
             rawBytes = Bytes.concat(rawBytes, this.getCommandConfig(Command.EVENT).getBytes());
@@ -109,9 +110,9 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
 
             this.setLengthAndCheckSum(rawBytes);
 
-            ComponentSpec component = config.getComponent(function, number.getNumber());
+            ComponentSpec component = config.getComponent(function, number.number());
 
-            eventMessages.add(new EventMessage(config, rawBytes, function, number.getNumber(), component.getState()));
+            eventMessages.add(new EventMessage(config, rawBytes, function, number.number(), component.getState()));
         }
 
 
@@ -121,7 +122,7 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
     private static class MicrosPlusKeepAliveStrategy implements KeepAliveStrategy {
         @Override
         public int getIntervalMillis() {
-            return 5000;
+            return 60000;
         }
 
         @Override

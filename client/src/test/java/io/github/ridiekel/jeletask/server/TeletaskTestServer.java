@@ -2,12 +2,12 @@ package io.github.ridiekel.jeletask.server;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
-import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
                             List<EventMessage> eventMessages = message.respond(TeletaskTestServer.this.getConfig(), TeletaskTestServer.this.getMessageHandler());
                             if (eventMessages != null) {
                                 for (EventMessage eventMessage : eventMessages) {
-                                    LOG.debug("Sending bytes to client: {}", ByteUtilities.bytesToHex(eventMessage.getRawBytes()));
+                                    LOG.debug("Sending bytes to client: {}", Bytes.bytesToHex(eventMessage.getRawBytes()));
                                     TeletaskTestServer.this.outputStream.write(eventMessage.getRawBytes());
                                     TeletaskTestServer.this.outputStream.flush();
                                 }

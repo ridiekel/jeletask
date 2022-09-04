@@ -6,21 +6,22 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 
 public class EventMessage extends FunctionBasedMessageSupport {
     private final int number;
-    private final String state;
+    private final ComponentState state;
     private final byte[] rawBytes;
 
-    public EventMessage(CentralUnit clientConfig, byte[] rawBytes, Function function, int number, String state) {
+    public EventMessage(CentralUnit clientConfig, byte[] rawBytes, Function function, int number, ComponentState state) {
         super(clientConfig, function);
         this.rawBytes = rawBytes;
         this.number = number;
         this.state = state;
     }
 
-    public String getState() {
+    public ComponentState getState() {
         return this.state;
     }
 
@@ -38,7 +39,7 @@ public class EventMessage extends FunctionBasedMessageSupport {
         ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
         byte[] function = {(byte) functionConfig.getNumber()};
         byte[] output = this.getMessageHandler().composeOutput(this.getNumber());
-        byte[] state = functionConfig.getStateCalculator().convertSet(component, this.getState());
+        byte[] state = functionConfig.getStateCalculator().convertSetState(this.getState());
         return Bytes.concat(function, output, state);
     }
 

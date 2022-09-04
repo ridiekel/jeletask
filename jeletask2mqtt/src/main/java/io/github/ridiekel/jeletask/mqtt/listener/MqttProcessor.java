@@ -5,6 +5,7 @@ import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
@@ -260,9 +261,9 @@ public class MqttProcessor implements StateChangeListener {
     @Override
     public void receive(List<ComponentSpec> components) {
         components.forEach(c -> {
-            String message = stateTranslateGet(c.getFunction(), c.getState().toUpperCase());
+            ComponentState message = stateTranslateGet(c.getFunction(), c.getState());
             String ttTopic = this.baseTopic(c) + "/state";
-            this.publish("EVENT", c, ttTopic, message, LOG::info);
+            this.publish("EVENT", c, ttTopic, message.toString(), LOG::info);
         });
     }
 
@@ -294,65 +295,40 @@ public class MqttProcessor implements StateChangeListener {
         return this.prefix + "/" + this.teletaskIdentifier + "/" + c.getFunction().toString().toLowerCase() + "/" + c.getNumber();
     }
 
-    private static final Map<Function, java.util.function.Function<String, String>> GET_TRANSLATIONS = Map.of(
-            Function.MOTOR, MqttProcessor::motorStateTranslationGet,
+    private static final Map<Function, java.util.function.Function<ComponentState, ComponentState>> GET_TRANSLATIONS = Map.of(
             Function.DIMMER, MqttProcessor::dimmerStateTranslationGet
     );
 
-    private static final Map<Function, java.util.function.Function<String, String>> SET_TRANSLATIONS = Map.of(
-            Function.MOTOR, MqttProcessor::motorStateTranslationSet,
+    private static final Map<Function, java.util.function.Function<ComponentState, ComponentState>> SET_TRANSLATIONS = Map.of(
             Function.DIMMER, MqttProcessor::dimmerStateTranslationSet
     );
 
-    private static String stateTranslateGet(Function function, String state) {
+    private static ComponentState stateTranslateGet(Function function, ComponentState state) {
         return GET_TRANSLATIONS.containsKey(function) ? GET_TRANSLATIONS.get(function).apply(state) : state;
     }
 
-    private static String dimmerStateTranslationGet(String state) {
+    private static ComponentState dimmerStateTranslationGet(ComponentState state) {
         return state;
     }
 
-    private static String motorStateTranslationGet(String state) {
-        switch (state) {
-            case "UP":
-                state = "0";
-                break;
-            case "DOWN":
-                state = "100";
-                break;
-        }
-        return state;
-    }
-
-    private static String stateTranslateSet(Function function, String state) {
+    private static ComponentState stateTranslateSet(Function function, ComponentState state) {
         return SET_TRANSLATIONS.containsKey(function) ? SET_TRANSLATIONS.get(function).apply(state) : state;
     }
 
-    private static String dimmerStateTranslationSet(String state) {
+    private static ComponentState dimmerStateTranslationSet(ComponentState state) {
         String newState = "0";
         try {
-            if ("ON".equalsIgnoreCase(state)) {
+            if ("ON".equalsIgnoreCase(state.getState())) {
                 newState = "100";
-            } else if ("OFF".equalsIgnoreCase(state)) {
+            } else if ("OFF".equalsIgnoreCase(state.getState())) {
                 newState = "0";
             } else {
-                newState = String.valueOf((int) Float.parseFloat(state));
+                newState = String.valueOf((int) Float.parseFloat(state.getState()));
             }
         } catch (Exception e) {
             LOG.warn(String.format("Could not translate dimmer state '%s' received from mqtt server", state));
         }
-        return newState;
-    }
-
-    private static String motorStateTranslationSet(String state) {
-        switch (state) {
-            case "0":
-                state = "UP";
-                break;
-            case "100":
-                state = "DOWN";
-                break;
-        }
+        state.setState(newState);
         return state;
     }
 
@@ -381,7 +357,7 @@ public class MqttProcessor implements StateChangeListener {
                 if (matcher.find()) {
                     Function function = Function.valueOf(matcher.group(1).toUpperCase());
                     int number = Integer.parseInt(matcher.group(2));
-                    String state = stateTranslateSet(function, message);
+                    ComponentState state = stateTranslateSet(function, ComponentState.parse(message));
 
                     String componentLog = getLoggingStringForComponent(MqttProcessor.this.teletaskClient.getConfig().getComponent(function, number));
                     LOG.info(String.format(WHAT_LOG_PATTERNS.get("COMMAND"), getWhat("COMMAND"), componentLog, payloadToLogWithColors(new String(mqttMessage.getPayload()))));

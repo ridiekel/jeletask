@@ -9,6 +9,7 @@ import io.github.ridiekel.jeletask.client.builder.message.strategy.KeepAliveStra
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 import java.util.List;
 
@@ -47,23 +48,8 @@ public interface MessageHandler {
 
     List<EventMessage> createResponseEventMessage(CentralUnit config, Function function, OutputState... numbers);
 
-    int getLogStateByte(String state);
+    int getLogStateByte(ComponentState state);
 
-    class OutputState {
-        private final int number;
-        private final String state;
-
-        public OutputState(int number, String state) {
-            this.number = number;
-            this.state = state;
-        }
-
-        public int getNumber() {
-            return this.number;
-        }
-
-        public String getState() {
-            return this.state;
-        }
+    record OutputState(int number, ComponentState state) {
     }
 }

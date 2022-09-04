@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.client.builder.composer.v3_1;
+package io.github.ridiekel.jeletask.client.builder.composer.microsplus;
 
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.config.ConfigurationSupport;
@@ -15,6 +15,7 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessa
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
         super(List.of(
                 new MicrosPlusSetCommandConfigurable(),
                 new MicrosPlusGetCommandConfigurable(),
-                new GroupGetCommandConfigurable(9, true, "Central Unit", "Fnc", "Output Part 1", "Output Part 2"),
+                new GroupGetCommandConfigurable(9, true, "Central Unit", "Fnc", "Number", "Number"),
                 new LogCommandConfigurable(3, false, "Fnc", "State"),
                 new MicrosPlusEventCommandConfigurable(),
                 new KeepAliveCommandConfigurable(11, true)
@@ -37,21 +38,21 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
 
     private static class MicrosPlusEventCommandConfigurable extends EventCommandConfigurable {
         public MicrosPlusEventCommandConfigurable() {
-            super(16, true, "Central Unit", "Fnc", "Output Part 1", "Output Part 2", "Err State", "State", "State");
+            super(16, true, "Central Unit", "Fnc", "Number", "Number", "Err State");
         }
 
         @Override
         public EventMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
             Function function = messageHandler.getFunction(payload[1]);
             int number = this.getOutputNumber(messageHandler, payload, 2);
-            String state = getState(messageHandler, config, function, number, payload, 5);
+            ComponentState state = getState(messageHandler, config, function, number, payload, 5);
             return new EventMessage(config, rawBytes, function, number, state);
         }
     }
 
     private static class MicrosPlusGetCommandConfigurable extends GetCommandConfigurable {
         public MicrosPlusGetCommandConfigurable() {
-            super(6, true, "Central Unit", "Fnc", "Output Part 1", "Output Part 2");
+            super(6, true, "Central Unit", "Fnc", "Number", "Number");
         }
 
         @Override
@@ -62,14 +63,14 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
 
     private static class MicrosPlusSetCommandConfigurable extends SetCommandConfigurable {
         public MicrosPlusSetCommandConfigurable() {
-            super(7, true, "Central Unit", "Fnc", "Output Part 1", "Output Part 2", "State");
+            super(7, true, "Central Unit", "Fnc", "Number", "Number", "State");
         }
 
         @Override
         public SetMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
             Function function = messageHandler.getFunction(payload[1]);
             int number = this.getOutputNumber(messageHandler, payload, 2);
-            String state = getState(messageHandler, config, function, number, payload, messageHandler.getOutputByteSize() + 2);
+            ComponentState state = getState(messageHandler, config, function, number, payload, messageHandler.getOutputByteSize() + 2);
             return new SetMessage(config, function, number, state);
         }
     }

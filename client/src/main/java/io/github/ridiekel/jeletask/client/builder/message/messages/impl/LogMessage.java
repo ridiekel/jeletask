@@ -1,16 +1,17 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
-import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionStateBasedMessageSupport;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+import io.github.ridiekel.jeletask.utilities.Bytes;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class LogMessage extends FunctionStateBasedMessageSupport {
-    public LogMessage(CentralUnit ClientConfig, Function function, String state) {
+    public LogMessage(CentralUnit ClientConfig, Function function, ComponentState state) {
         super(ClientConfig, function, state);
     }
 
@@ -29,9 +30,9 @@ public class LogMessage extends FunctionStateBasedMessageSupport {
         return new String[]{this.formatFunction(this.getFunction()), this.formatState(this.getState())};
     }
 
-    protected String formatState(String... states) {
+    protected String formatState(ComponentState... states) {
         return Arrays.stream(states)
-                .map(state -> "State: " + state + " | " + (state == null ? null : this.getMessageHandler().getLogStateByte(state)) + " | " + (state == null ? null : ByteUtilities.bytesToHex((byte) this.getMessageHandler().getLogStateByte(state))))
+                .map(state -> "State: " + state + " | " + (state == null ? null : this.getMessageHandler().getLogStateByte(state)) + " | " + (state == null ? null : Bytes.bytesToHex((byte) this.getMessageHandler().getLogStateByte(state))))
                 .collect(Collectors.joining(", "));
     }
 

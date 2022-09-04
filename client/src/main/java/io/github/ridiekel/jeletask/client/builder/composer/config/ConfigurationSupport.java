@@ -1,11 +1,13 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config;
 
-import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+import io.github.ridiekel.jeletask.utilities.Bytes;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,16 +28,19 @@ public abstract class ConfigurationSupport<T, C extends Configurable<T>, K> {
         this.config = config;
     }
 
-    public static String getState(MessageHandler messageHandler, CentralUnit config, Function function, int number, byte[] payload, int startIndex) {
+    public static ComponentState getState(MessageHandler messageHandler, CentralUnit config, Function function, int number, byte[] payload, int startIndex) {
         ComponentSpec component = config.getComponent(function, number);
-        StateCalculator stateCalculator = messageHandler.getFunctionConfig(function).getStateCalculator();
-        byte[] stateBytes = stateCalculator.getNumberConverter().read(payload, startIndex);
-        String state = stateCalculator.convertGet(component, stateBytes);
 
-        LOG.trace("Parsed state {} to {}", ByteUtilities.bytesToHex(stateBytes), state);
+        StateCalculator stateCalculator = messageHandler.getFunctionConfig(function).getStateCalculator();
+
+        byte[] dataBytes = ArrayUtils.subarray(payload, startIndex, payload.length);
+
+        ComponentState state = stateCalculator.convertGet(dataBytes);
+
+        LOG.trace("Parsed state {} to {}", Bytes.bytesToHex(dataBytes), state);
 
         if (state == null) {
-            throw new IllegalStateException("Got state '" + ByteUtilities.bytesToHex(stateBytes) + "' for " + function + ":" + number + ", which resolved to <null> using '" + stateCalculator.getClass().getSimpleName() + "'");
+            throw new IllegalStateException("Got state '" + Bytes.bytesToHex(dataBytes) + "' ("+stateCalculator.getNumberConverter().convert(dataBytes)+") for " + function + ":" + number + ", which resolved to <null> using '" + stateCalculator.getClass().getSimpleName() + "'");
         }
 
         return state;

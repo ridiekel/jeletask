@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 public class LuxStateCalculator extends SimpleStateCalculator {
     public LuxStateCalculator(NumberConverter numberConverter) {
@@ -9,17 +10,17 @@ public class LuxStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public String convertGet(ComponentSpec component, byte[] value) {
-        long longValue = this.getNumberConverter().convert(value).longValue();
+    public ComponentState convertGet(byte[] dataBytes) {
+        long longValue = this.getNumberConverter().convert(dataBytes).longValue();
         double exponent = longValue / 40d;
         double powered = Math.pow(10, exponent);
         double luxValue = powered - 1;
-        return String.valueOf(Math.round(luxValue));
+        return new ComponentState(Math.round(luxValue));
     }
 
     @Override
-    public byte[] convertSet(ComponentSpec component, String value) {
-        Long longValue = Long.valueOf(value);
+    public byte[] convertSetState(ComponentState value) {
+        long longValue = Long.parseLong(value.getState());
         long inBetween = longValue + 1;
         double log10 = Math.log10(inBetween);
         double convertedValue = log10 * 40;
@@ -27,7 +28,7 @@ public class LuxStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public String getDefaultState(ComponentSpec component) {
-        return "3547";
+    public ComponentState getDefaultState(ComponentSpec component) {
+        return new ComponentState("3547");
     }
 }

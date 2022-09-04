@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 public class TemperatureStateCalculator extends SimpleStateCalculator {
     private final double divide;
@@ -14,23 +15,23 @@ public class TemperatureStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public String convertGet(ComponentSpec component, byte[] value) {
-        long base = this.getNumberConverter().convert(value).longValue();
+    public ComponentState convertGet(byte[] dataBytes) {
+        long base = this.getNumberConverter().convert(dataBytes).longValue();
         double divided = base / this.divide;
         double subtracted = divided - this.subtract;
-        return String.valueOf(subtracted);
+        return new ComponentState(subtracted);
     }
 
     @Override
-    public byte[] convertSet(ComponentSpec component, String value) {
-        Long base = Long.valueOf(value);
+    public byte[] convertSetState(ComponentState value) {
+        long base = Long.parseLong(value.getState());
         long added = base + this.subtract;
         double multiplied = added * this.divide;
         return this.getNumberConverter().convert(Math.round(multiplied));
     }
 
     @Override
-    public String getDefaultState(ComponentSpec component) {
-        return "18";
+    public ComponentState getDefaultState(ComponentSpec component) {
+        return new ComponentState("18");
     }
 }

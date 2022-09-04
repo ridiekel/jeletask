@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask.client.builder.composer;
 
-import io.github.ridiekel.jeletask.client.builder.ByteUtilities;
 import io.github.ridiekel.jeletask.client.builder.composer.config.ConfigurationSupport;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.CommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
@@ -9,6 +8,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public abstract class MessageHandlerSupport implements MessageHandler {
         }
 
         if (sum != checksum) {
-            throw new IllegalArgumentException("Checksum not correct. Received '" + ByteUtilities.bytesToHex(checksum) + "' but expected '" + ByteUtilities.bytesToHex(sum) + "'");
+            throw new IllegalArgumentException("Checksum not correct. Received '" + Bytes.bytesToHex(checksum) + "' but expected '" + Bytes.bytesToHex(sum) + "'");
         }
 
         return this.getCommandConfig(this.getCommand(command)).parse(config, this, message, payload);
@@ -124,18 +124,18 @@ public abstract class MessageHandlerSupport implements MessageHandler {
     }
 
     protected byte[] getStateBytes(CentralUnit config, Function function, OutputState outputState) {
-        int number = outputState.getNumber();
+        int number = outputState.number();
         FunctionConfigurable functionConfig = this.getFunctionConfig(function);
         ComponentSpec component = config.getComponent(function, number);
-        return functionConfig.getStateCalculator().convertSet(component, outputState.getState());
+        return functionConfig.getStateCalculator().convertSetState(outputState.state());
     }
 
-    protected String parseState(byte[] message, int counter, CentralUnit config, Function function, int number) {
+    protected ComponentState parseState(byte[] message, int counter, CentralUnit config, Function function, int number) {
         return ConfigurationSupport.getState(this, config, function, number, message, counter);
     }
 
     @Override
-    public int getLogStateByte(String state) {
-        return LogState.valueOf(state.toUpperCase()).getByteValue();
+    public int getLogStateByte(ComponentState state) {
+        return LogState.valueOf(state.getState().toUpperCase()).getByteValue();
     }
 }

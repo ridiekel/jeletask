@@ -11,6 +11,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +26,19 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
 
     private final int number;
 
-    public SetMessage(CentralUnit clientConfig, Function function, int number, String state) {
+    private final byte[] functionBytes;
+    private final byte[] outputBytes;
+    private final byte[] stateBytes;
+
+    public SetMessage(CentralUnit clientConfig, Function function, int number, ComponentState state) {
         super(clientConfig, function, state);
         this.number = number;
+
+        FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
+        ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
+        this.functionBytes = new byte[]{(byte) functionConfig.getNumber()};
+        this.outputBytes = MessageHandlerFactory.getMessageHandler(this.getClientConfig().getCentralUnitType()).composeOutput(this.getNumber());
+        this.stateBytes = functionConfig.getStateCalculator().convertSetState(this.getState());
     }
 
     public int getNumber() {
@@ -36,12 +47,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
 
     @Override
     protected byte[] getPayload() {
-        FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
-        ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
-        byte[] function = {(byte) functionConfig.getNumber()};
-        byte[] output = MessageHandlerFactory.getMessageHandler(this.getClientConfig().getCentralUnitType()).composeOutput(this.getNumber());
-        byte[] state = functionConfig.getStateCalculator().convertSet(component, this.getState());
-        return Bytes.concat(function, output, state);
+        return Bytes.concat(functionBytes, outputBytes, stateBytes);
     }
 
     @Override
@@ -49,7 +55,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
         super.execute(client);
 
         ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
-        String initialState = component.getState();
+        ComponentState initialState = component.getState();
         long start = System.currentTimeMillis();
         while (!this.getState().equals(component.getState()) && (System.currentTimeMillis() - start) < 2000) {
             try {
@@ -76,7 +82,11 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
 
     @Override
     protected String[] getPayloadLogInfo() {
-        return new String[]{this.formatFunction(this.getFunction()), this.formatOutput(this.getNumber()), this.formatState(this.getFunction(), this.getNumber(), this.getState())};
+        return new String[]{
+                this.formatFunction(this.getFunction()),
+                this.formatOutput(this.getNumber()),
+                this.formatState(this.getFunction(), this.getNumber(), this.getState())
+        };
     }
 
     @Override

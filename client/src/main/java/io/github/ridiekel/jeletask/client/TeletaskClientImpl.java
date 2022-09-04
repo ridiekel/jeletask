@@ -15,6 +15,7 @@ import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +73,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     @Override
-    public void set(ComponentSpec component, String state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+    public void set(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
         if (this.started.get()) {
             if (Objects.isNull(component.getState())) {
                 this.get(component,
@@ -97,7 +98,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     @Override
-    public void set(Function function, int number, String state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
+    public void set(Function function, int number, ComponentState state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
         this.set(this.getComponent(function, number), state, onSucccess, onFailed);
     }
 
@@ -151,7 +152,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.getIoService().execute(() -> {
             this.groupGet();
 
-            this.sendLogEventMessages("ON");
+            this.sendLogEventMessages(new ComponentState("ON"));
         });
 
         LOG.info("Starting keepalive...");
@@ -186,7 +187,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.getIoService().execute(() -> {
             this.groupGet();
 
-            this.sendLogEventMessages("ON");
+            this.sendLogEventMessages(new ComponentState("ON"));
         });
 
         this.started.set(true);
@@ -252,7 +253,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         }
     }
 
-    private void sendLogEventMessages(String state) {
+    private void sendLogEventMessages(ComponentState state) {
         this.sendLogEventMessage(Function.RELAY, state);
         this.sendLogEventMessage(Function.LOCMOOD, state);
         this.sendLogEventMessage(Function.GENMOOD, state);
@@ -327,7 +328,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         return MessageHandlerFactory.getMessageHandler(this.getConfig().getCentralUnitType());
     }
 
-    private void sendLogEventMessage(Function function, String state) {
+    private void sendLogEventMessage(Function function, ComponentState state) {
         new LogMessage(this.getConfig(), function, state).execute(this);
     }
 
@@ -396,7 +397,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             } else if (LOG.isTraceEnabled()) {
                 LOG.trace("Event: \nComponent: {}\nCurrent State: {} {}", component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
             }
-            String state = eventMessage.getState();
+            ComponentState state = eventMessage.getState();
             if (component.getFunction() != Function.MOTOR || !Objects.equals("STOP", state)) {
                 component.setState(state);
             }

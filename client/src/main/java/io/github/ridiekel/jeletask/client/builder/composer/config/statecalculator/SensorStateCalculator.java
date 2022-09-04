@@ -2,6 +2,8 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,32 +25,33 @@ public class SensorStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public String convertGet(ComponentSpec component, byte[] value) {
-        return this.getStateCalculator(component).convertGet(component, value);
+    public ComponentState convertGet(byte[] dataBytes) {
+        throw new IllegalStateException("Should not get here");
     }
 
     @Override
-    public byte[] convertSet(ComponentSpec component, String value) {
-        return this.getStateCalculator(component).convertSet(component, value);
+    public byte[] convertSetState(ComponentState value) {
+        throw new IllegalStateException("Should not get here");
     }
 
     @Override
-    public String getDefaultState(ComponentSpec component) {
-        return this.getStateCalculator(component).getDefaultState(component);
+    public ComponentState getDefaultState(ComponentSpec component) {
+        throw new IllegalStateException("Should not get here");
     }
 
-    private StateCalculator getStateCalculator(ComponentSpec component) {
+    @Override
+    public StateCalculator forComponent(ComponentSpec component) {
         return Optional.ofNullable(this.sensorTypeCalculators.get(component.getType())).orElseGet(() -> {
             LOG.warn(String.format("State calculator not found for component:\n\n        %s\n", component));
             return new StateCalculator() {
                 @Override
-                public String convertGet(ComponentSpec component, byte[] value) {
+                public ComponentState convertGet(byte[] value) {
                     return null;
                 }
 
                 @Override
-                public byte[] convertSet(ComponentSpec component, String value) {
-                    return new byte[0];
+                public byte[] convertSetState(ComponentState value) {
+                    return Bytes.EMPTY;
                 }
 
                 @Override
@@ -57,12 +60,12 @@ public class SensorStateCalculator extends SimpleStateCalculator {
                 }
 
                 @Override
-                public boolean isValidState(String state) {
+                public boolean isValidState(ComponentState state) {
                     return false;
                 }
 
                 @Override
-                public String getDefaultState(ComponentSpec component) {
+                public ComponentState getDefaultState(ComponentSpec component) {
                     return null;
                 }
             };

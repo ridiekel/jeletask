@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,22 +27,22 @@ public class MappingStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public String convertGet(ComponentSpec component, byte[] value) {
-        return this.byNumber.get(this.getNumberConverter().convert(value).intValue());
+    public ComponentState convertGet(byte[] dataBytes) {
+        return new ComponentState(this.byNumber.get(this.getNumberConverter().convert(dataBytes).intValue()));
     }
 
     @Override
-    public byte[] convertSet(ComponentSpec component, String value) {
-        return super.convertSet(component, String.valueOf(this.byName.get(value)));
+    public byte[] convertSetState(ComponentState value) {
+        return super.convertSetState(new ComponentState(this.byName.get(value.getState())));
     }
 
     @Override
-    public boolean isValidState(String state) {
-        return this.byName.keySet().contains(state.toUpperCase());
+    public boolean isValidState(ComponentState state) {
+        return this.byName.containsKey(state.getState().toUpperCase());
     }
 
     @Override
-    public String getDefaultState(ComponentSpec component) {
-        return this.byName.keySet().stream().findFirst().orElse(null);
+    public ComponentState getDefaultState(ComponentSpec component) {
+        return new ComponentState(this.byName.keySet().stream().findFirst().orElse(null));
     }
 }
