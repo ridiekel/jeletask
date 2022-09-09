@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
@@ -330,8 +331,11 @@ public class MqttProcessor implements StateChangeListener {
                             (f, n, s, e) -> LOG.warn(String.format("[%s] MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
                 }
             } catch (Exception e) {
-                LOG.warn(String.format("MQTT topic '%s' could not change state to: %s", topic, message), e);
-                MqttProcessor.this.restartTeletask();
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace(String.format("MQTT topic '%s' could not change state to: %s", topic, message), e);
+                } else {
+                    LOG.warn(String.format("MQTT topic '%s' could not change state to: %s -- %s", topic, message, e.getMessage()));
+                }
             }
         }
     }
