@@ -127,7 +127,7 @@ public abstract class MessageHandlerSupport implements MessageHandler {
         int number = outputState.number();
         FunctionConfigurable functionConfig = this.getFunctionConfig(function);
         ComponentSpec component = config.getComponent(function, number);
-        return functionConfig.getStateCalculator(component).convertSetState(outputState.state());
+        return functionConfig.getStateCalculator(component).toBytes(outputState.state());
     }
 
     protected ComponentState parseState(byte[] message, int counter, CentralUnit config, Function function, int number) {

@@ -8,6 +8,7 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class LogMessage extends FunctionStateBasedMessageSupport {
@@ -32,7 +33,7 @@ public class LogMessage extends FunctionStateBasedMessageSupport {
 
     protected String formatState(ComponentState... states) {
         return Arrays.stream(states)
-                .map(state -> "State: " + state + " | " + (state == null ? null : this.getMessageHandler().getLogStateByte(state)) + " | " + (state == null ? null : Bytes.bytesToHex((byte) this.getMessageHandler().getLogStateByte(state))))
+                .map(state -> "State: " + (state == null ? null : this.getMessageHandler().getLogStateByte(state)) + " | " + (state == null ? null : Bytes.bytesToHex((byte) this.getMessageHandler().getLogStateByte(state))) + "\n" + Optional.ofNullable(state).map(ComponentState::prettyString).orElse(null))
                 .collect(Collectors.joining(", "));
     }
 

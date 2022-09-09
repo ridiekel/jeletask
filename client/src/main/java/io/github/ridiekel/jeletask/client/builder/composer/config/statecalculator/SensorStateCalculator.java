@@ -25,12 +25,12 @@ public class SensorStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public ComponentState convertGet(byte[] dataBytes) {
+    public ComponentState toComponentState(byte[] dataBytes) {
         throw new IllegalStateException("Should not get here");
     }
 
     @Override
-    public byte[] convertSetState(ComponentState value) {
+    public byte[] toBytes(ComponentState value) {
         throw new IllegalStateException("Should not get here");
     }
 
@@ -45,12 +45,12 @@ public class SensorStateCalculator extends SimpleStateCalculator {
             LOG.warn(String.format("State calculator not found for component:\n\n        %s\n", component));
             return new StateCalculator() {
                 @Override
-                public ComponentState convertGet(byte[] value) {
+                public ComponentState toComponentState(byte[] value) {
                     return null;
                 }
 
                 @Override
-                public byte[] convertSetState(ComponentState value) {
+                public byte[] toBytes(ComponentState value) {
                     return Bytes.EMPTY;
                 }
 

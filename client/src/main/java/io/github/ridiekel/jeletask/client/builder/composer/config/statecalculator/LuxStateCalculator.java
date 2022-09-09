@@ -10,7 +10,7 @@ public class LuxStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public ComponentState convertGet(byte[] dataBytes) {
+    public ComponentState toComponentState(byte[] dataBytes) {
         long longValue = this.getNumberConverter().convert(dataBytes).longValue();
         double exponent = longValue / 40d;
         double powered = Math.pow(10, exponent);
@@ -19,7 +19,7 @@ public class LuxStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public byte[] convertSetState(ComponentState value) {
+    public byte[] toBytes(ComponentState value) {
         long longValue = Long.parseLong(value.getState());
         long inBetween = longValue + 1;
         double log10 = Math.log10(inBetween);

@@ -35,7 +35,7 @@ public abstract class ConfigurationSupport<T, C extends Configurable<T>, K> {
 
         byte[] dataBytes = ArrayUtils.subarray(payload, startIndex, payload.length);
 
-        ComponentState state = stateCalculator.convertGet(dataBytes);
+        ComponentState state = stateCalculator.toComponentState(dataBytes);
 
         LOG.trace("Parsed state {} to {}", Bytes.bytesToHex(dataBytes), state);
 

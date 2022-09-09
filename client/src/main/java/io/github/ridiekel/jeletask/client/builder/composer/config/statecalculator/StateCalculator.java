@@ -5,9 +5,9 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 public interface StateCalculator {
-    ComponentState convertGet(byte[] dataBytes);
+    ComponentState toComponentState(byte[] dataBytes);
 
-    byte[] convertSetState(ComponentState state);
+    byte[] toBytes(ComponentState state);
 
     NumberConverter getNumberConverter();
 

@@ -13,13 +13,13 @@ public class SimpleStateCalculator implements StateCalculator {
     }
 
     @Override
-    public ComponentState convertGet(byte[] dataBytes) {
+    public ComponentState toComponentState(byte[] dataBytes) {
         Number number = this.numberConverter.convert(dataBytes);
         return new ComponentState(number.intValue() == -1 ? 255 : number);
     }
 
     @Override
-    public byte[] convertSetState(ComponentState value) {
+    public byte[] toBytes(ComponentState value) {
         return value == null ? null : this.numberConverter.convert(value.getState());
     }
 

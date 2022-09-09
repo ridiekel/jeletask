@@ -38,7 +38,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
         ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
         this.functionBytes = new byte[]{(byte) functionConfig.getNumber()};
         this.outputBytes = MessageHandlerFactory.getMessageHandler(this.getClientConfig().getCentralUnitType()).composeOutput(this.getNumber());
-        this.stateBytes = functionConfig.getStateCalculator(component).convertSetState(this.getState());
+        this.stateBytes = functionConfig.getStateCalculator(component).toBytes(this.getState());
     }
 
     public int getNumber() {
@@ -54,25 +54,25 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
     public void execute(TeletaskClientImpl client) throws AcknowledgeException {
         super.execute(client);
 
-        ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
-        ComponentState initialState = component.getState();
-        long start = System.currentTimeMillis();
-        while (!this.getState().equals(component.getState()) && (System.currentTimeMillis() - start) < 2000) {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                LOG.trace("Exception ({}) caught in set: {}", e.getClass().getName(), e.getMessage(), e);
-            }
-            try {
-                client.handleReceiveEvents(MessageUtilities.receive(LOG, client));
-            } catch (Exception e) {
-                LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
-            }
-        }
-        if (this.getFunction().shouldReceiveAcknowledge(this.getState()) && !this.getState().equals(component.getState())) {
-            String message = "Did not receive a state change for " + component.getFunction() + ":" + component.getNumber() + " ("+component.getDescription()+") within 2 seconds. Assuming failed to set state from '" + initialState + "' to '" + this.getState() + "'";
-            LOG.warn(message);
-        }
+//        ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
+//        ComponentState initialState = component.getState();
+//        long start = System.currentTimeMillis();
+//        while (!this.getState().equals(component.getState()) && (System.currentTimeMillis() - start) < 2000) {
+//            try {
+//                Thread.sleep(10);
+//            } catch (InterruptedException e) {
+//                LOG.trace("Exception ({}) caught in set: {}", e.getClass().getName(), e.getMessage(), e);
+//            }
+//            try {
+//                client.handleReceiveEvents(MessageUtilities.receive(LOG, client));
+//            } catch (Exception e) {
+//                LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
+//            }
+//        }
+//        if (this.getFunction().shouldReceiveAcknowledge(this.getState()) && !this.getState().equals(component.getState())) {
+//            String message = "Did not receive a state change for " + component.getFunction() + ":" + component.getNumber() + " (" + component.getDescription() + ") within 2 seconds. Assuming failed to set state from '" + initialState + "' to '" + this.getState() + "'";
+//            LOG.warn(message);
+//        }
     }
 
     @Override

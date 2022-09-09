@@ -10,6 +10,8 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -174,7 +177,7 @@ public abstract class MessageSupport {
     }
 
     protected String formatState(byte[] stateBytes, ComponentState... states) {
-        return Arrays.stream(states).map(state -> "State: " + state + " | " + (state == null ? null : Bytes.bytesToHex(stateBytes))).collect(Collectors.joining(", "));
+        return Arrays.stream(states).map(state -> "State: " + (state == null ? null : Bytes.bytesToHex(stateBytes))+ "\n" + Optional.ofNullable(state).map(ComponentState::prettyString).orElse(null)).collect(Collectors.joining(", "));
     }
 
     protected MessageHandler getMessageHandler() {
@@ -201,9 +204,7 @@ public abstract class MessageSupport {
 
     @Override
     public String toString() {
-        return "MessageSupport{" + "clientConfig=" + this.clientConfig +
-                ", acknowledged=" + this.acknowledged +
-                '}';
+        return ReflectionToStringBuilder.toString(this, ToStringStyle.JSON_STYLE);
     }
 
     public List<EventMessage> respond(CentralUnit config, MessageHandler messageHandler) {
