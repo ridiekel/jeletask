@@ -15,9 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gateway.version>${project.version}</gateway.version>
         <exec.mainClass>io.github.ridiekel.jeletask.mqtt.Teletask2Mqtt</exec.mainClass>
-        <java.version>17</java.version>
         <spring-boot.build-image.imageName>ridiekel/jeletask2mqtt:${project.version}-native</spring-boot.build-image.imageName>
-        <spring-native.version>0.11.1</spring-native.version>
     </properties>
 
     <dependencies>
