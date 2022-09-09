@@ -341,7 +341,7 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     private String payloadToLogWithColors(String payload) {
-        return AnsiOutput.toString(PAYLOAD_LOG_COLORS.getOrDefault(payload, AnsiColor.DEFAULT), payload, AnsiColor.DEFAULT);
+        return AnsiOutput.toString(PAYLOAD_LOG_COLORS.entrySet().stream().filter(e -> payload.contains(e.getKey())).findFirst().map(Map.Entry::getValue).orElse(AnsiColor.DEFAULT), payload, AnsiColor.DEFAULT);
     }
 
     private String topicToLogWithColors(String topic) {
@@ -351,6 +351,9 @@ public class MqttProcessor implements StateChangeListener {
     private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();
 
     static {
+        PAYLOAD_LOG_COLORS.put("UP", AnsiColor.GREEN);
+        PAYLOAD_LOG_COLORS.put("DOWN", AnsiColor.GREEN);
+        PAYLOAD_LOG_COLORS.put("STOP", AnsiColor.RED);
         PAYLOAD_LOG_COLORS.put("ON", AnsiColor.GREEN);
         PAYLOAD_LOG_COLORS.put("OFF", AnsiColor.RED);
         PAYLOAD_LOG_COLORS.put("0", AnsiColor.RED);
