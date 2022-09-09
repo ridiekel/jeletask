@@ -1,4 +1,7 @@
-package io.github.ridiekel.jeletask.mqtt.listener.homeassistant;
+package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types;
+
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAReadWriteConfig;
 
 public class HADimmerConfig extends HAReadWriteConfig<HADimmerConfig> {
     public HADimmerConfig(HAConfigParameters parameters) {

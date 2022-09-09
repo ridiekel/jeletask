@@ -9,8 +9,8 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HADimmerConfig;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HARelayConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HADimmerConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HARelayConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -125,6 +125,12 @@ public class MqttProcessor implements StateChangeListener {
     public void refreshStates() {
         LOG.info("Refreshing states...");
         this.teletaskClient.groupGet();
+    }
+
+    @Scheduled(fixedRate = 4, timeUnit = TimeUnit.MINUTES, initialDelay = 45)
+    public void refreshConfig() {
+        LOG.info("Refreshing config...");
+        this.publishConfig();
     }
 
     private void subscribe() throws MqttException {
