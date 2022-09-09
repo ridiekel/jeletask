@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
