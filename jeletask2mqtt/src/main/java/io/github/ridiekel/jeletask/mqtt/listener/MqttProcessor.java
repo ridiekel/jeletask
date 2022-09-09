@@ -358,11 +358,4 @@ public class MqttProcessor implements StateChangeListener {
             PAYLOAD_LOG_COLORS.put(String.valueOf(i), AnsiColor.GREEN);
         }
     }
-
-
-    private void restartTeletask() {
-        LOG.info("Restarting teletask connection due to exception in arriving message...");
-        this.teletaskClient.restart();
-        LOG.info("Restarted!");
-    }
 }
