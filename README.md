@@ -19,7 +19,7 @@ Create a configuration json file following this example.
 At this time I can only test with MICROS_PLUS. Please log an issue when you are having trouble with the other types of central unit. 
 If teletask has not changed their binary API, it should be compatible.
 
-The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS```, ```MICROS_PLUS```
+The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
 ```json
 {
   "type": "MICROS_PLUS",
@@ -197,12 +197,24 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
     -m "ON"
 ```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -m '{"state":"ON"}'
+```
 
 #### Turning off
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
     -m "OFF"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -m '{"state":"OFF"}'
 ```
 
 ## Local Mood
@@ -222,12 +234,24 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
     -m "ON"
 ```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -m '{"state":"ON"}'
+```
 
 #### Turning off
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
     -m "OFF"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -m '{"state":"OFF"}'
 ```
 
 ## General Mood
@@ -247,12 +271,24 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
     -m "ON"
 ```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -m '{"state":"ON"}'
+```
 
 #### Turning off
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
     -m "OFF"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -m '{"state":"OFF"}'
 ```
 
 ## Dimmer
@@ -268,22 +304,58 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 #### Turning on
 
-For turning on you can use `ON` (goes to 100%) of any integer value between `0` and `100`
+For turning on you can use `ON` (goes to 100%) or `OFF` (goes to 0%) or any integer value between `0` and `100`
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m "ON"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m '{"state":"ON"}'
+```
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
     -m "60"
 ```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m '{"state":60}'
+```
 
 #### Turning off
 
 For turning off, you can use either `OFF` or `0`
-
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
     -m "OFF"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m '{"state":"OFF"}'
+```
+
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m "0"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m '{"state":"0"}'
 ```
 
 ## Motor
@@ -304,7 +376,54 @@ You can send either `UP`, `DOWN` or `STOP` to the motor function.
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
-    -m "65"
+    -m "UP"
+```
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m "STOP"
+```
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m "DOWN"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m '{"state":"UP"}'
+```
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m '{"state":"STOP"}'
+```
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m '{"state":"DOWN"}'
+```
+
+#### Position
+
+You can also send the motor to a position. 
+Position can be anything between `0` and `100`. 
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m "25"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -m '{"position": 25}'
 ```
 
 ## Flag

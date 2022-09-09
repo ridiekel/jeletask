@@ -261,7 +261,7 @@ public class MqttProcessor implements StateChangeListener {
     @Override
     public void receive(List<ComponentSpec> components) {
         components.forEach(c -> {
-            ComponentState message = stateTranslateGet(c.getFunction(), c.getState());
+            ComponentState message = c.getState();
             String ttTopic = this.baseTopic(c) + "/state";
             this.publish("EVENT", c, ttTopic, message.toString(), LOG::info);
         });
@@ -295,43 +295,6 @@ public class MqttProcessor implements StateChangeListener {
         return this.prefix + "/" + this.teletaskIdentifier + "/" + c.getFunction().toString().toLowerCase() + "/" + c.getNumber();
     }
 
-    private static final Map<Function, java.util.function.Function<ComponentState, ComponentState>> GET_TRANSLATIONS = Map.of(
-            Function.DIMMER, MqttProcessor::dimmerStateTranslationGet
-    );
-
-    private static final Map<Function, java.util.function.Function<ComponentState, ComponentState>> SET_TRANSLATIONS = Map.of(
-            Function.DIMMER, MqttProcessor::dimmerStateTranslationSet
-    );
-
-    private static ComponentState stateTranslateGet(Function function, ComponentState state) {
-        return GET_TRANSLATIONS.containsKey(function) ? GET_TRANSLATIONS.get(function).apply(state) : state;
-    }
-
-    private static ComponentState dimmerStateTranslationGet(ComponentState state) {
-        return state;
-    }
-
-    private static ComponentState stateTranslateSet(Function function, ComponentState state) {
-        return SET_TRANSLATIONS.containsKey(function) ? SET_TRANSLATIONS.get(function).apply(state) : state;
-    }
-
-    private static ComponentState dimmerStateTranslationSet(ComponentState state) {
-        String newState = "0";
-        try {
-            if ("ON".equalsIgnoreCase(state.getState())) {
-                newState = "100";
-            } else if ("OFF".equalsIgnoreCase(state.getState())) {
-                newState = "0";
-            } else {
-                newState = String.valueOf((int) Float.parseFloat(state.getState()));
-            }
-        } catch (Exception e) {
-            LOG.warn(String.format("Could not translate dimmer state '%s' received from mqtt server", state));
-        }
-        state.setState(newState);
-        return state;
-    }
-
     @Override
     public void stop() {
         try {
@@ -357,7 +320,7 @@ public class MqttProcessor implements StateChangeListener {
                 if (matcher.find()) {
                     Function function = Function.valueOf(matcher.group(1).toUpperCase());
                     int number = Integer.parseInt(matcher.group(2));
-                    ComponentState state = stateTranslateSet(function, ComponentState.parse(message));
+                    ComponentState state = ComponentState.parse(function, message);
 
                     String componentLog = getLoggingStringForComponent(MqttProcessor.this.teletaskClient.getConfig().getComponent(function, number));
                     LOG.info(String.format(WHAT_LOG_PATTERNS.get("COMMAND"), getWhat("COMMAND"), componentLog, payloadToLogWithColors(new String(mqttMessage.getPayload()))));

@@ -5,8 +5,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import io.github.ridiekel.jeletask.client.spec.Function;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ComponentState {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -86,12 +90,58 @@ public class ComponentState {
         this.correctionAtHundredPercentInSeconds = correctionAtHundredPercentInSeconds;
     }
 
-    public static ComponentState parse(String state) {
+    public static ComponentState parse(Function function, String state) {
         try {
             return OBJECT_MAPPER.readValue(state, ComponentState.class);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            if (state != null && SIMPLE_VALUES.containsKey(function) && SIMPLE_VALUES.get(function).containsKey(state)) {
+                try {
+                    return OBJECT_MAPPER.readValue(SIMPLE_VALUES.get(function).get(state).apply(state), ComponentState.class);
+                } catch (Exception ex) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                throw new RuntimeException(e);
+            }
         }
+    }
+
+    private static final Map<Function, Map<String, java.util.function.Function<String, String>>> SIMPLE_VALUES = new HashMap<>();
+
+    static {
+        simpleValueMapper(Function.MOTOR).put("UP", ComponentState::stateTemplate);
+        simpleValueMapper(Function.MOTOR).put("DOWN", ComponentState::stateTemplate);
+        simpleValueMapper(Function.MOTOR).put("STOP", ComponentState::stateTemplate);
+        IntStream.range(0, 101).forEach(i -> simpleValueMapper(Function.MOTOR).put(String.valueOf(i), ComponentState::positionTemplate));
+
+        simpleValueMapper(Function.RELAY).put("ON", ComponentState::stateTemplate);
+        simpleValueMapper(Function.RELAY).put("OFF", ComponentState::stateTemplate);
+
+        simpleValueMapper(Function.LOCMOOD).put("ON", ComponentState::stateTemplate);
+        simpleValueMapper(Function.LOCMOOD).put("OFF", ComponentState::stateTemplate);
+
+        simpleValueMapper(Function.GENMOOD).put("ON", ComponentState::stateTemplate);
+        simpleValueMapper(Function.GENMOOD).put("OFF", ComponentState::stateTemplate);
+
+        simpleValueMapper(Function.DIMMER).put("ON", s -> stateTemplate("100"));
+        simpleValueMapper(Function.DIMMER).put("OFF", s -> stateTemplate("0"));
+        IntStream.range(0, 101).forEach(i -> simpleValueMapper(Function.DIMMER).put(String.valueOf(i), ComponentState::stateTemplate));
+    }
+
+    private static Map<String, java.util.function.Function<String, String>> simpleValueMapper(Function func) {
+        return SIMPLE_VALUES.computeIfAbsent(func, (a) -> new HashMap<>());
+    }
+
+    public static String stateTemplate(String state) {
+        return template("state", state);
+    }
+
+    public static String positionTemplate(String position) {
+        return template("position", position);
+    }
+
+    public static String template(String key, Object value) {
+        return "{\"" + key + "\":\"" + value + "\"}";
     }
 
     @Override
