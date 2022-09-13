@@ -7,7 +7,7 @@ public class HARelayConfig extends HAReadWriteConfig<HARelayConfig> {
             case "light":
                 this.put("state_value_template", "{{ value_json.state }}");
                 break;
-            case "switch":
+            default:
                 this.put("value_template", "{{ value_json.state }}");
                 break;
 
