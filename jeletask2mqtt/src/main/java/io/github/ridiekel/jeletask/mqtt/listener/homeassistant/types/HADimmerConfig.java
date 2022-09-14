@@ -12,6 +12,7 @@ public class HADimmerConfig extends HAReadWriteConfig<HADimmerConfig> {
         this.put("brightness_state_topic", "~/state");
         this.put("payload_on", "1");
         this.put("payload_off", "0");
-        this.put("state_value_template", "{% if value|int > 0 %}1{% else %}0{% endif %}");
+        this.put("state_value_template", "{% if value_json.state|int > 0 %}1{% else %}0{% endif %}");
+        this.put("brightness_value_template", "{{ value_json.state|int }}");
     }
 }
