@@ -5,7 +5,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 public interface StateCalculator {
-    ComponentState toComponentState(byte[] dataBytes);
+    ComponentState toComponentState(ComponentSpec component, byte[] dataBytes);
 
     byte[] toBytes(ComponentState state);
 
