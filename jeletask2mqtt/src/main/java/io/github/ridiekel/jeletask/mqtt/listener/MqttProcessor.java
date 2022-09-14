@@ -215,9 +215,7 @@ public class MqttProcessor implements StateChangeListener {
             Map.entry(Function.LOCMOOD, f("scene", p -> {
                 return null;
             })),
-            Map.entry(Function.MOTOR, f("cover", p -> {
-                return null;
-            })),
+            Map.entry(Function.MOTOR, f("cover", HAMotorConfig::new)),
             Map.entry(Function.RELAY, f("light", HARelayConfig::new)),
             Map.entry(Function.SENSOR, f("sensor", p -> {
                 return null;
