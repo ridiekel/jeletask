@@ -26,7 +26,7 @@ public class SensorStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public ComponentState toComponentState(byte[] dataBytes) {
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         throw new IllegalStateException("Should not get here");
     }
 
