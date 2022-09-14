@@ -7,25 +7,26 @@ public class GasStateCalculator extends SimpleStateCalculator {
     public GasStateCalculator(NumberConverter numberConverter) {
         super(numberConverter);
     }
-
-    public String convertGet(ComponentSpec component, byte[] value) {
-        short base = this.getNumberConverter().convert(value).shortValue();
+    
+    @Override
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
+        long longValue = this.getNumberConverter().convert(dataBytes).longValue();
         float mMax = component.getGas_max();
         float mMin = component.getGas_min();
         float gas_value = 0;
         switch (component.getGas_type()) {
             case "4-20ma":
-                gas_value = (mMax - mMin) / 704.0f * (base - 176) + mMin;
+                gas_value = (mMax - mMin) / 704.0f * (longValue - 176) + mMin;
                 break;
             case "0-10v":
             case "5-10v":
-                gas_value = (mMax - mMin) / 1023.0f * base + mMin;
+                gas_value = (mMax - mMin) / 1023.0f * longValue + mMin;
                 break;
             case "0-20ma":
-                gas_value = (mMax - mMin) / 880.0f * base + mMin;
+                gas_value = (mMax - mMin) / 880.0f * longValue + mMin;
                 break;
         }
 
-        return String.valueOf(gas_value);
+        return new ComponentState(Math.round(gas_value));
     }
 }
