@@ -46,7 +46,7 @@ public class SensorStateCalculator extends SimpleStateCalculator {
             LOG.warn(String.format("State calculator not found for component:\n\n        %s\n", component));
             return new StateCalculator() {
                 @Override
-                public ComponentState toComponentState(byte[] value) {
+                public ComponentState toComponentState(ComponentSpec component, byte[] value) {
                     return null;
                 }
 
