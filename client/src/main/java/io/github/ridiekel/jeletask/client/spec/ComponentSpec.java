@@ -19,6 +19,7 @@ public class ComponentSpec  {
     private String gas_type;
     private float gas_min;
     private float gas_max;
+    private int gas_decimals;
 
     /**
      * Default constructor.
@@ -94,4 +95,8 @@ public class ComponentSpec  {
     public float getGas_max() { return this.gas_max; }
 
     public void setGas_max(float gas_max) { this.gas_max = gas_max; }
+    
+    public int getGas_decimals() { return this.gas_decimals; }
+
+    public void setGas_decimals(int gas_decimals) { this.gas_decimals = gas_decimals; }
 }
