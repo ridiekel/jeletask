@@ -34,7 +34,7 @@ public class MotorStateCalculator extends MappingStateCalculator {
     }
 
     @Override
-    public ComponentState toComponentState(byte[] dataBytes) {
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         ComponentState state = new ComponentState(MOTOR_STATE_CALCULATOR.toComponentState(new byte[]{dataBytes[1]}).getState());
         state.setLastDirection(super.toComponentState(dataBytes).getState());
         state.setProtection(PROTECTION_STATE_CALCULATOR.toComponentState(new byte[]{dataBytes[2]}).getState());
