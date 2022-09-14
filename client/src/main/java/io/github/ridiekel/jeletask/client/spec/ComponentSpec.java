@@ -16,10 +16,10 @@ public class ComponentSpec  {
     private String type;
     
     // For GAS (General Analog Sensor)
-    private String gas_type;
-    private float gas_min;
-    private float gas_max;
-    private int gas_decimals;
+    private String gas_type = "";
+    private float gas_min = 0;
+    private float gas_max = 0;
+    private int gas_decimals = 0;
 
     /**
      * Default constructor.
