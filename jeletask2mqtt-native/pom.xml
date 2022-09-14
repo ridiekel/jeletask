@@ -13,6 +13,7 @@
     <properties>
         <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Needed for injecting in properties -->
         <gateway.version>${project.version}</gateway.version>
         <exec.mainClass>io.github.ridiekel.jeletask.mqtt.Teletask2Mqtt</exec.mainClass>
         <spring-boot.build-image.imageName>ridiekel/jeletask2mqtt:${project.version}-native</spring-boot.build-image.imageName>

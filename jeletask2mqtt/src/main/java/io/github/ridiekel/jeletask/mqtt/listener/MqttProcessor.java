@@ -10,6 +10,7 @@ import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HADimmerConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HAMotorConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HARelayConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
