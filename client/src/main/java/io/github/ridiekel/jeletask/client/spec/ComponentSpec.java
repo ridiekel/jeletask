@@ -14,6 +14,11 @@ public class ComponentSpec  {
     private int number;
     private ComponentState state;
     private String type;
+    
+    // For GAS (General Analog Sensor)
+    private String gas_type;
+    private float gas_min;
+    private float gas_max;
 
     /**
      * Default constructor.
@@ -77,4 +82,16 @@ public class ComponentSpec  {
     public void setType(String type) {
         this.type = type;
     }
+    
+    public String getGas_type() { return this.gas_type; }
+
+    public void setGas_type(String gas_type) { this.gas_type = gas_type; }
+
+    public float getGas_min() { return this.gas_min; }
+
+    public void setGas_min(float gas_min) { this.gas_min = gas_min; }
+
+    public float getGas_max() { return this.gas_max; }
+
+    public void setGas_max(float gas_max) { this.gas_max = gas_max; }
 }
