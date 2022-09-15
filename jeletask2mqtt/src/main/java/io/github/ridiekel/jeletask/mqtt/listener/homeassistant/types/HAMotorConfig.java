@@ -13,8 +13,11 @@ public class HAMotorConfig extends HAReadWriteConfig<HAMotorConfig> {
         this.putInt("position_closed", 100);
         this.put("optimistic", "false");
         this.put("payload_open", "UP");
+        this.put("state_open", "UP");
         this.put("payload_close", "DOWN");
+        this.put("state_closed", "DOWN");
         this.put("payload_stop", "STOP");
+        this.put("state_stopped", "STOP");
         this.put("position_template", "{{ value_json.position }}");
         this.put("value_template", "{% if value_json.state == 'OFF' %}STOP{% else %}value_json.last_direction{% endif %}");
     }
