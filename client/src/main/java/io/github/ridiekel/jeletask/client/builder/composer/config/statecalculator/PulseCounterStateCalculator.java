@@ -36,6 +36,7 @@ public class PulseCounterStateCalculator extends SimpleStateCalculator {
 
 
          */
+        return new ComponentState("TODO");
     }
 }
 
