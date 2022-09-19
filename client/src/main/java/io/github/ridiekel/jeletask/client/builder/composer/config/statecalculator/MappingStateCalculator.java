@@ -27,7 +27,7 @@ public class MappingStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public ComponentState toComponentState(byte[] dataBytes) {
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         return new ComponentState(this.byNumber.get(this.getNumberConverter().convert(dataBytes).intValue()));
     }
 

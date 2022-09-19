@@ -13,7 +13,7 @@ public class SimpleStateCalculator implements StateCalculator {
     }
 
     @Override
-    public ComponentState toComponentState(byte[] dataBytes) {
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         Number number = this.numberConverter.convert(dataBytes);
         return new ComponentState(number.intValue() == -1 ? 255 : number);
     }

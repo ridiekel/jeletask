@@ -45,6 +45,15 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "description": "Light Sensor",
         "type": "LIGHT"
       }
+      {
+        "number": 2,
+        "description": "General Analog Sensor 1",
+        "type": "GAS",
+        "gas_type": "4-20ma",
+        "gas_min": 0,
+        "gas_max": 14,
+        "gas_decimals": 2
+      }
     ],
     "COND": [
       {
@@ -439,13 +448,35 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ## Sensor
 
-You can only listen to sensor values.
+NOTE: For now, you can only listen to sensor values.
+
+The following sensor types are currently supported:
+
+```
+TEMPERATURE : Teletask temperature sensor (TDS12250, TDS12251). Value is in °C.
+HUMIDITY    : Teletask humidity sensor (TDS12260). Value is in %.
+LIGHT       : Teletask light sensor (TDS12270). Value is in Lux.
+GAS         : Teletask General Analog Sensor.
+```
 
 ### Listen to events
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+```
+
+### Sensor types with parameters:
+
+#### General Analog Sensor (GAS)
+
+This sensor has 4 possible config parameters:
+
+```
+gas_type     : One of the 4 possible signal options: "4-20ma", "0-20ma", "0-10V" or "5-10V"
+gas_min      : The "Min" value (see PROSOFT configuration)
+gas_max      : The "Max" value (see PROSOFT configuration)
+gas_decimals : How many decimals you want returned (rounded up)
 ```
 
 # HomeAssistant

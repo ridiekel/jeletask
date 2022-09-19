@@ -15,17 +15,18 @@ public class SensorStateCalculator extends SimpleStateCalculator {
 
     private final Map<String, StateCalculator> sensorTypeCalculators;
 
-    public SensorStateCalculator(StateCalculator temperature, StateCalculator lux, StateCalculator humidity) {
+    public SensorStateCalculator(StateCalculator temperature, StateCalculator lux, StateCalculator humidity, StateCalculator gas) {
         super(temperature.getNumberConverter());
         this.sensorTypeCalculators = Map.of(
                 "TEMPERATURE", temperature,
                 "LIGHT", lux,
-                "HUMIDITY", humidity
+                "HUMIDITY", humidity,
+                "GAS", gas
         );
     }
 
     @Override
-    public ComponentState toComponentState(byte[] dataBytes) {
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         throw new IllegalStateException("Should not get here");
     }
 
@@ -45,7 +46,7 @@ public class SensorStateCalculator extends SimpleStateCalculator {
             LOG.warn(String.format("State calculator not found for component:\n\n        %s\n", component));
             return new StateCalculator() {
                 @Override
-                public ComponentState toComponentState(byte[] value) {
+                public ComponentState toComponentState(ComponentSpec component, byte[] value) {
                     return null;
                 }
 

@@ -10,7 +10,7 @@ public class LuxStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public ComponentState toComponentState(byte[] dataBytes) {
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         long longValue = this.getNumberConverter().convert(dataBytes).longValue();
         double exponent = longValue / 40d;
         double powered = Math.pow(10, exponent);

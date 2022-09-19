@@ -5,6 +5,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverte
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.DimmerStateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.HumidityStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.GasStateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.LuxStateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.MotorStateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
@@ -30,7 +31,8 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                 new FunctionConfigurable(Function.SENSOR, 20, new SensorStateCalculator(
                         new TemperatureStateCalculator(NumberConverter.UNSIGNED_SHORT, 10, 273),
                         new LuxStateCalculator(NumberConverter.UNSIGNED_SHORT),
-                        new HumidityStateCalculator(NumberConverter.UNSIGNED_SHORT)
+                        new HumidityStateCalculator(NumberConverter.UNSIGNED_SHORT),
+                        new GasStateCalculator(NumberConverter.UNSIGNED_SHORT)
                 )),
                 new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE)
         ));

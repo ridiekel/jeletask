@@ -15,7 +15,7 @@ public class TemperatureStateCalculator extends SimpleStateCalculator {
     }
 
     @Override
-    public ComponentState toComponentState(byte[] dataBytes) {
+    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         long base = this.getNumberConverter().convert(dataBytes).longValue();
         double divided = base / this.divide;
         double subtracted = divided - this.subtract;
