@@ -34,7 +34,8 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                         new HumidityStateCalculator(NumberConverter.UNSIGNED_SHORT),
                         new GasStateCalculator(NumberConverter.UNSIGNED_SHORT)
                 )),
-                new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE)
+                new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE),
+                new FunctionConfigurable(Function.SERVICE, 52, new ServiceStateCalculator(NumberConverter.UNSIGNED_SHORT))
         ));
     }
 
