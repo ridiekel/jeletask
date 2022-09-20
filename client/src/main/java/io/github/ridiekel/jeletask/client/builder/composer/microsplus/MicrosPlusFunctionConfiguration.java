@@ -12,6 +12,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.SensorStateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.ServiceStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.Function;
 
 import java.util.List;
