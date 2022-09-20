@@ -90,6 +90,13 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "number": 1,
         "description": "Spots"
       }
+    ],
+    "SERVICE": [
+      {
+        "number": 42,
+        "description": "State of TDS12117 input nr 3",
+        "service_type": "DIGITALINPUT"
+      }
     ]
   }
 }
@@ -502,6 +509,23 @@ gas_type     : One of the 4 possible signal options: "4-20ma", "0-20ma", "0-10V"
 gas_min      : The "Min" value (see PROSOFT configuration)
 gas_max      : The "Max" value (see PROSOFT configuration)
 gas_decimals : How many decimals you want returned (rounded up)
+```
+
+## Service function
+
+NOTE: For now, you can only listen to service functions
+
+The following service types are currently supported:
+
+```
+DIGITALINPUT : For example, for the TDS12117 digital input interface. (OPEN / CLOSED)
+```
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/service/1/state
 ```
 
 # HomeAssistant
