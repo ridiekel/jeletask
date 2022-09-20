@@ -230,7 +230,10 @@ public class MqttProcessor implements StateChangeListener {
             })),
             Map.entry(Function.TIMEDMOOD, f("scene", p -> {
                 return null;
-            }))
+            })),
+            Map.entry(Function.SERVICE, f("service", p -> {
+                return null;
+            }))        
     );
 
     static FunctionConfig f(String type, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
