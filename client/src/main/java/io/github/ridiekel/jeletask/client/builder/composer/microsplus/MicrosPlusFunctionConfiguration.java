@@ -12,6 +12,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.SensorStateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.ServiceStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.Function;
 
 import java.util.List;
@@ -34,7 +35,8 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                         new HumidityStateCalculator(NumberConverter.UNSIGNED_SHORT),
                         new GasStateCalculator(NumberConverter.UNSIGNED_SHORT)
                 )),
-                new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE)
+                new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE),
+                new FunctionConfigurable(Function.SERVICE, 52, new ServiceStateCalculator(NumberConverter.UNSIGNED_SHORT))
         ));
     }
 

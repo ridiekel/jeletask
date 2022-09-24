@@ -44,7 +44,7 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "number": 1,
         "description": "Light Sensor",
         "type": "LIGHT"
-      }
+      },
       {
         "number": 2,
         "description": "General Analog Sensor 1",
@@ -89,6 +89,13 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 1,
         "description": "Spots"
+      }
+    ],
+    "SERVICE": [
+      {
+        "number": 42,
+        "description": "State of TDS12117 input nr 3",
+        "service_type": "DIGITALINPUT"
       }
     ]
   }
@@ -437,13 +444,38 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ## Flag
 
-You can only listen to flags.
-
 ### Listen to events
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/state
+```
+### Change the state
+
+#### Turning on
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -m "ON"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -m '{"state":"ON"}'
+```
+
+#### Turning off
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -m "OFF"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -m '{"state":"OFF"}'
 ```
 
 ## Sensor
@@ -479,9 +511,26 @@ gas_max      : The "Max" value (see PROSOFT configuration)
 gas_decimals : How many decimals you want returned (rounded up)
 ```
 
+## Service function
+
+NOTE: For now, you can only listen to service functions
+
+The following service types are currently supported:
+
+```
+DIGITALINPUT : For example, for the TDS12117 digital input interface. (OPEN / CLOSED)
+```
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/service/1/state
+```
+
 # HomeAssistant
 
-Auto configuration should work with relays and dimmers. 
+Auto configuration should work with relays, dimmers and motors. 
 Other types are not yet supported, work in progress.
 Pleas log an issue when having trouble with auto configuration in HA.
 

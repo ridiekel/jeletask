@@ -21,6 +21,9 @@ public class ComponentSpec  {
     private float gas_max = 0;
     private int gas_decimals = 0;
 
+    // For Teletask Service functions
+    private String service_type = "";
+    
     /**
      * Default constructor.
      * The default constructor is used by Jackson.  In order not to have null values, some fields are initialised to empty strings.
@@ -99,4 +102,8 @@ public class ComponentSpec  {
     public int getGas_decimals() { return this.gas_decimals; }
 
     public void setGas_decimals(int gas_decimals) { this.gas_decimals = gas_decimals; }
+    
+    public String getService_type() { return this.service_type; }
+
+    public void setService_type(String service_type) { this.service_type = service_type; }
 }

@@ -16,7 +16,8 @@ public enum Function {
     GENMOOD("general mood", state -> true),
     FLAG("flag", state -> true),
     SENSOR("sensor value", state -> true),
-    COND("condition", state -> true);
+    COND("condition", state -> true),
+    SERVICE("service", state -> true);
 
     private final String description;
     private final ShouldReceiveAcknowledge shouldReceiveAcknowledge;

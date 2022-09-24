@@ -10,28 +10,27 @@ public class GasStateCalculator extends SimpleStateCalculator {
     public GasStateCalculator(NumberConverter numberConverter) {
         super(numberConverter);
     }
+    
     @Override
     public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
-        long longValue = this.getNumberConverter().convert(dataBytes).longValue();
+        // Default value
+        float gas_value = this.getNumberConverter().convert(dataBytes).longValue();
 
-        // Default in case gas_type was not defined.
-        float gas_value = longValue;
-
-        // Min and Max values are configurable. Use the same values you already use in PROSOFT
+        // Min and Max values are configurable. Use the same values you already use in PROSOFT!
         float mMax = component.getGas_max();
         float mMin = component.getGas_min();
 
         // There are 3 different General Analog Sensors in Teletask.
-        switch (component.getGas_type()) {
+        switch (component.getGas_type().toLowerCase()) {
             case "4-20ma":
-                gas_value = (mMax - mMin) / 704.0f * (longValue - 176) + mMin;
+                gas_value = (mMax - mMin) / 704.0f * (gas_value - 176) + mMin;
                 break;
             case "0-10v":
             case "5-10v":
-                gas_value = (mMax - mMin) / 1023.0f * longValue + mMin;
+                gas_value = (mMax - mMin) / 1023.0f * gas_value + mMin;
                 break;
             case "0-20ma":
-                gas_value = (mMax - mMin) / 880.0f * longValue + mMin;
+                gas_value = (mMax - mMin) / 880.0f * gas_value + mMin;
                 break;
         }
 
