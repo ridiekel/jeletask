@@ -127,6 +127,8 @@ public class ComponentState {
         simpleValueMapper(Function.DIMMER).put("OFF", s -> stateTemplate("0"));
         simpleValueMapper(Function.DIMMER).put("PREVIOUS_STATE", s -> stateTemplate("103"));
         IntStream.range(0, 101).forEach(i -> simpleValueMapper(Function.DIMMER).put(String.valueOf(i), ComponentState::stateTemplate));
+        
+        simpleValueMapper(Function.TIMEDFNC).put("ON", ComponentState::stateTemplate);        
     }
 
     private static Map<String, java.util.function.Function<String, String>> simpleValueMapper(Function func) {
