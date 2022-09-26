@@ -97,6 +97,12 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "description": "State of TDS12117 input nr 3",
         "service_type": "DIGITALINPUT"
       }
+    ],
+    "TIMEDFNC": [
+      {
+        "number": 3,
+        "description": "Timed function nr 3"
+      }
     ]
   }
 }
@@ -526,6 +532,42 @@ DIGITALINPUT : For example, for the TDS12117 digital input interface. (OPEN / CL
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/service/1/state
+```
+
+## Timed function
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/state
+```
+### Starting / stopping a timed function
+
+#### Starting a timed function
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -m "ON"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -m '{"state":"ON"}'
+```
+
+#### Stopping a timed function
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -m "OFF"
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -m '{"state":"OFF"}'
 ```
 
 # HomeAssistant
