@@ -320,7 +320,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 #### Turning on
 
-For turning on you can use `ON` (goes to 100%) or `OFF` (goes to 0%) or any integer value between `0` and `100`
+For turning on you can use `ON` (goes to 100%), `OFF` (goes to 0%), 'PREVIOUS_STATE' (goes to last %) or any integer value between `0` and `100`
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
