@@ -22,6 +22,7 @@ public class ComponentState {
     private Number secondsToFinish;
     private Number correctionAtZeroPercentInSeconds;
     private Number correctionAtHundredPercentInSeconds;
+    private Number brightness;    
 
     public ComponentState() {
     }
@@ -89,6 +90,14 @@ public class ComponentState {
     public void setCorrectionAtHundredPercentInSeconds(Number correctionAtHundredPercentInSeconds) {
         this.correctionAtHundredPercentInSeconds = correctionAtHundredPercentInSeconds;
     }
+    
+    public Number getBrightness() {
+        return brightness;
+    }
+
+    public void setBrightness(Number brightness) {
+        this.brightness = brightness;
+    }    
 
     public static ComponentState parse(Function function, String state) {
         try {
