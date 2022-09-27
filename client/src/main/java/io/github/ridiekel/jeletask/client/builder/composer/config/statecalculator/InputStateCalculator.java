@@ -4,9 +4,9 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverte
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
-public class ServiceStateCalculator extends SimpleStateCalculator {
+public class InputStateCalculator extends SimpleStateCalculator {
 
-    public ServiceStateCalculator(NumberConverter numberConverter) {
+    public InputStateCalculator(NumberConverter numberConverter) {
         super(numberConverter);
     }
 
