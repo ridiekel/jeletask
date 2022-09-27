@@ -237,7 +237,7 @@ public class MqttProcessor implements StateChangeListener {
             Map.entry(Function.TIMEDMOOD, f("scene", p -> {
                 return null;
             })),
-            Map.entry(Function.SERVICE, f("service", p -> {
+            Map.entry(Function.INPUT, f("service", p -> {
                 return null;
             })),
             Map.entry(Function.TIMEDFNC, f("button", p -> {
