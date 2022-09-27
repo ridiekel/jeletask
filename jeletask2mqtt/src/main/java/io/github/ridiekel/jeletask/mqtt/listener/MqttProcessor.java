@@ -87,7 +87,13 @@ public class MqttProcessor implements StateChangeListener {
 
         this.connOpts = new MqttConnectOptions();
         this.connOpts.setMaxInflight(100000);
-        this.connOpts.setCleanSession(true);
+        
+        // TODO:
+        // Do we need CleanSession?
+        // I have disabled it for now because it's not subscribing to the mqtt topics again
+        // after a reconnect (for ex. when you restart your mqtt broker).
+        this.connOpts.setCleanSession(false);
+        
         this.connOpts.setAutomaticReconnect(true);
         this.connOpts.setUserName(username);
         this.connOpts.setPassword(password);
