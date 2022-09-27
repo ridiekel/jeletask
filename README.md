@@ -91,11 +91,10 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "description": "Spots"
       }
     ],
-    "SERVICE": [
+    "INPUT": [
       {
         "number": 42,
         "description": "State of TDS12117 input nr 3",
-        "service_type": "DIGITALINPUT"
       }
     ],
     "TIMEDFNC": [
@@ -517,21 +516,13 @@ gas_max      : The "Max" value (see PROSOFT configuration)
 gas_decimals : How many decimals you want returned (rounded up)
 ```
 
-## Service function
-
-NOTE: For now, you can only listen to service functions
-
-The following service types are currently supported:
-
-```
-DIGITALINPUT : For example, for the TDS12117 digital input interface. (OPEN / CLOSED)
-```
+## Input (digital inputs)
 
 ### Listen to events
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/service/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/input/1/state
 ```
 
 ## Timed function
