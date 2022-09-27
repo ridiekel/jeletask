@@ -22,6 +22,7 @@ public class AurusStateCalculator extends MappingStateCalculator {
 //            new StateMapping("SETSTANDBY", 88),
 //            new StateMapping("SETNIGHT", 27),
 //            new StateMapping("SETNIGHTCOOL", 56),
+//            new StateMapping("TEMPMANUAL_TARGET", 87), // Not verified yet
             new StateMapping("SPEED", 31),
             new StateMapping("SPLOW", 97),
             new StateMapping("SPMED", 98),
@@ -34,6 +35,7 @@ public class AurusStateCalculator extends MappingStateCalculator {
             new StateMapping("VENT", 105),
             new StateMapping("STOP", 106),
             new StateMapping("HEATP", 107),
+            new StateMapping("DRY", 108), // Not verified yet
             new StateMapping("ONOFF", 104)
     );
     public AurusStateCalculator(NumberConverter numberConverter) {
@@ -67,7 +69,7 @@ public class AurusStateCalculator extends MappingStateCalculator {
         byte[] setting = null;
         byte[] data = Bytes.EMPTY;
 
-        // TODO: implement commands with parameters: SETDAY,SETSTANDY,SETNIGHT,SETNIGHTCOOL ?
+        // TODO: implement commands with parameters: SETDAY,SETSTANDY,SETNIGHT,SETNIGHTCOOL,TEMPMANUAL_TARGET
 
         if (setting == null) {
             setting = super.toBytes(state);
