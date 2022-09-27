@@ -48,7 +48,7 @@ public class AurusStateCalculator extends MappingStateCalculator {
             return null;
 
         ComponentState state = new ComponentState(AURUS_STATE_CALCULATOR.toComponentState(component, new byte[]{dataBytes[12]}).getState());
-        TemperatureStateCalculator tempcalculator = new TemperatureStateCalculator(this.getNumberConverter(), 10, 273);
+        TemperatureStateCalculator tempcalculator = new TemperatureStateCalculator(NumberConverter.UNSIGNED_SHORT, 10, 273);
 
         state.setCurrentTemperature(Float.valueOf(tempcalculator.toComponentState(component, new byte[]{dataBytes[0], dataBytes[1]}).getState()));
         state.setTargetTemperature(Float.valueOf(tempcalculator.toComponentState(component, new byte[]{dataBytes[2], dataBytes[3]}).getState()));
@@ -75,11 +75,7 @@ public class AurusStateCalculator extends MappingStateCalculator {
             setting = super.toBytes(state);
         }
 
-        // TODO: Why is there a 0x00 byte in settings[0]?
-        setting = new byte[]{setting[1]};
-
         return Bytes.concat(setting, data);
-
     }
 
     @Override
