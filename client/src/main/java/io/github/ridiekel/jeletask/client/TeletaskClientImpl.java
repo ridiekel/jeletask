@@ -262,6 +262,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.sendLogEventMessage(Function.COND, state);
         this.sendLogEventMessage(Function.SENSOR, state);
         this.sendLogEventMessage(Function.FLAG, state);
+        this.sendLogEventMessage(Function.TIMEDFNC, state);
     }
 
     private <M extends MessageSupport> void execute(
