@@ -22,7 +22,11 @@ public class ComponentState {
     private Number secondsToFinish;
     private Number correctionAtZeroPercentInSeconds;
     private Number correctionAtHundredPercentInSeconds;
-    private Number brightness;    
+    private Number brightness;
+
+    // for aurus
+    private Number currentTemperature;
+    private Number targetTemperature;
 
     public ComponentState() {
     }
@@ -90,14 +94,27 @@ public class ComponentState {
     public void setCorrectionAtHundredPercentInSeconds(Number correctionAtHundredPercentInSeconds) {
         this.correctionAtHundredPercentInSeconds = correctionAtHundredPercentInSeconds;
     }
-    
+
     public Number getBrightness() {
         return brightness;
     }
-
     public void setBrightness(Number brightness) {
         this.brightness = brightness;
-    }    
+    }
+
+    public Number getCurrentTemperature() {
+        return currentTemperature;
+    }
+    public void setCurrentTemperature(Number temperature) {
+        this.currentTemperature = temperature;
+    }
+
+    public Number getTargetTemperature() {
+        return targetTemperature;
+    }
+    public void setTargetTemperature(Number temperature) {
+        this.targetTemperature = temperature;
+    }
 
     public static ComponentState parse(Function function, String state) {
         try {
