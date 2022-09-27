@@ -349,7 +349,7 @@ or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m '{"state":60}'
+    -m '{"state":"ON", "brightness": "60"}'
 ```
 
 #### Turning off
@@ -377,7 +377,7 @@ or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m '{"state":"0"}'
+    -m '{"brightness":"0"}'
 ```
 
 ## Motor
