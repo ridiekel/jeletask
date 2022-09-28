@@ -103,6 +103,20 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     @Override
+    public void displaymessage(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        this.execute(
+                new DisplayMessage(this.getConfig(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+        );
+    }
+
+    @Override
+    public void displaymessage(int number, ComponentState state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
+        this.displaymessage(this.getComponent(Function.DISPLAYMESSAGE, number), state, onSucccess, onFailed);
+    }    
+    
+    @Override
     public void get(Function function, int number, SuccessConsumer onSucccess, FailureConsumer onFailed) {
         this.get(this.getComponent(function, number), onSucccess, onFailed);
     }
@@ -236,7 +250,11 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     @Override
     public void groupGet() {
         for (Function function : Function.values()) {
-            this.groupGet(function);
+
+            // No group get message for DISPLAYMESSAGE please
+            if (function != Function.DISPLAYMESSAGE)
+
+                this.groupGet(function);
         }
     }
 
