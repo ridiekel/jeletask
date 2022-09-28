@@ -34,7 +34,7 @@ public class AurusStateCalculator extends MappingStateCalculator {
             new StateMapping("COOL", 96),
             new StateMapping("VENT", 105),
             new StateMapping("STOP", 106),
-            new StateMapping("HEATP", 107),
+            new StateMapping("HEATP", 107), // What is Heat+ ?
             new StateMapping("DRY", 108), // Undocumented, Not verified
             new StateMapping("ONOFF", 104)
     );
@@ -69,7 +69,7 @@ public class AurusStateCalculator extends MappingStateCalculator {
         byte[] setting = null;
         byte[] data = Bytes.EMPTY;
 
-        // TODO: implement commands with parameters: SETDAY,SETSTANDY,SETNIGHT,SETNIGHTCOOL
+        // TODO: implement other commands with parameters: SETDAY,SETSTANDBY,SETNIGHT,SETNIGHTCOOL
         if (state.getTargetTemperature() != null) {
             setting = super.toBytes(new ComponentState("MANUALTARGET"));
             try {
