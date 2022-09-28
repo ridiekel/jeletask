@@ -10,6 +10,7 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMes
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.LogMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
+import io.github.ridiekel.jeletask.client.builder.message.messages.impl.DisplayMessage;
 import io.github.ridiekel.jeletask.client.builder.message.strategy.KeepAliveStrategy;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
