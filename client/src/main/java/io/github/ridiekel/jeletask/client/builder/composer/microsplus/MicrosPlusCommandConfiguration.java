@@ -9,6 +9,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.KeepAliveCommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.LogCommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.SetCommandConfigurable;
+import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.DisplayMessageCommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
