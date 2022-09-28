@@ -20,6 +20,7 @@ At this time I can only test with MICROS_PLUS. Please log an issue when you are 
 If teletask has not changed their binary API, it should be compatible.
 
 The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
+
 ```json
 {
   "type": "MICROS_PLUS",
@@ -28,7 +29,7 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 1,
         "description": "Power outlet",
-        "type": "switch" 
+        "type": "switch"
       },
       {
         "number": 23,
@@ -94,13 +95,22 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
     "INPUT": [
       {
         "number": 42,
-        "description": "State of TDS12117 input nr 3",
+        "description": "State of TDS12117 input nr 3"
       }
     ],
     "TIMEDFNC": [
       {
         "number": 3,
         "description": "Timed function nr 3"
+      }
+    ],
+    // TODO: Write documentation for DISPLAYMESSAGE. bus_numbers+address_numbers -> see PDF for explanation
+    "DISPLAYMESSAGE": [
+      {
+        "number": 1000,
+        "bus_numbers": "1,1",
+        "address_numbers": "13,5",
+        "description": "Aurus living room + aurus basement"
       }
     ]
   }
