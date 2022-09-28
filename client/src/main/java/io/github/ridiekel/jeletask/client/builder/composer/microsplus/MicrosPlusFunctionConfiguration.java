@@ -3,17 +3,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.microsplus;
 import io.github.ridiekel.jeletask.client.builder.composer.config.ConfigurationSupport;
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.DimmerStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.HumidityStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.GasStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.LuxStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.MotorStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.SensorStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.AurusStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.*;
 import io.github.ridiekel.jeletask.client.spec.Function;
 
 import java.util.List;
@@ -39,7 +29,8 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                 )),
                 new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE),
                 new FunctionConfigurable(Function.INPUT, 52, new InputStateCalculator(NumberConverter.UNSIGNED_SHORT)),
-                new FunctionConfigurable(Function.TIMEDFNC, 5, ON_OFF_TOGGLE)
+                new FunctionConfigurable(Function.TIMEDFNC, 5, ON_OFF_TOGGLE),
+                new FunctionConfigurable(Function.DISPLAYMESSAGE, 54, new DisplayMessageStateCalculator(NumberConverter.UNSIGNED_BYTE))            
         ));
     }
 
