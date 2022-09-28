@@ -18,7 +18,9 @@ public enum Function {
     SENSOR("sensor value", state -> true),
     COND("condition", state -> true),
     INPUT("input", state -> true),
-    TIMEDFNC("timed function", state -> true);    
+    TIMEDFNC("timed function", state -> true),
+    DISPLAYMESSAGE("Display message", state -> false);
+    
 
     private final String description;
     private final ShouldReceiveAcknowledge shouldReceiveAcknowledge;
