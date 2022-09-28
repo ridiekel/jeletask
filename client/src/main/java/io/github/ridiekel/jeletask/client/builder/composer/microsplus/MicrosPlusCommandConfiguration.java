@@ -27,7 +27,8 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
                 new GroupGetCommandConfigurable(9, true, "Central Unit", "Fnc", "Number", "Number"),
                 new LogCommandConfigurable(3, false, "Fnc", "State"),
                 new MicrosPlusEventCommandConfigurable(),
-                new KeepAliveCommandConfigurable(11, true)
+                new KeepAliveCommandConfigurable(11, true),
+                new DisplayMessageCommandConfigurable(4, true, "Central Unit")            
         ));
     }
 
