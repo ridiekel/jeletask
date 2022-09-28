@@ -7,5 +7,6 @@ public enum Command {
     LOG,
     EVENT,
     KEEP_ALIVE,
-    GROUPGET;
+    GROUPGET,
+    DISPLAYMESSAGE;
 }
