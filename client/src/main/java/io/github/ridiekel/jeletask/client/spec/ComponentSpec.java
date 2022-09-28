@@ -20,7 +20,12 @@ public class ComponentSpec  {
     private float gas_min = 0;
     private float gas_max = 0;
     private int gas_decimals = 0;
-   
+
+
+    // For DISPLAYMESSAGE
+    private String address_numbers;
+    private String bus_numbers;
+    
     /**
      * Default constructor.
      * The default constructor is used by Jackson.  In order not to have null values, some fields are initialised to empty strings.
@@ -99,5 +104,13 @@ public class ComponentSpec  {
     public int getGas_decimals() { return this.gas_decimals; }
 
     public void setGas_decimals(int gas_decimals) { this.gas_decimals = gas_decimals; }
+    
+    public String getAddressNumbers() { return this.address_numbers; }
+
+    public void setAddress_numbers(String numbers) { this.address_numbers = numbers; }
+
+    public String getBusNumbers() { return this.bus_numbers; }
+
+    public void setBus_numbers(String numbers) { this.bus_numbers = numbers; }
     
 }
