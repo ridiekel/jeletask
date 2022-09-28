@@ -13,6 +13,10 @@ public interface TeletaskClient {
 
     void set(Function function, int number, ComponentState state, SuccessConsumer onSucccess, FailureConsumer onFailed);
 
+    void displaymessage(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed);
+
+    void displaymessage(int number, ComponentState state, SuccessConsumer onSucccess, FailureConsumer onFailed);
+
     void get(Function function, int number, SuccessConsumer onSucccess, FailureConsumer onFailed);
 
     void get(ComponentSpec component, SuccessConsumer onSuccess, FailureConsumer onFailed);
