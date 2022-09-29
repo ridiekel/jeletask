@@ -239,9 +239,7 @@ public class MqttProcessor implements StateChangeListener {
             Map.entry(Function.INPUT, f("service", p -> {
                 return null;
             })),
-            Map.entry(Function.TIMEDFNC, f("button", p -> {
-                return null;
-            }))  
+            Map.entry(Function.TIMEDFNC, f("switch", HARelayConfig::new)) // timed functions actually  act like a relay so we can HA autodiscover them like a relay
     );
 
     static FunctionConfig f(String type, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
