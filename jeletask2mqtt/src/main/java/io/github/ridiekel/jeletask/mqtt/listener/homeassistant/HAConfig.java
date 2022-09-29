@@ -86,11 +86,17 @@ public class HAConfig<T extends HAConfig<T>> {
     public T putBoolean(String key, boolean value) {
         return this.putBoolean(this.config, key, value);
     }
-
     private T putBoolean(ObjectNode node, String key, boolean value) {
         node.put(key, value);
         return this.self();
     }
+
+    public T putDouble(String key, Double value) { return this.putDouble(this.config, key, value); }
+    private T putDouble(ObjectNode node, String key, Double value) {
+        node.put(key, value);
+        return this.self();
+    }
+
 
     public T putInt(String key, int value) {
         return this.putInt(this.config, key, value);
