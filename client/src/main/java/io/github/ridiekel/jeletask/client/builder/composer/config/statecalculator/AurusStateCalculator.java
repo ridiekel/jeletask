@@ -12,13 +12,14 @@ public class AurusStateCalculator extends MappingStateCalculator {
     public static final OnOffToggleStateCalculator AURUS_STATE_CALCULATOR = new OnOffToggleStateCalculator(NumberConverter.UNSIGNED_BYTE, 255, 0);
 
     private static final List<StateMapping> STATE_MAPPINGS = List.of(
+            new StateMapping("MANUAL", 0),
             new StateMapping("UP", 21),
             new StateMapping("DOWN", 22),
-            new StateMapping("MANUALTARGET", 87), // Undocumented, verified
+            new StateMapping("MANUALTARGET", 87),
             new StateMapping("FROST", 24),
             new StateMapping("DAY", 26),
             new StateMapping("NIGHT",25 ),
-            new StateMapping("STANDBY", 93),
+            new StateMapping("STANDBY", 93),    // On the Aurus this mode is called "ECO" ?
 //            new StateMapping("SETDAY", 29),
 //            new StateMapping("SETSTANDBY", 88),
 //            new StateMapping("SETNIGHT", 27),
@@ -35,9 +36,12 @@ public class AurusStateCalculator extends MappingStateCalculator {
             new StateMapping("VENT", 105),
             new StateMapping("STOP", 106),
             new StateMapping("HEATP", 107), // What is Heat+ ?
-            new StateMapping("DRY", 108), // Undocumented, Not verified
+            new StateMapping("DRY", 108),
+            new StateMapping("ON", 255),
+            new StateMapping("OFF", 0),
             new StateMapping("ONOFF", 104)
     );
+
     public AurusStateCalculator(NumberConverter numberConverter) {
         super(numberConverter, STATE_MAPPINGS.toArray(StateMapping[]::new));
     }
@@ -53,14 +57,21 @@ public class AurusStateCalculator extends MappingStateCalculator {
         state.setCurrentTemperature(Float.valueOf(tempcalculator.toComponentState(component, new byte[]{dataBytes[0], dataBytes[1]}).getState()));
         state.setTargetTemperature(Float.valueOf(tempcalculator.toComponentState(component, new byte[]{dataBytes[2], dataBytes[3]}).getState()));
 
-        // TODO: reverse engineer these additional bytes? Or ask Teletask for more info?
-        // We need to complete toComponentState() here...
-        // Byte 0+1 = current temperature
-        // Byte 2+3 = target temperature
-        // Byte 4-11 = Unknown. Need to reverse engineer...
-        // Byte 12 = ON/OFF state (255/0)
-        // Byte 13-17 = Unknown. Need to reverse engineer...
+        // Byte 4+5 seems to be the day preset temperature?
+        // Byte 6+7 seems to be the night preset @heating temperature?
+        // Byte 8 = Unknown (0x19 ?)
 
+        state.setPreset(super.toComponentState(component, new byte[]{dataBytes[9]}).getState());
+        state.setMode(super.toComponentState(component, new byte[]{dataBytes[10]}).getState());
+        state.setFanspeed(super.toComponentState(component, new byte[]{dataBytes[11]}).getState());
+
+        // Byte 12 = ON/OFF (already used, see above)
+
+        // Byte 13 = Unknown (0x00 ?)
+        // Byte 14 = Unknown (0x80 / 0x90 ?)
+        // Byte 15 = Unknown (0x00 ?)
+        // Byte 16+17 seems to be the night preset @cooling temperature?
+        
         return state;
     }
 
@@ -69,7 +80,6 @@ public class AurusStateCalculator extends MappingStateCalculator {
         byte[] setting = null;
         byte[] data = Bytes.EMPTY;
 
-        // TODO: implement other commands with parameters: SETDAY,SETSTANDBY,SETNIGHT,SETNIGHTCOOL
         if (state.getTargetTemperature() != null) {
             setting = super.toBytes(new ComponentState("MANUALTARGET"));
             try {
