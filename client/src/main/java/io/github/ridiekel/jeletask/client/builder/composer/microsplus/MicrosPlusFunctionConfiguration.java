@@ -25,7 +25,7 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                         new LuxStateCalculator(NumberConverter.UNSIGNED_SHORT),
                         new HumidityStateCalculator(NumberConverter.UNSIGNED_SHORT),
                         new GasStateCalculator(NumberConverter.UNSIGNED_SHORT),
-                        new AurusStateCalculator(NumberConverter.UNSIGNED_BYTE)
+                        new TemperatureControlStateCalculator(NumberConverter.UNSIGNED_BYTE, 10, 273)
                 )),
                 new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE),
                 new FunctionConfigurable(Function.INPUT, 52, new InputStateCalculator(NumberConverter.UNSIGNED_SHORT)),
