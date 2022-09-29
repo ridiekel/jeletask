@@ -64,8 +64,12 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         // Byte 8 = Unknown (0x19 ?)
 
         state.setPreset(super.toComponentState(component, new byte[]{dataBytes[9]}).getState());
-        state.setMode(super.toComponentState(component, new byte[]{dataBytes[10]}).getState());
         state.setFanspeed(super.toComponentState(component, new byte[]{dataBytes[11]}).getState());
+
+        if ("OFF".equals(state.getState()))
+            state.setMode("OFF");
+        else
+            state.setMode(super.toComponentState(component, new byte[]{dataBytes[10]}).getState());
 
         // Byte 12 = ON/OFF (already used, see above)
 
@@ -85,7 +89,7 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         if (state.getTargetTemperature() != null) {
             setting = super.toBytes(new ComponentState("TARGET"));
             try {
-                int temperature = (int) state.getTargetTemperature();
+                int temperature = (int) state.getTargetTemperature().intValue();
                 data = NumberConverter.UNSIGNED_SHORT.convert((temperature+this.subtract)*this.divide);
             } catch (NumberFormatException e) {
                 //Not a number, so no data is needed
@@ -101,7 +105,7 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
 
     @Override
     public boolean isValidState(ComponentState state) {
-        return state.getState() != null || super.isValidState(state);
+        return state.getTargetTemperature() != null || super.isValidState(state);
     }
 
 
