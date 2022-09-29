@@ -12,6 +12,7 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameter
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HADimmerConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HAMotorConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HARelayConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HASensorConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
