@@ -35,8 +35,8 @@ public class ComponentSpec  {
             "TEMPERATURE", "sensor",
             "LIGHT", "sensor",
             "HUMIDITY", "sensor",
-            "GAS", "sensor"
-//            "TEMPERATURECONTROL", "climate"
+            "GAS", "sensor",
+            "TEMPERATURECONTROL", "climate"
     );
 
     /**
