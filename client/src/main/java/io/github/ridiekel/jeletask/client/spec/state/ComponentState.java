@@ -31,6 +31,9 @@ public class ComponentState {
     // for AURUS
     private Number currentTemperature;
     private Number targetTemperature;
+    private String preset;
+    private String mode;
+    private String fanspeed;
 
     // For DISPLAYMESSAGE
     private String messageLine1;
@@ -119,10 +122,24 @@ public class ComponentState {
     public void setCurrentTemperature(Number temperature) {
         this.currentTemperature = temperature;
     }
-
     public Number getTargetTemperature() { return targetTemperature; }
     public void setTargetTemperature(Number temperature) {
         this.targetTemperature = temperature;
+    }
+
+    public String getPreset() { return preset; }
+    public void setPreset(String preset) {
+        this.preset = preset;
+    }
+
+    public String getMode() { return mode; }
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
+
+    public String getFanspeed() { return fanspeed; }
+    public void setFanspeed(String fanspeed) {
+        this.fanspeed = fanspeed;
     }
 
     public String getMessageLine1() { return messageLine1; }
