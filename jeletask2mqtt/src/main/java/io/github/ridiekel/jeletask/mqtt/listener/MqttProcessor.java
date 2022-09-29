@@ -204,7 +204,7 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     private String haComponent(ComponentSpec c) {
-        return Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getType(c)).orElse("light");
+        return Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getHAType(c)).orElse("light");
     }
 
     private String haDiscoveryPrefix() {
@@ -231,9 +231,7 @@ public class MqttProcessor implements StateChangeListener {
             })),
             Map.entry(Function.MOTOR, f("cover", HAMotorConfig::new)),
             Map.entry(Function.RELAY, f("light", HARelayConfig::new)),
-            Map.entry(Function.SENSOR, f("sensor", p -> {
-                return null;
-            })),
+            Map.entry(Function.SENSOR, f("sensor", HASensorConfig::new)),
             Map.entry(Function.TIMEDMOOD, f("scene", p -> {
                 return null;
             })),
@@ -254,11 +252,11 @@ public class MqttProcessor implements StateChangeListener {
         private final java.util.function.Function<HAConfigParameters, HAConfig<?>> config;
 
         private FunctionConfig(String typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
-            this.type = c -> Optional.ofNullable(c.getType()).orElse(typeIfAbsent);
+            this.type = c -> Optional.ofNullable(c.getHAType()).orElse(typeIfAbsent);
             this.config = config;
         }
 
-        public String getType(ComponentSpec componentSpec) {
+        public String getHAType(ComponentSpec componentSpec) {
             return this.type.apply(componentSpec);
         }
 
@@ -267,7 +265,7 @@ public class MqttProcessor implements StateChangeListener {
                     centralUnit,
                     componentSpec,
                     baseTopic,
-                    this.getType(componentSpec),
+                    this.getHAType(componentSpec),
                     identifier
             );
             return Optional.ofNullable(this.config.apply(params)).map(HAConfig::toString).orElse(null);
