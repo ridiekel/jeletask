@@ -28,7 +28,7 @@ public class ComponentState {
     // For DIMMER
     private Number brightness;
 
-    // for AURUS
+    // for TEMPERATURECONTROL
     private Number currentTemperature;
     private Number targetTemperature;
     private String preset;
