@@ -54,6 +54,22 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "gas_min": 0,
         "gas_max": 14,
         "gas_decimals": 2
+      },
+      {
+        "number": 3,
+        "description": "Temperature Sensor",
+        "type": "TEMPERATURE",
+        "ha_unit_of_measurement": "°C"
+      },
+      {
+        "number": 4,
+        "description": "HVAC / AC",
+        "type": "TEMPERATURECONTROL"
+      },
+      {
+        "number": 5,
+        "description": "Aurus wall switch in the attic",
+        "type": "TEMPERATURECONTROL"
       }
     ],
     "COND": [
@@ -500,10 +516,11 @@ NOTE: For now, you can only listen to sensor values.
 The following sensor types are currently supported:
 
 ```
-TEMPERATURE : Teletask temperature sensor (TDS12250, TDS12251). Value is in °C.
-HUMIDITY    : Teletask humidity sensor (TDS12260). Value is in %.
-LIGHT       : Teletask light sensor (TDS12270). Value is in Lux.
-GAS         : Teletask General Analog Sensor.
+TEMPERATURE        : Teletask temperature sensor (TDS12250, TDS12251). Value is in °C.
+TEMPERATURECONTROL : Teletask temperature controllabe sensor (Aurus OLED, HVAC, ...)
+HUMIDITY           : Teletask humidity sensor (TDS12260). Value is in %.
+LIGHT              : Teletask light sensor (TDS12270). Value is in Lux.
+GAS                : Teletask General Analog Sensor.
 ```
 
 ### Listen to events
@@ -512,6 +529,37 @@ GAS         : Teletask General Analog Sensor.
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
 ```
+
+### Sensor TEMPERATURECONTROL
+
+Use TEMPERATURECONTROL for any temperature controllabe 'sensor' like an AC (HVAC) or an Aurus OLED wall switch 
+
+The following json attributes are provided on the /state MQTT topic: 
+```
+state               : ON/OFF state
+current_temperature : The current temperature
+target_temperature  : The set target temperature
+preset              : The current preset (DAY/NIGHT/STANDBY)
+mode                : The current mode (AUTO/HEAT/COOL/VENT/DRY)
+fanspeed            : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
+```
+
+The following "state" attribute commands are supported on the /set MQTT topic:
+
+```
+ON (Turn on the device)
+OFF (Turn off the device)
+ONOFF (Toggle on or off the device)
+UP (Set target temperature up 0.5°C)
+DOWN (Set target temperature down 0.5°C)
+For a preset, one of: DAY, NIGHT, STANDBY
+For an operating mode, one of: AUTO, HEAT, COOL, VENT, DRY
+   (or MODE to toggle between the available modes...)
+For a fan speed, one of: SPAUTO, SPLOW, SPMED, SPHIGH
+   (or SPEED to toggle between the available speeds...)
+```
+
+You can also set the target temperature by sending the desired temperature to the "target_temperature" attribute.
 
 ### Sensor types with parameters:
 
