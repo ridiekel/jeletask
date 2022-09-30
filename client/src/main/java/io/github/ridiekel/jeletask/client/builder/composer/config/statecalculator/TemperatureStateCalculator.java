@@ -3,6 +3,8 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class TemperatureStateCalculator extends SimpleStateCalculator {
     private final double divide;
@@ -19,7 +21,12 @@ public class TemperatureStateCalculator extends SimpleStateCalculator {
         long base = this.getNumberConverter().convert(dataBytes).longValue();
         double divided = base / this.divide;
         double subtracted = divided - this.subtract;
-        return new ComponentState(subtracted);
+
+        // Round up to X decimals
+        BigDecimal rounded_value = new BigDecimal(subtracted);
+        rounded_value = rounded_value.setScale(component.getDecimals(), RoundingMode.HALF_UP);
+
+        return new ComponentState(rounded_value);
     }
 
     @Override
