@@ -16,6 +16,7 @@ public class ComponentSpec  {
     private int number;
     private ComponentState state;
     private String type;
+    private int decimals = 0;
 
     private String HAtype;
     private String HA_unit_of_measurement;
@@ -24,8 +25,6 @@ public class ComponentSpec  {
     private String gas_type = "";
     private float gas_min = 0;
     private float gas_max = 0;
-    private int gas_decimals = 0;
-
 
     // For DISPLAYMESSAGE
     private String address_numbers;
@@ -130,9 +129,9 @@ public class ComponentSpec  {
 
     public void setGas_max(float gas_max) { this.gas_max = gas_max; }
     
-    public int getGas_decimals() { return this.gas_decimals; }
+    public int getDecimals() { return this.decimals; }
 
-    public void setGas_decimals(int gas_decimals) { this.gas_decimals = gas_decimals; }
+    public void setDecimals(int decimals) { this.decimals = decimals; }
     
     public String getAddressNumbers() { return this.address_numbers; }
 
