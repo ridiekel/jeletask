@@ -21,10 +21,8 @@ public class DisplayMessageStateCalculator extends SimpleStateCalculator {
         String str_msg2 = null;
 
         // Alarm requested? Set is_message to false.
-        if (state.getMessageType() != null) {
-            if (state.getMessageType().equalsIgnoreCase("alarm"))
+        if (state.getMessageType() != null || "alarm".equalsIgnoreCase(state.getMessageType()))
                 is_message = false;
-        }
 
         // msgType: 0x01 = message, 0x00 = alarm
         byte[] msgType = new byte[]{(byte)(is_message?1:0)};
@@ -32,12 +30,12 @@ public class DisplayMessageStateCalculator extends SimpleStateCalculator {
         if (state.getMessageLine1() != null)
             str_msg1 = StringUtils.left(state.getMessageLine1(), 16);
         else
-            str_msg1 = StringUtils.repeat(' ', 16);;
+            str_msg1 = StringUtils.repeat(' ', 16);
 
         if (state.getMessageLine2() != null)
             str_msg2 = StringUtils.left(state.getMessageLine2(), 16);
         else
-            str_msg2 = StringUtils.repeat(' ', 16);;
+            str_msg2 = StringUtils.repeat(' ', 16);
 
         // Create our message byte arrays
         bytes_msg1 = String.format("%-16s", str_msg1).getBytes();
