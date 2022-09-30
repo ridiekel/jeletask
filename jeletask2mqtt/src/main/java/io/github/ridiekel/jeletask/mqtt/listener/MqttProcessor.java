@@ -12,6 +12,7 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameter
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HADimmerConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HAMotorConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HARelayConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HASensorConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -87,7 +88,13 @@ public class MqttProcessor implements StateChangeListener {
 
         this.connOpts = new MqttConnectOptions();
         this.connOpts.setMaxInflight(100000);
-        this.connOpts.setCleanSession(true);
+        
+        // TODO:
+        // Do we need CleanSession?
+        // I have disabled it for now because it's not subscribing to the mqtt topics again
+        // after a reconnect (for ex. when you restart your mqtt broker).
+        this.connOpts.setCleanSession(false);
+        
         this.connOpts.setAutomaticReconnect(true);
         this.connOpts.setUserName(username);
         this.connOpts.setPassword(password);
@@ -198,7 +205,7 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     private String haComponent(ComponentSpec c) {
-        return Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getType(c)).orElse("light");
+        return Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getHAType(c)).orElse("light");
     }
 
     private String haDiscoveryPrefix() {
@@ -225,18 +232,14 @@ public class MqttProcessor implements StateChangeListener {
             })),
             Map.entry(Function.MOTOR, f("cover", HAMotorConfig::new)),
             Map.entry(Function.RELAY, f("light", HARelayConfig::new)),
-            Map.entry(Function.SENSOR, f("sensor", p -> {
-                return null;
-            })),
+            Map.entry(Function.SENSOR, f("sensor", HASensorConfig::new)),
             Map.entry(Function.TIMEDMOOD, f("scene", p -> {
                 return null;
             })),
-            Map.entry(Function.SERVICE, f("service", p -> {
+            Map.entry(Function.INPUT, f("service", p -> {
                 return null;
             })),
-            Map.entry(Function.TIMEDFNC, f("button", p -> {
-                return null;
-            }))  
+            Map.entry(Function.TIMEDFNC, f("switch", HARelayConfig::new)) // timed functions actually  act like a relay so we can HA autodiscover them like a relay
     );
 
     static FunctionConfig f(String type, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
@@ -248,11 +251,11 @@ public class MqttProcessor implements StateChangeListener {
         private final java.util.function.Function<HAConfigParameters, HAConfig<?>> config;
 
         private FunctionConfig(String typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
-            this.type = c -> Optional.ofNullable(c.getType()).orElse(typeIfAbsent);
+            this.type = c -> Optional.ofNullable(c.getHAType()).orElse(typeIfAbsent);
             this.config = config;
         }
 
-        public String getType(ComponentSpec componentSpec) {
+        public String getHAType(ComponentSpec componentSpec) {
             return this.type.apply(componentSpec);
         }
 
@@ -261,7 +264,7 @@ public class MqttProcessor implements StateChangeListener {
                     centralUnit,
                     componentSpec,
                     baseTopic,
-                    this.getType(componentSpec),
+                    this.getHAType(componentSpec),
                     identifier
             );
             return Optional.ofNullable(this.config.apply(params)).map(HAConfig::toString).orElse(null);
@@ -336,9 +339,16 @@ public class MqttProcessor implements StateChangeListener {
                     String componentLog = getLoggingStringForComponent(MqttProcessor.this.teletaskClient.getConfig().getComponent(function, number));
                     LOG.info(String.format(WHAT_LOG_PATTERNS.get("COMMAND"), getWhat("COMMAND"), componentLog, payloadToLogWithColors(new String(mqttMessage.getPayload()))));
 
-                    MqttProcessor.this.teletaskClient.set(function, number, state,
-                            (f, n, s) -> LOG.debug(String.format("[%s] MQTT topic '%s' changed state for: %s / %s -> %s", componentLog, topic, f, n, s)),
-                            (f, n, s, e) -> LOG.warn(String.format("[%s] MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
+                    if (function == Function.DISPLAYMESSAGE)
+                        MqttProcessor.this.teletaskClient.displaymessage(number, state,
+                                (f, n, s) -> LOG.debug(String.format("[%s] MQTT topic '%s' changed state for: %s / %s -> %s", componentLog, topic, f, n, s)),
+                                (f, n, s, e) -> LOG.warn(String.format("[%s] MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
+
+                    else
+                        MqttProcessor.this.teletaskClient.set(function, number, state,
+                                (f, n, s) -> LOG.debug(String.format("[%s] MQTT topic '%s' changed state for: %s / %s -> %s", componentLog, topic, f, n, s)),
+                                (f, n, s, e) -> LOG.warn(String.format("[%s] MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
+
                 }
             } catch (Exception e) {
                 if (LOG.isTraceEnabled()) {

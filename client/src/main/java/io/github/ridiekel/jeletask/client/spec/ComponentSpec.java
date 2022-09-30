@@ -3,7 +3,9 @@ package io.github.ridiekel.jeletask.client.spec;
 
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
@@ -14,6 +16,9 @@ public class ComponentSpec  {
     private int number;
     private ComponentState state;
     private String type;
+
+    private String HAtype;
+    private String HA_unit_of_measurement;
     
     // For GAS (General Analog Sensor)
     private String gas_type = "";
@@ -21,9 +26,19 @@ public class ComponentSpec  {
     private float gas_max = 0;
     private int gas_decimals = 0;
 
-    // For Teletask Service functions
-    private String service_type = "";
-    
+
+    // For DISPLAYMESSAGE
+    private String address_numbers;
+    private String bus_numbers;
+
+    public final Map<String, String> SensorTypesToHATypes = Map.of(
+            "TEMPERATURE", "sensor",
+            "LIGHT", "sensor",
+            "HUMIDITY", "sensor",
+            "GAS", "sensor",
+            "TEMPERATURECONTROL", "climate"
+    );
+
     /**
      * Default constructor.
      * The default constructor is used by Jackson.  In order not to have null values, some fields are initialised to empty strings.
@@ -79,14 +94,30 @@ public class ComponentSpec  {
         this.description = description;
     }
 
-    public String getType() {
-        return this.type;
-    }
+    public String getType() { return this.type; }
 
     public void setType(String type) {
         this.type = type;
     }
-    
+
+    public String getHAType() {
+
+        if (this.HAtype == null) {
+
+            if (this.type != null)
+                return Optional.ofNullable(this.SensorTypesToHATypes.get(this.type)).orElse(this.type);
+
+            return this.type;
+
+        } else
+            return this.HAtype;
+
+    }
+
+    public void setHAType(String HAtype) {
+        this.HAtype = HAtype;
+    }
+
     public String getGas_type() { return this.gas_type; }
 
     public void setGas_type(String gas_type) { this.gas_type = gas_type; }
@@ -103,7 +134,16 @@ public class ComponentSpec  {
 
     public void setGas_decimals(int gas_decimals) { this.gas_decimals = gas_decimals; }
     
-    public String getService_type() { return this.service_type; }
+    public String getAddressNumbers() { return this.address_numbers; }
 
-    public void setService_type(String service_type) { this.service_type = service_type; }
+    public void setAddress_numbers(String numbers) { this.address_numbers = numbers; }
+
+    public String getBusNumbers() { return this.bus_numbers; }
+
+    public void setBus_numbers(String numbers) { this.bus_numbers = numbers; }
+
+    public String getHA_unit_of_measurement() { return this.HA_unit_of_measurement; }
+
+    public void setHA_unit_of_measurement(String HA_unit_of_measurement) { this.HA_unit_of_measurement = HA_unit_of_measurement; }
+
 }

@@ -16,12 +16,31 @@ public class ComponentState {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
     private String state;
+
+    // For MOTOR
     private String lastDirection;
     private String protection;
     private Number position;
     private Number secondsToFinish;
     private Number correctionAtZeroPercentInSeconds;
     private Number correctionAtHundredPercentInSeconds;
+
+    // For DIMMER
+    private Number brightness;
+
+    // for TEMPERATURECONTROL
+    private Number currentTemperature;
+    private Number targetTemperature;
+    private String preset;
+    private String mode;
+    private String fanspeed;
+
+    // For DISPLAYMESSAGE
+    private String messageLine1;
+    private String messageLine2;
+    private Number messageBeeps;
+    private String messageType;
+
 
     public ComponentState() {
     }
@@ -88,6 +107,57 @@ public class ComponentState {
 
     public void setCorrectionAtHundredPercentInSeconds(Number correctionAtHundredPercentInSeconds) {
         this.correctionAtHundredPercentInSeconds = correctionAtHundredPercentInSeconds;
+    }
+
+    public Number getBrightness() {
+        return brightness;
+    }
+    public void setBrightness(Number brightness) {
+        this.brightness = brightness;
+    }
+
+    public Number getCurrentTemperature() {
+        return currentTemperature;
+    }
+    public void setCurrentTemperature(Number temperature) {
+        this.currentTemperature = temperature;
+    }
+    public Number getTargetTemperature() { return targetTemperature; }
+    public void setTargetTemperature(Number temperature) {
+        this.targetTemperature = temperature;
+    }
+
+    public String getPreset() { return preset; }
+    public void setPreset(String preset) {
+        this.preset = preset;
+    }
+
+    public String getMode() { return mode; }
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
+
+    public String getFanspeed() { return fanspeed; }
+    public void setFanspeed(String fanspeed) {
+        this.fanspeed = fanspeed;
+    }
+
+    public String getMessageLine1() { return messageLine1; }
+    public void setMessageLine1(String line) {
+        this.messageLine1 = line;
+    }
+
+    public String getMessageLine2() { return messageLine2; }
+    public void setMessageLine2(String line) {
+        this.messageLine2 = line;
+    }
+
+    public Number getMessageBeeps() { return messageBeeps; }
+    public void setMessageBeeps(Number beeps) { this.messageBeeps = beeps; }
+
+    public String getMessageType() { return messageType; }
+    public void setMessageType(String type) {
+        this.messageType = type;
     }
 
     public static ComponentState parse(Function function, String state) {

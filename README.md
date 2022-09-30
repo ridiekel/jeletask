@@ -4,12 +4,12 @@ An open source java API for Teletask domotics.
 
 It is the purpose to create an API for software developers or domotics enthusiasts, who are interested in generating their own control environment for the TELETASK domotics systems, so you can create your own user interface and connected solutions and services.
 
-If you own a Teletask MICROS or MICROS+, you have access to the free (or paid in case of the MICROS+) DLL32 LIBRARY (TDS15132).  
+If you own a Teletask MICROS+, you need the (paid) DLL32 LIBRARY (TDS15132).  
 However, if you're a java programmer like myself, you don't want to use a windows dll :-).
 
 Teletask documentation on how their API works can be found here: https://teletask.be/media/3109/tds15132-library.pdf
 
-The program supports the MICROS+ (maybe also PICOS, but untested), but you'll have to buy a licence to be able to make TCP calls.
+The program supports the MICROS+ (maybe also NANOS/PICOS, but untested), but you'll have to buy a licence to be able to make TCP calls.
 
 You can find the latest docker images at: https://hub.docker.com/r/ridiekel/jeletask2mqtt
 
@@ -20,6 +20,7 @@ At this time I can only test with MICROS_PLUS. Please log an issue when you are 
 If teletask has not changed their binary API, it should be compatible.
 
 The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
+
 ```json
 {
   "type": "MICROS_PLUS",
@@ -28,7 +29,7 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 1,
         "description": "Power outlet",
-        "type": "switch" 
+        "type": "switch"
       },
       {
         "number": 23,
@@ -53,6 +54,22 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "gas_min": 0,
         "gas_max": 14,
         "gas_decimals": 2
+      },
+      {
+        "number": 3,
+        "description": "Temperature Sensor",
+        "type": "TEMPERATURE",
+        "ha_unit_of_measurement": "°C"
+      },
+      {
+        "number": 4,
+        "description": "HVAC / AC",
+        "type": "TEMPERATURECONTROL"
+      },
+      {
+        "number": 5,
+        "description": "Aurus wall switch in the attic",
+        "type": "TEMPERATURECONTROL"
       }
     ],
     "COND": [
@@ -91,17 +108,24 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "description": "Spots"
       }
     ],
-    "SERVICE": [
+    "INPUT": [
       {
         "number": 42,
-        "description": "State of TDS12117 input nr 3",
-        "service_type": "DIGITALINPUT"
+        "description": "State of TDS12117 input nr 3"
       }
     ],
     "TIMEDFNC": [
       {
         "number": 3,
-        "description": "Timed function nr 3"
+        "description": "Timed function nr 3 (pulse for garage door)"
+      }
+    ],
+    "DISPLAYMESSAGE": [
+      {
+        "number": 1000,
+        "bus_numbers": "1,1",
+        "address_numbers": "13,5",
+        "description": "Aurus living room + aurus basement"
       }
     ]
   }
@@ -217,22 +241,10 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
-    -m "ON"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
     -m '{"state":"ON"}'
 ```
 
 #### Turning off
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
-    -m "OFF"
-```
-or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
@@ -254,22 +266,10 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
-    -m "ON"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
     -m '{"state":"ON"}'
 ```
 
 #### Turning off
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
-    -m "OFF"
-```
-or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
@@ -291,22 +291,10 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
-    -m "ON"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
     -m '{"state":"ON"}'
 ```
 
 #### Turning off
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
-    -m "OFF"
-```
-or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
@@ -331,25 +319,13 @@ For turning on you can use `ON` (goes to 100%), `OFF` (goes to 0%), `PREVIOUS_ST
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m "ON"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
     -m '{"state":"ON"}'
 ```
-
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m "60"
-```
 or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m '{"state":60}'
+    -m '{"state":"ON", "brightness": "60"}'
 ```
 
 #### Turning off
@@ -358,26 +334,13 @@ For turning off, you can use either `OFF` or `0`
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m "OFF"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
     -m '{"state":"OFF"}'
 ```
-
-
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m "0"
-```
 or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
-    -m '{"state":"0"}'
+    -m '{"brightness":"0"}'
 ```
 
 ## Motor
@@ -395,24 +358,6 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 You can send either `UP`, `DOWN` or `STOP` to the motor function.
 
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
-    -m "UP"
-```
-
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
-    -m "STOP"
-```
-
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
-    -m "DOWN"
-```
-or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
@@ -439,12 +384,6 @@ Position can be anything between `0` and `100`.
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
-    -m "25"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
     -m '{"position": 25}'
 ```
 
@@ -462,22 +401,10 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
-    -m "ON"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
     -m '{"state":"ON"}'
 ```
 
 #### Turning off
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
-    -m "OFF"
-```
-or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
@@ -486,15 +413,14 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ## Sensor
 
-NOTE: For now, you can only listen to sensor values.
-
 The following sensor types are currently supported:
 
 ```
-TEMPERATURE : Teletask temperature sensor (TDS12250, TDS12251). Value is in °C.
-HUMIDITY    : Teletask humidity sensor (TDS12260). Value is in %.
-LIGHT       : Teletask light sensor (TDS12270). Value is in Lux.
-GAS         : Teletask General Analog Sensor.
+TEMPERATURE        : Teletask temperature sensor (TDS12250, TDS12251). Value is in °C.
+TEMPERATURECONTROL : Teletask temperature controllabe sensor (Aurus OLED, HVAC, ...)
+HUMIDITY           : Teletask humidity sensor (TDS12260). Value is in %.
+LIGHT              : Teletask light sensor (TDS12270). Value is in Lux.
+GAS                : Teletask General Analog Sensor.
 ```
 
 ### Listen to events
@@ -503,6 +429,45 @@ GAS         : Teletask General Analog Sensor.
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
 ```
+
+### HA config parameters
+
+The following additional Home Assistant related parameters are available:
+
+```
+ha_unit_of_measurement: To specify a custom 'unit_of_measurement' in HA auto discovery. For example: "°C"
+```
+
+### Sensor TEMPERATURECONTROL
+
+Use TEMPERATURECONTROL for any temperature controllabe 'sensor' like an AC (HVAC) or an Aurus OLED wall switch 
+
+The following json attributes are provided on the /state MQTT topic: 
+```
+state               : ON/OFF state
+current_temperature : The current temperature
+target_temperature  : The set target temperature
+preset              : The current preset (DAY/NIGHT/STANDBY)
+mode                : The current mode (AUTO/HEAT/COOL/VENT/DRY)
+fanspeed            : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
+```
+
+The following "state" attribute commands are supported on the /set MQTT topic:
+
+```
+ON (Turn on the device)
+OFF (Turn off the device)
+ONOFF (Toggle on or off the device)
+UP (Set target temperature up 0.5°C)
+DOWN (Set target temperature down 0.5°C)
+For a preset, one of: DAY, NIGHT, STANDBY
+For an operating mode, one of: AUTO, HEAT, COOL, VENT, DRY
+   (or MODE to toggle between the available modes...)
+For a fan speed, one of: SPAUTO, SPLOW, SPMED, SPHIGH
+   (or SPEED to toggle between the available speeds...)
+```
+
+You can also set the target temperature by sending the desired temperature to the "target_temperature" attribute.
 
 ### Sensor types with parameters:
 
@@ -517,21 +482,13 @@ gas_max      : The "Max" value (see PROSOFT configuration)
 gas_decimals : How many decimals you want returned (rounded up)
 ```
 
-## Service function
-
-NOTE: For now, you can only listen to service functions
-
-The following service types are currently supported:
-
-```
-DIGITALINPUT : For example, for the TDS12117 digital input interface. (OPEN / CLOSED)
-```
+## Input (digital inputs)
 
 ### Listen to events
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/service/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/input/1/state
 ```
 
 ## Timed function
@@ -548,12 +505,6 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
-    -m "ON"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -561,14 +512,37 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
-    -m "OFF"
-```
-or
-```
-mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
     -m '{"state":"OFF"}'
 ```
+
+## Display message
+
+You can only send a display message. Listening for events is not supported.
+
+DISPLAYMESSAGE config attribute parameters:
+
+```
+number          : A unique DISPLAYMESSAGE number 
+bus_numbers     : A list of BUS numbers (see below)
+address_numbers : A list of ADDRESS numbers (see below)
+description     : Description for this config entry
+```
+
+#### What are bus_numbers and address_numbers?
+bus_numbers and addres_numbers are two comma separated lists of the same size.
+They contain the Teletask bus number(s) and Teletask interface address(es) of the interface(s) on which to display the Message/Alarm
+
+#### Sending a display message
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/displaymessage/1000/set \
+    -m '{"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!", "message_beeps":"10","message_type="message"}'
+```
+
+Notes:
+- Both lines each have maximum length of 16 chars. This is a Teletask limitation.
+- message_type can either be "alarm" or "message".
 
 # HomeAssistant
 
@@ -584,7 +558,7 @@ switch.teletask_my_teletask_relay_1
 light.teletask_my_teletask_relay_36
 ```
 
-## Additional config
+## Additional HA config
 
 ### Relay
 

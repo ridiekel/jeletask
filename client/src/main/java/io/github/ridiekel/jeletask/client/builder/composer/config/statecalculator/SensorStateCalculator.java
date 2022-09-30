@@ -15,13 +15,14 @@ public class SensorStateCalculator extends SimpleStateCalculator {
 
     private final Map<String, StateCalculator> sensorTypeCalculators;
 
-    public SensorStateCalculator(StateCalculator temperature, StateCalculator lux, StateCalculator humidity, StateCalculator gas) {
+    public SensorStateCalculator(StateCalculator temperature, StateCalculator lux, StateCalculator humidity, StateCalculator gas, StateCalculator temperaturecontrol) {
         super(temperature.getNumberConverter());
         this.sensorTypeCalculators = Map.of(
                 "TEMPERATURE", temperature,
                 "LIGHT", lux,
                 "HUMIDITY", humidity,
-                "GAS", gas
+                "GAS", gas,
+                "TEMPERATURECONTROL", temperaturecontrol
         );
     }
 

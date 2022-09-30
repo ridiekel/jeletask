@@ -3,16 +3,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.microsplus;
 import io.github.ridiekel.jeletask.client.builder.composer.config.ConfigurationSupport;
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.DimmerStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.HumidityStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.GasStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.LuxStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.MotorStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.SensorStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.ServiceStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.*;
 import io.github.ridiekel.jeletask.client.spec.Function;
 
 import java.util.List;
@@ -33,11 +24,13 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                         new TemperatureStateCalculator(NumberConverter.UNSIGNED_SHORT, 10, 273),
                         new LuxStateCalculator(NumberConverter.UNSIGNED_SHORT),
                         new HumidityStateCalculator(NumberConverter.UNSIGNED_SHORT),
-                        new GasStateCalculator(NumberConverter.UNSIGNED_SHORT)
+                        new GasStateCalculator(NumberConverter.UNSIGNED_SHORT),
+                        new TemperatureControlStateCalculator(NumberConverter.UNSIGNED_BYTE, 10, 273)
                 )),
                 new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE),
-                new FunctionConfigurable(Function.SERVICE, 52, new ServiceStateCalculator(NumberConverter.UNSIGNED_SHORT)),
-                new FunctionConfigurable(Function.TIMEDFNC, 5, ON_OFF_TOGGLE)
+                new FunctionConfigurable(Function.INPUT, 52, new InputStateCalculator(NumberConverter.UNSIGNED_SHORT)),
+                new FunctionConfigurable(Function.TIMEDFNC, 5, ON_OFF_TOGGLE),
+                new FunctionConfigurable(Function.DISPLAYMESSAGE, 54, new DisplayMessageStateCalculator(NumberConverter.UNSIGNED_BYTE))            
         ));
     }
 

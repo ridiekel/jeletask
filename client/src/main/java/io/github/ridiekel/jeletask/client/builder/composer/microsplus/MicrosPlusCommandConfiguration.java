@@ -9,6 +9,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.KeepAliveCommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.LogCommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.SetCommandConfigurable;
+import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.command.DisplayMessageCommandConfigurable;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
@@ -27,7 +28,8 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
                 new GroupGetCommandConfigurable(9, true, "Central Unit", "Fnc", "Number", "Number"),
                 new LogCommandConfigurable(3, false, "Fnc", "State"),
                 new MicrosPlusEventCommandConfigurable(),
-                new KeepAliveCommandConfigurable(11, true)
+                new KeepAliveCommandConfigurable(11, true),
+                new DisplayMessageCommandConfigurable(4, true, "Central Unit")            
         ));
     }
 
