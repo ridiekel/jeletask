@@ -53,7 +53,7 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "gas_type": "4-20ma",
         "gas_min": 0,
         "gas_max": 14,
-        "gas_decimals": 2
+        "decimals": 2
       },
       {
         "number": 3,
@@ -479,7 +479,7 @@ This sensor has 4 possible config parameters:
 gas_type     : One of the 4 possible signal options: "4-20ma", "0-20ma", "0-10V" or "5-10V"
 gas_min      : The "Min" value (see PROSOFT configuration)
 gas_max      : The "Max" value (see PROSOFT configuration)
-gas_decimals : How many decimals you want returned (rounded up)
+decimals : How many decimals you want returned (rounded up)
 ```
 
 ## Input (digital inputs)
