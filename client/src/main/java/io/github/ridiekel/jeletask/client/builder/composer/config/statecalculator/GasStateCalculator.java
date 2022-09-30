@@ -36,7 +36,7 @@ public class GasStateCalculator extends SimpleStateCalculator {
 
         // Round up to X decimals
         BigDecimal gas_rounded_value = new BigDecimal(gas_value);
-        gas_rounded_value = gas_rounded_value.setScale(component.getGas_decimals(), RoundingMode.HALF_UP);
+        gas_rounded_value = gas_rounded_value.setScale(component.getDecimals(), RoundingMode.HALF_UP);
 
         return new ComponentState(gas_rounded_value.toString());
     }
