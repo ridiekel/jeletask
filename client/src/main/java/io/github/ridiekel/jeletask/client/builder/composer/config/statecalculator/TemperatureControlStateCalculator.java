@@ -58,25 +58,23 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         ComponentState state = new ComponentState(TEMPERATURE_CONTROL_STATE_CALCULATOR.toComponentState(component, new byte[]{dataBytes[12]}).getState());
         state.setCurrentTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[0], dataBytes[1]}).longValue() / this.divide) - this.subtract).getState()));
         state.setTargetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[2], dataBytes[3]}).longValue() / this.divide) - this.subtract).getState()));
-
-        // Byte 4+5 seems to be the day preset temperature?
-        // Byte 6+7 seems to be the night preset @heating temperature?
-        // Byte 8 = Unknown (0x19 ?)
-
+        state.setDayPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[4], dataBytes[5]}).longValue() / this.divide) - this.subtract).getState()));
+        state.setNightAtHeatingPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[6], dataBytes[7]}).longValue() / this.divide) - this.subtract).getState()));
+        state.setEcoPreset( (float) dataBytes[8] / this.divide );
         state.setPreset(super.toComponentState(component, new byte[]{dataBytes[9]}).getState());
-        state.setFanspeed(super.toComponentState(component, new byte[]{dataBytes[11]}).getState());
 
         if ("OFF".equals(state.getState()))
             state.setMode("OFF");
         else
             state.setMode(super.toComponentState(component, new byte[]{dataBytes[10]}).getState());
 
-        // Byte 12 = ON/OFF (already used, see above)
+        state.setFanspeed(super.toComponentState(component, new byte[]{dataBytes[11]}).getState());
 
         // Byte 13 = Unknown (0x00 ?)
         // Byte 14 = Unknown (0x80 / 0x90 ?)
         // Byte 15 = Unknown (0x00 ?)
-        // Byte 16+17 seems to be the night preset @cooling temperature?
+
+        state.setNightAtCoolingPresetPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[16], dataBytes[17]}).longValue() / this.divide) - this.subtract).getState()));
 
         return state;
     }
