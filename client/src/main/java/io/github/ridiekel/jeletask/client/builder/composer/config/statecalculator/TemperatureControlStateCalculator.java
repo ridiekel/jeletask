@@ -21,10 +21,10 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
             new StateMapping("FROST", 24),
             new StateMapping("DAY", 26),
             new StateMapping("NIGHT",25 ),
-            new StateMapping("STANDBY", 93),        // On the Aurus this mode is called "ECO" ?
+            new StateMapping("ECO", 93),
             new StateMapping("SETDAY", 29),         // Not implemented
-            new StateMapping("SETSTANDBY", 88),     // Not implemented
-            new StateMapping("SETNIGHT", 27),       // Not implemented
+            new StateMapping("SETECO", 88),         // Not implemented
+            new StateMapping("SETNIGHTHEAT", 27),   // Not implemented
             new StateMapping("SETNIGHTCOOL", 56),   // Not implemented
             new StateMapping("SPEED", 31),
             new StateMapping("SPLOW", 97),
@@ -84,6 +84,11 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         byte[] setting = null;
         byte[] data = Bytes.EMPTY;
 
+        /*
+            TODO:   Add support to changing preset temperatures (SETDAY, SETECO, SETNIGHTHEAT, SETNIGHTCOOL). 
+                    Needs to be implemented the same way we already did for "TARGET" (see below).
+         */
+        
         if (state.getTargetTemperature() != null) {
             setting = super.toBytes(new ComponentState("TARGET"));
             try {
