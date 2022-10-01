@@ -462,13 +462,18 @@ Use TEMPERATURECONTROL for any temperature controllabe 'sensor' like an AC (HVAC
 
 The following json attributes are provided on the /state MQTT topic:
 ```
-state               : ON/OFF state
-current_temperature : The current temperature
-target_temperature  : The set target temperature
-preset              : The current preset (DAY/NIGHT/STANDBY)
-mode                : The current mode (AUTO/HEAT/COOL/VENT/DRY)
-fanspeed            : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
+state                   : ON/OFF state
+current_temperature     : The current temperature
+target_temperature      : The set target temperature
+preset                  : The current preset (DAY/NIGHT/STANDBY)
+mode                    : The current mode (AUTO/HEAT/COOL/VENT/DRY)
+fanspeed                : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
+day_preset_temperature  : Day preset temperature (see prosoft)
+night_at_heating_preset_temperature         : Night at heating temperature (see prosoft)
+night_at_cooling_preset_preset_temperature  : Night at cooling temperature (see prosoft)
+eco_preset                                  : ECO offset preset temperature (see prosoft)
 ```
+
 
 The following "state" attribute commands are supported on the /set MQTT topic:
 
