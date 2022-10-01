@@ -413,6 +413,14 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ## Sensor
 
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+```
+
+
 The following sensor types are currently supported:
 
 ```
@@ -423,14 +431,13 @@ LIGHT              : Teletask light sensor (TDS12270). Value is in Lux.
 GAS                : Teletask General Analog Sensor.
 ```
 
-### Listen to events
+#### Optional parameters:
 
 ```
-mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+decimals : How many decimals you want returned (rounded up) (Supported by GAS + TEMPERATURE)
 ```
 
-### HA config parameters
+#### HA MQTT config parameters
 
 The following additional Home Assistant related parameters are available:
 
@@ -438,11 +445,22 @@ The following additional Home Assistant related parameters are available:
 ha_unit_of_measurement: To specify a custom 'unit_of_measurement' in HA auto discovery. For example: "°C"
 ```
 
-### Sensor TEMPERATURECONTROL
+#### More details for: General Analog Sensor (GAS)
 
-Use TEMPERATURECONTROL for any temperature controllabe 'sensor' like an AC (HVAC) or an Aurus OLED wall switch 
+This type of sensor has 3 additional config parameters:
 
-The following json attributes are provided on the /state MQTT topic: 
+```
+gas_type     : One of the 4 possible signal options: "4-20ma", "0-20ma", "0-10V" or "5-10V"
+gas_min      : The "Min" value (see PROSOFT configuration)
+gas_max      : The "Max" value (see PROSOFT configuration)
+```
+
+
+#### More details for: TEMPERATURECONTROL
+
+Use TEMPERATURECONTROL for any temperature controllabe 'sensor' like an AC (HVAC) or an Aurus OLED wall switch
+
+The following json attributes are provided on the /state MQTT topic:
 ```
 state               : ON/OFF state
 current_temperature : The current temperature
@@ -469,22 +487,12 @@ For a fan speed, one of: SPAUTO, SPLOW, SPMED, SPHIGH
 
 You can also set the target temperature by sending the desired temperature to the "target_temperature" attribute.
 
-### Sensor types with parameters:
 
-#### General Analog Sensor (GAS)
 
-This sensor has 4 possible config parameters:
-
-```
-gas_type     : One of the 4 possible signal options: "4-20ma", "0-20ma", "0-10V" or "5-10V"
-gas_min      : The "Min" value (see PROSOFT configuration)
-gas_max      : The "Max" value (see PROSOFT configuration)
-decimals : How many decimals you want returned (rounded up)
-```
 
 ## Input (digital inputs)
 
-### Listen to events
+### Listen to sensor events
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
