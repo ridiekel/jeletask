@@ -465,7 +465,7 @@ The following json attributes are provided on the /state MQTT topic:
 state                   : ON/OFF state
 current_temperature     : The current temperature
 target_temperature      : The set target temperature
-preset                  : The current preset (DAY/NIGHT/STANDBY)
+preset                  : The current preset (DAY/NIGHT/ECO)
 mode                    : The current mode (AUTO/HEAT/COOL/VENT/DRY)
 fanspeed                : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
 day_preset_temperature  : Day preset temperature (see prosoft)
@@ -483,7 +483,7 @@ OFF (Turn off the device)
 ONOFF (Toggle on or off the device)
 UP (Set target temperature up 0.5°C)
 DOWN (Set target temperature down 0.5°C)
-For a preset, one of: DAY, NIGHT, STANDBY
+For a preset, one of: DAY, NIGHT, ECO
 For an operating mode, one of: AUTO, HEAT, COOL, VENT, DRY
    (or MODE to toggle between the available modes...)
 For a fan speed, one of: SPAUTO, SPLOW, SPMED, SPHIGH
