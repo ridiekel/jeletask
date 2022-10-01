@@ -31,6 +31,10 @@ public class ComponentState {
     // for TEMPERATURECONTROL
     private Number currentTemperature;
     private Number targetTemperature;
+    private Number dayPresetTemperature;
+    private Number nightAtHeatingPresetTemperature;
+    private Number nightAtCoolingPresetTemperature;
+    private Number ecoPreset;
     private String preset;
     private String mode;
     private String fanspeed;
@@ -126,6 +130,20 @@ public class ComponentState {
     public void setTargetTemperature(Number temperature) {
         this.targetTemperature = temperature;
     }
+
+    public Number getDayPresetTemperature() { return dayPresetTemperature; }
+    public void setDayPresetTemperature(Number temperature) {
+        this.dayPresetTemperature = temperature;
+    }
+
+    public Number getNightAtHeatingPresetTemperature() { return nightAtHeatingPresetTemperature; }
+    public void setNightAtHeatingPresetTemperature(Number temperature) { this.nightAtHeatingPresetTemperature = temperature; }
+
+    public Number getNightAtCoolingPresetTemperature() { return nightAtCoolingPresetTemperature; }
+    public void setNightAtCoolingPresetTemperature(Number temperature) { this.nightAtCoolingPresetTemperature = temperature; }
+
+    public Number getEcoPreset() { return ecoPreset; }
+    public void setEcoPreset(Number temperature) { this.ecoPreset = temperature; }
 
     public String getPreset() { return preset; }
     public void setPreset(String preset) {
