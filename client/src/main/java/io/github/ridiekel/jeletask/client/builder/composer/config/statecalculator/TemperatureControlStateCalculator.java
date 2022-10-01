@@ -74,7 +74,7 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         // Byte 14 = Unknown (0x80 / 0x90 ?)
         // Byte 15 = Unknown (0x00 ?)
 
-        state.setNightAtCoolingPresetPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[16], dataBytes[17]}).longValue() / this.divide) - this.subtract).getState()));
+        state.setNightAtCoolingPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[16], dataBytes[17]}).longValue() / this.divide) - this.subtract).getState()));
 
         return state;
     }
