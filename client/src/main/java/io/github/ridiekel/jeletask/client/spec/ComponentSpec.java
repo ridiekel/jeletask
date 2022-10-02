@@ -20,6 +20,7 @@ public class ComponentSpec  {
 
     private String HAtype;
     private String HA_unit_of_measurement;
+    private String HA_modes = "auto,off,cool,heat,dry,fan_only";
     
     // For GAS (General Analog Sensor)
     private String gas_type = "";
@@ -144,5 +145,9 @@ public class ComponentSpec  {
     public String getHA_unit_of_measurement() { return this.HA_unit_of_measurement; }
 
     public void setHA_unit_of_measurement(String HA_unit_of_measurement) { this.HA_unit_of_measurement = HA_unit_of_measurement; }
+
+    public String getHA_modes() { return this.HA_modes; }
+
+    public void setHA_modes(String HA_modes) { this.HA_modes = HA_modes; }
 
 }
