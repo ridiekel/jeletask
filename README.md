@@ -560,7 +560,7 @@ Notes:
 
 # HomeAssistant
 
-Auto configuration should work with relays, dimmers, motors, sensors and timed functions. 
+Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags and general/local/timed moods. 
 Other types are not yet supported, work in progress.
 Pleas log an issue when having trouble with auto configuration in HA.
 
