@@ -472,7 +472,7 @@ fanspeed                : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
 day_preset_temperature  : Day preset temperature (see prosoft)
 night_at_heating_preset_temperature  : Night at heating temperature (see prosoft)
 night_at_cooling_preset_temperature  : Night at cooling temperature (see prosoft)
-eco_preset                           : ECO offset preset temperature (see prosoft)
+eco_preset_offset                    : ECO offset preset temperature (see prosoft)
 ```
 
 
