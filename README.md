@@ -443,6 +443,7 @@ The following additional Home Assistant related parameters are available:
 
 ```
 ha_unit_of_measurement: To specify a custom 'unit_of_measurement' in HA auto discovery. For example: "°C"
+ha_modes: To specify a custom "modes" in HA auto discovery. Default: "auto,off,cool,heat,dry,fan_only"
 ```
 
 #### More details for: General Analog Sensor (GAS)
