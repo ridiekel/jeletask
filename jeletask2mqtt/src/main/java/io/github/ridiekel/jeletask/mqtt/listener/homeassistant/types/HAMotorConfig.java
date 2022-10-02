@@ -19,6 +19,6 @@ public class HAMotorConfig extends HAReadWriteConfig<HAMotorConfig> {
         this.put("payload_stop", "STOP");
         this.put("state_stopped", "STOP");
         this.put("position_template", "{{ value_json.position }}");
-        this.put("value_template", "{% if value_json.state == 'OFF' %}STOP{% else %}value_json.last_direction{% endif %}");
+        this.put("value_template", "{% if value_json.state == 'OFF' %}STOP{% else %}{{value_json.last_direction}}{% endif %}");
     }
 }
