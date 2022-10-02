@@ -9,10 +9,7 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HADimmerConfig;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HAMotorConfig;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HARelayConfig;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HASensorConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -218,12 +215,8 @@ public class MqttProcessor implements StateChangeListener {
 
     private static final Map<Function, FunctionConfig> FUNCTION_TO_TYPE = Map.ofEntries(
             // COND and INPUT are readonly -> HA autodiscovery: binary_sensor
-            Map.entry(Function.COND, f("binary_sensor", p -> {
-                return null;
-            })),
-            Map.entry(Function.INPUT, f("binary_sensor", p -> {
-                return null;
-            })),
+            Map.entry(Function.COND, f("binary_sensor", HABinarySensorConfig::new)),
+            Map.entry(Function.INPUT, f("binary_sensor", HABinarySensorConfig::new)),
             // Dimmers -> -> HA auto discovery: light
             Map.entry(Function.DIMMER, f("light", HADimmerConfig::new)),
             // Flags can be read + turned on/off -> HA auto discovery: switch
