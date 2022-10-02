@@ -15,6 +15,7 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.putInt("min_temp", 10);
             this.putInt("max_temp", 30);
             this.putDouble("precision", 0.1);
+            this.putArray("modes", parameters.getComponentSpec().getHA_modes().split(","));
             this.put("current_temperature_topic", "~/state");
             this.put("temperature_state_topic", "~/state");
             this.put("temperature_command_topic", "~/set");
@@ -26,7 +27,6 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("mode_command_topic", "~/set");
             this.put("fan_mode_state_topic", "~/state");
             this.put("fan_mode_command_topic", "~/set");
-
             this.put("current_temperature_template", "{{ value_json.current_temperature }}");
             this.put("temperature_state_template", "{{ value_json.target_temperature }}");
             this.put("temperature_command_template", "{\"target_temperature\": \"{{ value }}\"}");
