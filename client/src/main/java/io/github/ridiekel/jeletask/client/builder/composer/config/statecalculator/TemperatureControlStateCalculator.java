@@ -60,7 +60,7 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         state.setTargetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[2], dataBytes[3]}).longValue() / this.divide) - this.subtract).getState()));
         state.setDayPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[4], dataBytes[5]}).longValue() / this.divide) - this.subtract).getState()));
         state.setNightAtHeatingPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[6], dataBytes[7]}).longValue() / this.divide) - this.subtract).getState()));
-        state.setEcoPreset( (float) dataBytes[8] / this.divide );
+        state.setEcoPresetOffset( (float) dataBytes[8] / this.divide );
         state.setPreset(super.toComponentState(component, new byte[]{dataBytes[9]}).getState());
 
         if ("OFF".equals(state.getState()))
@@ -85,10 +85,10 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         byte[] data = Bytes.EMPTY;
 
         /*
-            TODO:   Add support to changing preset temperatures (SETDAY, SETECO, SETNIGHTHEAT, SETNIGHTCOOL). 
+            TODO:   Add support to changing preset temperatures (SETDAY, SETECO, SETNIGHTHEAT, SETNIGHTCOOL).
                     Needs to be implemented the same way we already did for "TARGET" (see below).
          */
-        
+
         if (state.getTargetTemperature() != null) {
             setting = super.toBytes(new ComponentState("TARGET"));
             try {
