@@ -48,6 +48,10 @@ public class ComponentState {
     private Number messageBeeps;
     private String messageType;
 
+    // For PULSECOUNTER
+    private Number current;
+    private Number total;
+
 
     public ComponentState() {
     }
@@ -187,6 +191,11 @@ public class ComponentState {
     public void setMessageType(String type) {
         this.messageType = type;
     }
+
+    public Number getCurrent() { return current; }
+    public void setCurrent(Number current) { this.current = current; }
+    public Number getTotal() { return total; }
+    public void setTotal(Number total) { this.total = total; }
 
     public static ComponentState parse(Function function, String state) {
         try {
