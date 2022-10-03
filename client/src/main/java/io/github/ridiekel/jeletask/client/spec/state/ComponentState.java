@@ -38,6 +38,9 @@ public class ComponentState {
     private String preset;
     private String mode;
     private String fanspeed;
+    private Number windowOpen;
+    private Number swingDirection;
+    private Number outputState;
 
     // For DISPLAYMESSAGE
     private String messageLine1;
@@ -156,9 +159,16 @@ public class ComponentState {
     }
 
     public String getFanspeed() { return fanspeed; }
-    public void setFanspeed(String fanspeed) {
-        this.fanspeed = fanspeed;
-    }
+    public void setFanspeed(String fanspeed) { this.fanspeed = fanspeed; }
+
+    public Number getWindowOpen() { return windowOpen; }
+    public void setWindowOpen(Number windowOpen) { this.windowOpen = windowOpen; }
+
+    public Number getSwingDirection() { return swingDirection; }
+    public void setSwingDirection(Number swingDirection) { this.swingDirection = swingDirection; }
+
+    public Number getOutputState() { return outputState; }
+    public void setOutputState(Number outputState) { this.outputState = outputState; }
 
     public String getMessageLine1() { return messageLine1; }
     public void setMessageLine1(String line) {
