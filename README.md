@@ -469,7 +469,10 @@ target_temperature      : The set target temperature
 preset                  : The current preset (DAY/NIGHT/ECO)
 mode                    : The current mode (AUTO/HEAT/COOL/VENT/DRY)
 fanspeed                : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
-day_preset_temperature  : Day preset temperature (see prosoft)
+window_open             : Untested: 0=closed / 255 = open
+swing_direction         : Untested: switch direction as value
+output_state            : Untested/Unsure
+day_preset_temperature               : Day preset temperature (see prosoft)
 night_at_heating_preset_temperature  : Night at heating temperature (see prosoft)
 night_at_cooling_preset_temperature  : Night at cooling temperature (see prosoft)
 eco_preset_offset                    : ECO offset preset temperature (see prosoft)
