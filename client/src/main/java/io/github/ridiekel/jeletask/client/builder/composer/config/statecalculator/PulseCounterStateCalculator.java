@@ -4,6 +4,9 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverte
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 public class PulseCounterStateCalculator extends SimpleStateCalculator {
 
     public PulseCounterStateCalculator(NumberConverter numberConverter) {
@@ -12,31 +15,14 @@ public class PulseCounterStateCalculator extends SimpleStateCalculator {
 
     @Override
     public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
-        /*
 
-    private double GetDisplayValue(final int val, final boolean realtime, final byte decimals) {
-        if (val == 0) {
-            return 0.0;
-        }
-        double waarde;
-        if (realtime) {
-            if (!this.mShowRealTime) {
-                waarde = val * (1000.0 / this.mPulsePerUnit);
-            }
-            else {
-                waarde = val * (this.mRtUnitsPerUnit * (double)this.SecondsPerTimeBase(this.mTimeBase)) / (3600.0 * this.mPulsePerUnit);
-            }
-        }
-        else {
-            waarde = val / (double)this.mPulsePerUnit;
-        }
-        final int temp = (int)(waarde * Math.pow(10.0, decimals));
-        return temp / Math.pow(10.0, decimals);
-    }
+        ComponentState state = new ComponentState("PULSECOUNTER");
 
+        state.setCurrent(NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[0],dataBytes[1]}).shortValue());
+        state.setTotal(NumberConverter.UNSIGNED_INT.convert(new byte[]{dataBytes[16],dataBytes[17],dataBytes[18],dataBytes[19]}).floatValue() / component.getPulses_per_unit());
 
-         */
-        return new ComponentState("TODO");
+        return state;
+
     }
 }
 
