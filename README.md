@@ -70,7 +70,12 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "number": 5,
         "description": "Aurus wall switch in the attic",
         "type": "TEMPERATURECONTROL"
-      }
+      },
+      {
+        "number": 6,
+        "description": "Pulse counter energy Airco",
+        "type": "PULSECOUNTER"
+      },
     ],
     "COND": [
       {
@@ -429,6 +434,7 @@ TEMPERATURECONTROL : Teletask temperature controllabe sensor (Aurus OLED, HVAC, 
 HUMIDITY           : Teletask humidity sensor (TDS12260). Value is in %.
 LIGHT              : Teletask light sensor (TDS12270). Value is in Lux.
 GAS                : Teletask General Analog Sensor.
+PULSECOUNTER       : Teletask pulse counter (returns current reading + total).
 ```
 
 #### Optional parameters:
