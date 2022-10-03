@@ -31,6 +31,9 @@ public class ComponentSpec  {
     private String address_numbers;
     private String bus_numbers;
 
+    // For PULSECOUNTER
+    private int pulses_per_unit = 1000;
+
     public final Map<String, String> SensorTypesToHATypes = Map.of(
             "TEMPERATURE", "sensor",
             "LIGHT", "sensor",
@@ -149,5 +152,9 @@ public class ComponentSpec  {
     public String getHA_modes() { return this.HA_modes; }
 
     public void setHA_modes(String HA_modes) { this.HA_modes = HA_modes; }
+
+    public int getPulses_per_unit() { return this.pulses_per_unit; }
+    public void setPulses_per_unit(int pulses_per_unit) { this.pulses_per_unit = pulses_per_unit; }
+
 
 }
