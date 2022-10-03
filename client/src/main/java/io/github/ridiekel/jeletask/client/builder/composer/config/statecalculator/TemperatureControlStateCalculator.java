@@ -69,11 +69,9 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
             state.setMode(super.toComponentState(component, new byte[]{dataBytes[10]}).getState());
 
         state.setFanspeed(super.toComponentState(component, new byte[]{dataBytes[11]}).getState());
-
-        // Byte 13 = Unknown (0x00 ?)
-        // Byte 14 = Unknown (0x80 / 0x90 ?)
-        // Byte 15 = Unknown (0x00 ?)
-
+        state.setWindowOpen((int) dataBytes[13]);       // 0 = open, 255 = closed
+        state.setOutputState((int) dataBytes[14]);      // Untested, no idea about the values
+        state.setSwingDirection((int) dataBytes[15]);   // Untested, no idea about the values
         state.setNightAtCoolingPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[16], dataBytes[17]}).longValue() / this.divide) - this.subtract).getState()));
 
         return state;
