@@ -357,6 +357,22 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/state
 ```
 
+The following json attributes are provided on the /state MQTT topic:
+```
+state             : ON/OFF
+last_direction    : Last direction UP/DOWN
+protection        : Info about SUN and WIND protection.
+     Possible values:
+       0: no protection defined
+       1: on, and the motor is controlled by the protection
+       2: on, but the motor is not controlled by the protection - 3: on, but overruled by user
+       4: protection switched OFF
+position          : If state is ON, the position we're running to
+current_position  : The current position of the motor
+seconds_to_finish : Time, in seconds, it'll take to get to position
+```
+
+
 ### Change the state
 
 #### Controlling
