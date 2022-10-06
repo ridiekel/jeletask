@@ -21,6 +21,7 @@ public class ComponentState {
     private String lastDirection;
     private String protection;
     private Number position;
+    private Number currentPosition;
     private Number secondsToFinish;
     private Number correctionAtZeroPercentInSeconds;
     private Number correctionAtHundredPercentInSeconds;
@@ -91,10 +92,12 @@ public class ComponentState {
     public Number getPosition() {
         return position;
     }
+    public void setPosition(Number position) { this.position = position; }
 
-    public void setPosition(Number position) {
-        this.position = position;
+    public Number getCurrentPosition() {
+        return currentPosition;
     }
+    public void setCurrentPosition(Number position) { this.currentPosition = position; }
 
     public Number getSecondsToFinish() {
         return secondsToFinish;
