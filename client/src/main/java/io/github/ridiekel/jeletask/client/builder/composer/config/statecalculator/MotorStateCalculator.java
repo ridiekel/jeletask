@@ -41,10 +41,10 @@ public class MotorStateCalculator extends MappingStateCalculator {
         state.setProtection(PROTECTION_STATE_CALCULATOR.toComponentState(component, new byte[]{dataBytes[2]}).getState());
         state.setPosition(NumberConverter.UNSIGNED_BYTE.convert(new byte[]{dataBytes[3]}));
         if (dataBytes.length > 4) {
-            state.setPosition(NumberConverter.UNSIGNED_BYTE.convert(new byte[]{dataBytes[4]}));
+            state.setCurrentPosition(NumberConverter.UNSIGNED_BYTE.convert(new byte[]{dataBytes[4]}));
         }
         if (dataBytes.length > 6) {
-            state.setSecondsToFinish(NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[5], dataBytes[6]}).floatValue() / 100);
+            state.setSecondsToFinish( NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[5], dataBytes[6]}).floatValue() / 100);
         }
         if (dataBytes.length > 7) {
             state.setCorrectionAtZeroPercentInSeconds(NumberConverter.UNSIGNED_BYTE.convert(new byte[]{dataBytes[7]}));
