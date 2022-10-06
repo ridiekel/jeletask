@@ -40,8 +40,14 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("fan_mode_command_template", "{% if value|lower == \"auto\" %}{\"state\": \"SPAUTO\"}{% elif value|lower == \"low\" %}{\"state\": \"SPLOW\"}{% elif value|lower == \"med\" %}{\"state\": \"SPMED\"}{% elif value|lower == \"high\" %}{\"state\": \"SPHIGH\"}{% endif %}");
             this.put("fan_mode_state_template", "{% if value_json.fanspeed|upper == \"SPAUTO\" %}auto{% elif value_json.fanspeed|upper == \"SPLOW\" %}low{% elif value_json.fanspeed|upper == \"SPMED\" %}med{% elif value_json.fanspeed|upper == \"SPHIGH\" %}high{% endif %}");
 
-        } else {
+        } else if ("PULSECOUNTER".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
 
+            // TODO: implement both current + total. Only current is implemented right now.
+            if (parameters.getComponentSpec().getHA_unit_of_measurement() != null)
+                this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
+
+            this.put("value_template", "{{ value_json.current }}");
+        } else {
             // Regular simple sensor
             if (parameters.getComponentSpec().getHA_unit_of_measurement() != null)
                 this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
