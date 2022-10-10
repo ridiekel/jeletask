@@ -13,20 +13,8 @@ public class InputStateCalculator extends SimpleStateCalculator {
 
     @Override
     public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
-
-        String state_str = "";
-        int state = dataBytes[0]; // For digital input (TDS12117) -> 1 = Pulse?, 2 = Pressed, 3 = Released, 9 = Long pressed?
-
-        // Return the received value by default
-        state_str = String.valueOf(dataBytes[0]);
-
-        // TDS12117 ? 2 = pressed (contact closed) / 3 = released (contact open)
-        if (state == 2)
-            state_str = "CLOSED";
-        else if (state == 3)
-            state_str = "OPEN";
-
-        return new ComponentState(state_str);
+        boolean closed = (dataBytes[0] & (byte)1) == 1;
+        return new ComponentState( closed ? "CLOSED" : "OPEN");
     }
 
 }

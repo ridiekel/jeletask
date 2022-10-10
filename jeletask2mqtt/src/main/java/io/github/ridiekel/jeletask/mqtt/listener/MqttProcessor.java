@@ -9,10 +9,7 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HADimmerConfig;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HAMotorConfig;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HARelayConfig;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HASensorConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -217,29 +214,25 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     private static final Map<Function, FunctionConfig> FUNCTION_TO_TYPE = Map.ofEntries(
-            Map.entry(Function.COND, f("binary_sensor", p -> {
-                return null;
-            })),
+            // COND and INPUT are readonly -> HA autodiscovery: binary_sensor
+            Map.entry(Function.COND, f("binary_sensor", HABinarySensorConfig::new)),
+            Map.entry(Function.INPUT, f("binary_sensor", HABinarySensorConfig::new)),
+            // Dimmers -> -> HA auto discovery: light
             Map.entry(Function.DIMMER, f("light", HADimmerConfig::new)),
-            Map.entry(Function.FLAG, f("binary_sensor", p -> {
-                return null;
-            })),
-            Map.entry(Function.GENMOOD, f("scene", p -> {
-                return null;
-            })),
-            Map.entry(Function.LOCMOOD, f("scene", p -> {
-                return null;
-            })),
+            // Flags can be read + turned on/off -> HA auto discovery: switch
+            Map.entry(Function.FLAG, f("switch", HARelayConfig::new)),
+            // Mood functions actually act like a switch in Teletask. They can be turned ON/OFF?
+            // HA scenes can only be 'activated' and do not support a state?
+            // -> HA auto discovery: switch
+            Map.entry(Function.GENMOOD, f("switch", HARelayConfig::new)),
+            Map.entry(Function.LOCMOOD, f("switch", HARelayConfig::new)),
+            Map.entry(Function.TIMEDMOOD, f("switch", HARelayConfig::new)),
+            // Motors -> HA auto discovery: cover. Sufficient?
             Map.entry(Function.MOTOR, f("cover", HAMotorConfig::new)),
-            Map.entry(Function.RELAY, f("light", HARelayConfig::new)),
             Map.entry(Function.SENSOR, f("sensor", HASensorConfig::new)),
-            Map.entry(Function.TIMEDMOOD, f("scene", p -> {
-                return null;
-            })),
-            Map.entry(Function.INPUT, f("service", p -> {
-                return null;
-            })),
-            Map.entry(Function.TIMEDFNC, f("switch", HARelayConfig::new)) // timed functions actually  act like a relay so we can HA autodiscover them like a relay
+            Map.entry(Function.RELAY, f("light", HARelayConfig::new)),
+            // Timed functions actually act like a switch. They can only be ON or OFF -> HA auto discovery: switch
+            Map.entry(Function.TIMEDFNC, f("switch", HARelayConfig::new))
     );
 
     static FunctionConfig f(String type, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {

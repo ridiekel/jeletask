@@ -21,10 +21,10 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
             new StateMapping("FROST", 24),
             new StateMapping("DAY", 26),
             new StateMapping("NIGHT",25 ),
-            new StateMapping("STANDBY", 93),        // On the Aurus this mode is called "ECO" ?
+            new StateMapping("ECO", 93),
             new StateMapping("SETDAY", 29),         // Not implemented
-            new StateMapping("SETSTANDBY", 88),     // Not implemented
-            new StateMapping("SETNIGHT", 27),       // Not implemented
+            new StateMapping("SETECO", 88),         // Not implemented
+            new StateMapping("SETNIGHTHEAT", 27),   // Not implemented
             new StateMapping("SETNIGHTCOOL", 56),   // Not implemented
             new StateMapping("SPEED", 31),
             new StateMapping("SPLOW", 97),
@@ -58,25 +58,21 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
         ComponentState state = new ComponentState(TEMPERATURE_CONTROL_STATE_CALCULATOR.toComponentState(component, new byte[]{dataBytes[12]}).getState());
         state.setCurrentTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[0], dataBytes[1]}).longValue() / this.divide) - this.subtract).getState()));
         state.setTargetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[2], dataBytes[3]}).longValue() / this.divide) - this.subtract).getState()));
-
-        // Byte 4+5 seems to be the day preset temperature?
-        // Byte 6+7 seems to be the night preset @heating temperature?
-        // Byte 8 = Unknown (0x19 ?)
-
+        state.setDayPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[4], dataBytes[5]}).longValue() / this.divide) - this.subtract).getState()));
+        state.setNightAtHeatingPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[6], dataBytes[7]}).longValue() / this.divide) - this.subtract).getState()));
+        state.setEcoPresetOffset( (float) dataBytes[8] / this.divide );
         state.setPreset(super.toComponentState(component, new byte[]{dataBytes[9]}).getState());
-        state.setFanspeed(super.toComponentState(component, new byte[]{dataBytes[11]}).getState());
 
         if ("OFF".equals(state.getState()))
             state.setMode("OFF");
         else
             state.setMode(super.toComponentState(component, new byte[]{dataBytes[10]}).getState());
 
-        // Byte 12 = ON/OFF (already used, see above)
-
-        // Byte 13 = Unknown (0x00 ?)
-        // Byte 14 = Unknown (0x80 / 0x90 ?)
-        // Byte 15 = Unknown (0x00 ?)
-        // Byte 16+17 seems to be the night preset @cooling temperature?
+        state.setFanspeed(super.toComponentState(component, new byte[]{dataBytes[11]}).getState());
+        state.setWindowOpen((int) dataBytes[13]);       // 0 = open, 255 = closed
+        state.setOutputState((int) dataBytes[14]);      // Untested, no idea about the values
+        state.setSwingDirection((int) dataBytes[15]);   // Untested, no idea about the values
+        state.setNightAtCoolingPresetTemperature(Float.valueOf(new ComponentState((NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[16], dataBytes[17]}).longValue() / this.divide) - this.subtract).getState()));
 
         return state;
     }
@@ -85,6 +81,11 @@ public class TemperatureControlStateCalculator extends MappingStateCalculator {
     public byte[] toBytes(ComponentState state) {
         byte[] setting = null;
         byte[] data = Bytes.EMPTY;
+
+        /*
+            TODO:   Add support to changing preset temperatures (SETDAY, SETECO, SETNIGHTHEAT, SETNIGHTCOOL).
+                    Needs to be implemented the same way we already did for "TARGET" (see below).
+         */
 
         if (state.getTargetTemperature() != null) {
             setting = super.toBytes(new ComponentState("TARGET"));

@@ -44,6 +44,22 @@ public enum NumberConverter {
         public ByteBuffer putBytes(ByteBuffer buffer, Number number) {
             return buffer.putShort((short) (number.intValue() & 0xffff));
         }
+    }),
+
+    UNSIGNED_INT(4, new Converter() {
+        @Override
+        public Number toNumber(ByteBuffer buffer) { return buffer.getInt() & 0xffffffff; }
+
+        @Override
+        public Number convert(String value) { return value == null ? null : Integer.valueOf(value); }
+
+        @Override
+        public Number cast(Number number) { return number.intValue(); }
+
+        @Override
+        public ByteBuffer putBytes(ByteBuffer buffer, Number number) {
+            return buffer.putInt((int) (number.intValue() & 0xffffffff));
+        }
     });
 
     private final int byteSize;

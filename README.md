@@ -53,7 +53,7 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "gas_type": "4-20ma",
         "gas_min": 0,
         "gas_max": 14,
-        "gas_decimals": 2
+        "decimals": 2
       },
       {
         "number": 3,
@@ -70,7 +70,12 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "number": 5,
         "description": "Aurus wall switch in the attic",
         "type": "TEMPERATURECONTROL"
-      }
+      },
+      {
+        "number": 6,
+        "description": "Pulse counter energy Airco",
+        "type": "PULSECOUNTER"
+      },
     ],
     "COND": [
       {
@@ -352,6 +357,22 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/state
 ```
 
+The following json attributes are provided on the /state MQTT topic:
+```
+state             : ON/OFF
+last_direction    : Last direction UP/DOWN
+protection        : Info about SUN and WIND protection.
+     Possible values:
+       0: no protection defined
+       1: on, and the motor is controlled by the protection
+       2: on, but the motor is not controlled by the protection - 3: on, but overruled by user
+       4: protection switched OFF
+position          : If state is ON, the position we're running to
+current_position  : The current position of the motor
+seconds_to_finish : Time, in seconds, it'll take to get to position
+```
+
+
 ### Change the state
 
 #### Controlling
@@ -413,6 +434,14 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ## Sensor
 
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+```
+
+
 The following sensor types are currently supported:
 
 ```
@@ -421,36 +450,56 @@ TEMPERATURECONTROL : Teletask temperature controllabe sensor (Aurus OLED, HVAC, 
 HUMIDITY           : Teletask humidity sensor (TDS12260). Value is in %.
 LIGHT              : Teletask light sensor (TDS12270). Value is in Lux.
 GAS                : Teletask General Analog Sensor.
+PULSECOUNTER       : Teletask pulse counter (returns current reading + total).
 ```
 
-### Listen to events
+#### Optional parameters:
 
 ```
-mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+decimals : How many decimals you want returned (rounded up) (Supported by GAS + TEMPERATURE)
 ```
 
-### HA config parameters
+#### HA MQTT config parameters
 
 The following additional Home Assistant related parameters are available:
 
 ```
 ha_unit_of_measurement: To specify a custom 'unit_of_measurement' in HA auto discovery. For example: "°C"
+ha_modes: To specify a custom "modes" in HA auto discovery. Default: "auto,off,cool,heat,dry,fan_only"
 ```
 
-### Sensor TEMPERATURECONTROL
+#### More details for: General Analog Sensor (GAS)
 
-Use TEMPERATURECONTROL for any temperature controllabe 'sensor' like an AC (HVAC) or an Aurus OLED wall switch 
+This type of sensor has 3 additional config parameters:
 
-The following json attributes are provided on the /state MQTT topic: 
 ```
-state               : ON/OFF state
-current_temperature : The current temperature
-target_temperature  : The set target temperature
-preset              : The current preset (DAY/NIGHT/STANDBY)
-mode                : The current mode (AUTO/HEAT/COOL/VENT/DRY)
-fanspeed            : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
+gas_type     : One of the 4 possible signal options: "4-20ma", "0-20ma", "0-10V" or "5-10V"
+gas_min      : The "Min" value (see PROSOFT configuration)
+gas_max      : The "Max" value (see PROSOFT configuration)
 ```
+
+
+#### More details for: TEMPERATURECONTROL
+
+Use TEMPERATURECONTROL for any temperature controllabe 'sensor' like an AC (HVAC) or an Aurus OLED wall switch
+
+The following json attributes are provided on the /state MQTT topic:
+```
+state                   : ON/OFF state
+current_temperature     : The current temperature
+target_temperature      : The set target temperature
+preset                  : The current preset (DAY/NIGHT/ECO)
+mode                    : The current mode (AUTO/HEAT/COOL/VENT/DRY)
+fanspeed                : The current fan speed (SPAUTO/SPLOW/SPMED/SPHIGH)
+window_open             : Untested: 0=closed / 255 = open
+swing_direction         : Untested: switch direction as value
+output_state            : Untested/Unsure
+day_preset_temperature               : Day preset temperature (see prosoft)
+night_at_heating_preset_temperature  : Night at heating temperature (see prosoft)
+night_at_cooling_preset_temperature  : Night at cooling temperature (see prosoft)
+eco_preset_offset                    : ECO offset preset temperature (see prosoft)
+```
+
 
 The following "state" attribute commands are supported on the /set MQTT topic:
 
@@ -460,7 +509,7 @@ OFF (Turn off the device)
 ONOFF (Toggle on or off the device)
 UP (Set target temperature up 0.5°C)
 DOWN (Set target temperature down 0.5°C)
-For a preset, one of: DAY, NIGHT, STANDBY
+For a preset, one of: DAY, NIGHT, ECO
 For an operating mode, one of: AUTO, HEAT, COOL, VENT, DRY
    (or MODE to toggle between the available modes...)
 For a fan speed, one of: SPAUTO, SPLOW, SPMED, SPHIGH
@@ -469,22 +518,12 @@ For a fan speed, one of: SPAUTO, SPLOW, SPMED, SPHIGH
 
 You can also set the target temperature by sending the desired temperature to the "target_temperature" attribute.
 
-### Sensor types with parameters:
 
-#### General Analog Sensor (GAS)
 
-This sensor has 4 possible config parameters:
-
-```
-gas_type     : One of the 4 possible signal options: "4-20ma", "0-20ma", "0-10V" or "5-10V"
-gas_min      : The "Min" value (see PROSOFT configuration)
-gas_max      : The "Max" value (see PROSOFT configuration)
-gas_decimals : How many decimals you want returned (rounded up)
-```
 
 ## Input (digital inputs)
 
-### Listen to events
+### Listen to sensor events
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
@@ -546,7 +585,7 @@ Notes:
 
 # HomeAssistant
 
-Auto configuration should work with relays, dimmers and motors. 
+Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions and digital inputs. 
 Other types are not yet supported, work in progress.
 Pleas log an issue when having trouble with auto configuration in HA.
 

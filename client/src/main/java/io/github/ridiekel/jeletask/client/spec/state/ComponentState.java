@@ -21,6 +21,7 @@ public class ComponentState {
     private String lastDirection;
     private String protection;
     private Number position;
+    private Number currentPosition;
     private Number secondsToFinish;
     private Number correctionAtZeroPercentInSeconds;
     private Number correctionAtHundredPercentInSeconds;
@@ -31,15 +32,26 @@ public class ComponentState {
     // for TEMPERATURECONTROL
     private Number currentTemperature;
     private Number targetTemperature;
+    private Number dayPresetTemperature;
+    private Number nightAtHeatingPresetTemperature;
+    private Number nightAtCoolingPresetTemperature;
+    private Number ecoPresetOffset;
     private String preset;
     private String mode;
     private String fanspeed;
+    private Number windowOpen;
+    private Number swingDirection;
+    private Number outputState;
 
     // For DISPLAYMESSAGE
     private String messageLine1;
     private String messageLine2;
     private Number messageBeeps;
     private String messageType;
+
+    // For PULSECOUNTER
+    private Number current;
+    private Number total;
 
 
     public ComponentState() {
@@ -80,10 +92,12 @@ public class ComponentState {
     public Number getPosition() {
         return position;
     }
+    public void setPosition(Number position) { this.position = position; }
 
-    public void setPosition(Number position) {
-        this.position = position;
+    public Number getCurrentPosition() {
+        return currentPosition;
     }
+    public void setCurrentPosition(Number position) { this.currentPosition = position; }
 
     public Number getSecondsToFinish() {
         return secondsToFinish;
@@ -127,6 +141,20 @@ public class ComponentState {
         this.targetTemperature = temperature;
     }
 
+    public Number getDayPresetTemperature() { return dayPresetTemperature; }
+    public void setDayPresetTemperature(Number temperature) {
+        this.dayPresetTemperature = temperature;
+    }
+
+    public Number getNightAtHeatingPresetTemperature() { return nightAtHeatingPresetTemperature; }
+    public void setNightAtHeatingPresetTemperature(Number temperature) { this.nightAtHeatingPresetTemperature = temperature; }
+
+    public Number getNightAtCoolingPresetTemperature() { return nightAtCoolingPresetTemperature; }
+    public void setNightAtCoolingPresetTemperature(Number temperature) { this.nightAtCoolingPresetTemperature = temperature; }
+
+    public Number getEcoPresetOffset() { return ecoPresetOffset; }
+    public void setEcoPresetOffset(Number temperature) { this.ecoPresetOffset = temperature; }
+
     public String getPreset() { return preset; }
     public void setPreset(String preset) {
         this.preset = preset;
@@ -138,9 +166,16 @@ public class ComponentState {
     }
 
     public String getFanspeed() { return fanspeed; }
-    public void setFanspeed(String fanspeed) {
-        this.fanspeed = fanspeed;
-    }
+    public void setFanspeed(String fanspeed) { this.fanspeed = fanspeed; }
+
+    public Number getWindowOpen() { return windowOpen; }
+    public void setWindowOpen(Number windowOpen) { this.windowOpen = windowOpen; }
+
+    public Number getSwingDirection() { return swingDirection; }
+    public void setSwingDirection(Number swingDirection) { this.swingDirection = swingDirection; }
+
+    public Number getOutputState() { return outputState; }
+    public void setOutputState(Number outputState) { this.outputState = outputState; }
 
     public String getMessageLine1() { return messageLine1; }
     public void setMessageLine1(String line) {
@@ -159,6 +194,11 @@ public class ComponentState {
     public void setMessageType(String type) {
         this.messageType = type;
     }
+
+    public Number getCurrent() { return current; }
+    public void setCurrent(Number current) { this.current = current; }
+    public Number getTotal() { return total; }
+    public void setTotal(Number total) { this.total = total; }
 
     public static ComponentState parse(Function function, String state) {
         try {
