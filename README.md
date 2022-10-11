@@ -107,6 +107,12 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "description": "Watch TV"
       }
     ],
+    "TIMEDMOOD": [
+      {
+        "number": 1,
+        "description": "Outdoor light"
+      }
+    ],
     "DIMMER": [
       {
         "number": 1,
@@ -303,6 +309,31 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -m '{"state":"OFF"}'
+```
+
+## Timed Mood
+
+### Listen to events
+
+```
+mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/state
+```
+
+### Change the state
+
+#### Turning on
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/set \
+    -m '{"state":"ON"}'
+```
+
+#### Turning off
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/set \
     -m '{"state":"OFF"}'
 ```
 
