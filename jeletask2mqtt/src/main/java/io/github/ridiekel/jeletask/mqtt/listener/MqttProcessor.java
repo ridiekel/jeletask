@@ -25,10 +25,7 @@ import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -58,6 +55,8 @@ public class MqttProcessor implements StateChangeListener {
     private final TeletaskService service;
     private final MqttConnectOptions connOpts;
     private final String teletaskIdentifier;
+
+    List<MotorTimer> motorTimers = new ArrayList<>();;
 
     public MqttProcessor(TeletaskService service) {
         this.service = service;
@@ -265,12 +264,34 @@ public class MqttProcessor implements StateChangeListener {
 
     }
 
+    public void handleMotorTimers(ComponentSpec component, ComponentState state) {
+        Iterator mtrItr = this.motorTimers.iterator();
+        while (mtrItr.hasNext()) {
+            MotorTimer timer = (MotorTimer) mtrItr.next();
+            if (timer.getComponent().getNumber() == component.getNumber() ) {
+                timer.cancel();
+                timer.purge();
+                mtrItr.remove();
+            }
+        }
+
+        if ("ON".equalsIgnoreCase(state.getState()))
+            if (state.getPosition() != state.getCurrentPosition()) {
+                MotorTimer timer = new MotorTimer(component);
+                timer.schedule(new MotorTimerTask(this.client, this.baseTopic(component) + "/state", state),0, 250);
+                this.motorTimers.add(timer);
+            }
+    }
+
     @Override
     public void receive(List<ComponentSpec> components) {
         components.forEach(c -> {
-            ComponentState message = c.getState();
+            ComponentState state = c.getState();
             String ttTopic = this.baseTopic(c) + "/state";
-            this.publish("EVENT", c, ttTopic, message.toString(), LOG::info);
+            this.publish("EVENT", c, ttTopic, state.toString(), LOG::info);
+
+            if (c.getFunction() == Function.MOTOR)
+                handleMotorTimers(c, state);
         });
     }
 
@@ -308,6 +329,57 @@ public class MqttProcessor implements StateChangeListener {
             this.client.disconnect();
         } catch (MqttException e) {
             LOG.debug(e.getMessage());
+        }
+    }
+
+    private class MotorTimer extends Timer {
+        private final ComponentSpec component;
+        public ComponentSpec getComponent() { return this.component; }
+
+        public MotorTimer(ComponentSpec component) {
+            this.component = component;
+        }
+    }
+
+    private class MotorTimerTask extends TimerTask {
+
+        private final ComponentState state;
+        private final String MqttTopic;
+        private MqttClient client;
+        private long startTimeMillis;
+        private float startSecondsToFinish;
+        private float secondsPerStep;
+        private int startPosition = 0;
+        private int lastPosition = 0;
+        public MotorTimerTask(MqttClient client, String MqttTopic, ComponentState state) {
+            this.state = state;
+            this.client = client;
+            this.MqttTopic = MqttTopic;
+            this.secondsPerStep = (float) (state.getSecondsToFinish().floatValue() / Math.abs(state.getPosition().intValue() - state.getCurrentPosition().intValue()));
+            this.startTimeMillis = System.currentTimeMillis();
+            this.startPosition = state.getCurrentPosition().intValue();
+            this.startSecondsToFinish = state.getSecondsToFinish().floatValue();
+        }
+
+        @Override
+        public void run() {
+            try {
+                MqttMessage mqttMessage = new MqttMessage(this.state.toString().getBytes());
+                mqttMessage.setQos(0);
+                float estimatedPositionChange = (System.currentTimeMillis() - this.startTimeMillis) / this.secondsPerStep / 1000F;
+                int estimatedPosition = "UP".equalsIgnoreCase(this.state.getLastDirection()) ?  Math.round(this.startPosition - estimatedPositionChange) : Math.round(this.startPosition + estimatedPositionChange);
+                if (estimatedPosition != this.lastPosition && (estimatedPosition>=0 && estimatedPosition<=100)) {
+                    this.state.setCurrentPosition(estimatedPosition);
+                    this.lastPosition = estimatedPosition;
+                }
+                float newSecondsToFinish = this.startSecondsToFinish - ((System.currentTimeMillis() - this.startTimeMillis) / 1000F);
+                if (newSecondsToFinish > 0)
+                    this.state.setSecondsToFinish(newSecondsToFinish);
+                mqttMessage.setRetained(MqttProcessor.this.service.getConfiguration().getMqtt().isRetained());
+                this.client.publish(this.MqttTopic, mqttMessage);
+            } catch (Exception e) {
+                LOG.warn(e.getMessage());
+            }
         }
     }
 
