@@ -12,7 +12,7 @@
     <groupId>io.github.ridiekel</groupId>
     <artifactId>jeletask</artifactId>
     <packaging>pom</packaging>
-    <version>4.2.2</version>
+    <version>4.2.3</version>
 
     <name>Teletask API - Parent</name>
     <description>An API written in java for accessing Teletask central units.</description>
