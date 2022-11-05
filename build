@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+mkdir -p /tmp/.m2
+
+if ! docker run -it --rm \
+       -v "$PWD":/src \
+       -v "/var/run/docker.sock:/var/run/docker.sock" \
+       -v "/tmp/.m2":/root/.m2 \
+       -w /src \
+       maven:latest \
+       mvn clean install spring-boot:build-image; then
+    echo "Native build failed!"
+    exit 255
+fi
