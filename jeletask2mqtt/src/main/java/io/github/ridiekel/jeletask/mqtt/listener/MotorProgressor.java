@@ -61,6 +61,14 @@ public class MotorProgressor extends TimerTask {
         }
         progress.update();
         this.processor.publishState(motor, progress.getState());
+        if ((float) progress.getState().getSecondsToFinish() == 0) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Motor {} reached the end: \n{}", motor.getNumber(), progress.prettyString());
+            } else if (LOG.isDebugEnabled()) {
+                LOG.trace("Motor {} reached the end", motor.getNumber());
+            }
+            this.runningMotors.remove(motor);
+        }
     }
 
     private static class Progress {
