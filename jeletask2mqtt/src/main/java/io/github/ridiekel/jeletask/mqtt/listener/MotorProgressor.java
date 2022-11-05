@@ -23,7 +23,6 @@ public class MotorProgressor extends TimerTask {
 
     @Override
     public void run() {
-        LOG.trace("Running motors count: {}", this.runningMotors.size());
         if (!this.runningMotors.isEmpty()) {
             LOG.debug("Running motors (numbers): {}", this.runningMotors.keySet().stream().map(ComponentSpec::getNumber).map(String::valueOf).collect(Collectors.joining(", ")));
             this.runningMotors.forEach(this::publish);
