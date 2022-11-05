@@ -177,7 +177,7 @@ public abstract class MessageSupport {
     }
 
     protected String formatState(byte[] stateBytes, ComponentState... states) {
-        return Arrays.stream(states).map(state -> "State: " + (state == null ? null : Bytes.bytesToHex(stateBytes))+ "\n" + Optional.ofNullable(state).map(ComponentState::prettyString).orElse(null)).collect(Collectors.joining(", "));
+        return Arrays.stream(states).map(state -> "State: " + (state == null ? null : Bytes.bytesToHex(stateBytes)) + (LOG.isTraceEnabled() ? "\n" : " ") + Optional.ofNullable(state).map(s -> LOG.isTraceEnabled() ? s.prettyString() : s.toString()).orElse(null)).collect(Collectors.joining(", "));
     }
 
     protected MessageHandler getMessageHandler() {

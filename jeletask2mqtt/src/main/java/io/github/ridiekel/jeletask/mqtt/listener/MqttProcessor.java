@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+import io.github.ridiekel.jeletask.mqtt.Teletask2MqttConfiguration;
 import io.github.ridiekel.jeletask.mqtt.TeletaskService;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
@@ -99,6 +100,10 @@ public class MqttProcessor implements StateChangeListener {
         this.connect(clientId, host, port);
 
         new Timer("motor-service").schedule(motorProgressor, 0, service.getConfiguration().getPublish().getMotorPositionInterval());
+    }
+
+    public Teletask2MqttConfiguration getConfiguration() {
+        return this.service.getConfiguration();
     }
 
     private static String resolveTeletaskIdentifier(TeletaskService service, CentralUnit centralUnit) {
