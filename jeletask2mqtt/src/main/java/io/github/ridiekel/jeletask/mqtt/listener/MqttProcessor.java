@@ -359,7 +359,7 @@ public class MqttProcessor implements StateChangeListener {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace(String.format("MQTT topic '%s' could not change state to: %s", topic, message), e);
                 } else {
-                    LOG.warn(String.format("MQTT topic '%s' could not change state to: %s -- %s", topic, message, e.getMessage()));
+                    LOG.warn(String.format("MQTT topic '%s' could not change state to: %s -- %s", topic, message, e.getMessage()),e);
                 }
             }
         }

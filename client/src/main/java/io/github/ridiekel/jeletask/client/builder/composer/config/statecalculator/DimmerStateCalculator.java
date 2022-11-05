@@ -3,6 +3,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
+
 import java.util.List;
 
 public class DimmerStateCalculator extends MappingStateCalculator {
@@ -26,7 +27,7 @@ public class DimmerStateCalculator extends MappingStateCalculator {
     public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
         Number number = NumberConverter.UNSIGNED_BYTE.convert(new byte[]{dataBytes[0]});
 
-        ComponentState state = new ComponentState( (number.intValue() > 0) ? "ON" : "OFF");
+        ComponentState state = new ComponentState((number.intValue() > 0) ? "ON" : "OFF");
         state.setBrightness(number);
 
         return state;
@@ -34,15 +35,23 @@ public class DimmerStateCalculator extends MappingStateCalculator {
 
     @Override
     public byte[] toBytes(ComponentState state) {
-        if (state == null)
-            return null;
-
-        if (state.getBrightness() != null) {
-            // Brightness attribute always has priority
-            return NumberConverter.UNSIGNED_BYTE.convert(state.getBrightness());
+        byte[] bytes = null;
+        if (state != null) {
+            if (state.getBrightness() != null) {
+                // Brightness attribute always has priority
+                bytes = NumberConverter.UNSIGNED_BYTE.convert(state.getBrightness());
+            } else if (isStateNumber(state)) {
+                bytes = NumberConverter.UNSIGNED_BYTE.convert(state.getState());
+            } else{
+                bytes = super.toBytes(new ComponentState(state.getState()));
+            }
         }
 
-        return super.toBytes(new ComponentState(state.getState()));
+        return bytes;
+    }
+
+    private static boolean isStateNumber(ComponentState state) {
+        return state.getState().chars().allMatch(Character::isDigit);
     }
 
     @Override
@@ -51,10 +60,13 @@ public class DimmerStateCalculator extends MappingStateCalculator {
 
         if (state.getBrightness() != null) {
             byte brightness = state.getBrightness().byteValue();
-            valid_brightness = (brightness>=0 && brightness<=100);
+            valid_brightness = (brightness >= 0 && brightness <= 100);
+        } if (state.getState() != null && isStateNumber(state)) {
+            int brightness = Integer.parseInt(state.getState());
+            valid_brightness = (brightness >= 0 && brightness <= 100);
         }
 
-        return (state.getState() == null) ? valid_brightness : super.isValidState(state);
+        return valid_brightness || super.isValidState(state);
     }
 }
 

@@ -365,6 +365,12 @@ or
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m '{"state":"75"}'
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
     -m '{"state":"ON", "brightness": "60"}'
 ```
 
@@ -375,6 +381,12 @@ For turning off, you can use either `OFF` or `0`
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
     -m '{"state":"OFF"}'
+```
+or
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -m '{"state":"0"}'
 ```
 or
 ```

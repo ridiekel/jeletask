@@ -6,12 +6,16 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class LogMessage extends FunctionStateBasedMessageSupport {
+    private static final Logger LOG = LoggerFactory.getLogger(LogMessage.class);
+
     public LogMessage(CentralUnit ClientConfig, Function function, ComponentState state) {
         super(ClientConfig, function, state);
     }
@@ -33,7 +37,7 @@ public class LogMessage extends FunctionStateBasedMessageSupport {
 
     protected String formatState(ComponentState... states) {
         return Arrays.stream(states)
-                .map(state -> "State: " + (state == null ? null : this.getMessageHandler().getLogStateByte(state)) + " | " + (state == null ? null : Bytes.bytesToHex((byte) this.getMessageHandler().getLogStateByte(state))) + "\n" + Optional.ofNullable(state).map(ComponentState::prettyString).orElse(null))
+                .map(state -> "State: " + (state == null ? null : this.getMessageHandler().getLogStateByte(state)) + " | " + (state == null ? null : Bytes.bytesToHex((byte) this.getMessageHandler().getLogStateByte(state))) + (LOG.isTraceEnabled() ? "\n" : " ") + Optional.ofNullable(state).map(s -> LOG.isTraceEnabled() ? s.prettyString() : s.toString()).orElse(null))
                 .collect(Collectors.joining(", "));
     }
 
