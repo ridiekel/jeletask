@@ -184,6 +184,7 @@ public class Teletask2MqttConfiguration {
     public static class PublishConfiguration {
         private boolean motorPosition = true;
         private Integer motorPositionInterval = 250;
+        private Integer statesInterval = 300;
 
         public boolean isMotorPosition() {
             return motorPosition;
@@ -199,6 +200,14 @@ public class Teletask2MqttConfiguration {
 
         public void setMotorPositionInterval(Integer motorPositionInterval) {
             this.motorPositionInterval = motorPositionInterval;
+        }
+
+        public Integer getStatesInterval() {
+            return statesInterval;
+        }
+
+        public void setStatesInterval(Integer statesInterval) {
+            this.statesInterval = statesInterval;
         }
     }
 

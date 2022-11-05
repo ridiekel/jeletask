@@ -100,6 +100,21 @@ public class MqttProcessor implements StateChangeListener {
         this.connect(clientId, host, port);
 
         new Timer("motor-service").schedule(motorProgressor, 0, service.getConfiguration().getPublish().getMotorPositionInterval());
+
+        scheduleGroupGet(service);
+    }
+
+    private void scheduleGroupGet(TeletaskService service) {
+        if (service.getConfiguration().getPublish().getStatesInterval() > 0) {
+            LOG.info(String.format("Scheduling force refresh every %s second(s)", service.getConfiguration().getPublish().getStatesInterval()));
+            new Timer("groupget-service").schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    LOG.info("Forcing refresh of states...");
+                    teletaskClient.groupGet();
+                }
+            }, 0, TimeUnit.SECONDS.toMillis(service.getConfiguration().getPublish().getStatesInterval()));
+        }
     }
 
     public Teletask2MqttConfiguration getConfiguration() {
