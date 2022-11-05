@@ -577,6 +577,16 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/input/1/state
 ```
 
+This will provide messages like:
+
+``` json
+{
+    "state":"OPEN"
+}
+```
+
+Where state can be `OPEN` (ie: button is pressed) or `CLOSED` (ie: button is released)
+
 ## Timed function
 
 ### Listen to events

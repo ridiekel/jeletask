@@ -71,3 +71,10 @@ echo "---------------------------------------------------------------------"
 docker push "ridiekel/jeletask2mqtt:$VERSION-native"
 docker tag "ridiekel/jeletask2mqtt:$VERSION-native" ridiekel/jeletask2mqtt:latest-native
 docker push ridiekel/jeletask2mqtt:latest-native
+
+docker run -it --rm \
+  -v "$PWD":/src \
+  -v "/tmp/.m2":/root/.m2 \
+  -w /src \
+  maven:latest \
+  mvn clean
