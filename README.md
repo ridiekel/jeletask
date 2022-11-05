@@ -148,23 +148,25 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
 ## Environment variables
 
 
-| Variable                                 | Type     | Default value | Description                                                                           |
-|------------------------------------------|----------|---------------|---------------------------------------------------------------------------------------|
-| TELETASK_HOST                            | Required |               | The ip address or hostname of your central unit                                       |
-| TELETASK_PORT                            | Required |               | The port of your central unit, probably 55957                                         |
-| TELETASK_ID                              | Required |               | The id used in mqtt messages of the central unit                                      |     
-| TELETASK_MQTT_HOST                       | Required |               | The host of your MQTT broker                                                          |     
-| TELETASK_MQTT_PORT                       | Optional | 1883          | The port of your MQTT broker                                                          |     
-| TELETASK_MQTT_USERNAME                   | Optional | <empty>       | The MQTT broker username                                                              |
-| TELETASK_MQTT_PASSWORD                   | Optional | <empty>       | The MQTT broker password                                                              |
-| TELETASK_MQTT_CLIENTID                   | Optional | teletask2mqtt | The client id used for connecting to MQTT                                             |
-| TELETASK_MQTT_PREFIX                     | Optional | teletask2mqtt | The MQTT message topic prefix                                                         |
-| TELETASK_MQTT_RETAINED                   | Optional | false         | Indicates whether or not the messages should be retained by the broker                |
-| TELETASK_MQTT_DISCOVERY_PREFIX           | Optional | homeassistant | The MQTT home assistant discovery prefix                                              |
-| TELETASK_LOG_HACONFIG_ENABLED            | Optional | false         | (Advanced) Log the homeassistant config messages                                      |
-| TELETASK_LOG_TOPIC_ENABLED               | Optional | false         | (Advanced) Add the topic name to the log message                                      |
-| TELETASK_PUBLISH_MOTOR_POSITION          | Optional | true          | Publish the position of the motor                                                     |
-| TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds). |
+| Variable                                         | Type     | Default value | Description                                                                                                                                                       |
+|--------------------------------------------------|----------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| TELETASK_HOST                                    | Required |               | The ip address or hostname of your central unit                                                                                                                   |
+| TELETASK_PORT                                    | Required |               | The port of your central unit, probably 55957                                                                                                                     |
+| TELETASK_ID                                      | Required |               | The id used in mqtt messages of the central unit                                                                                                                  |     
+| TELETASK_MQTT_HOST                               | Required |               | The host of your MQTT broker                                                                                                                                      |     
+| TELETASK_MQTT_PORT                               | Optional | 1883          | The port of your MQTT broker                                                                                                                                      |     
+| TELETASK_MQTT_USERNAME                           | Optional | <empty>       | The MQTT broker username                                                                                                                                          |
+| TELETASK_MQTT_PASSWORD                           | Optional | <empty>       | The MQTT broker password                                                                                                                                          |
+| TELETASK_MQTT_CLIENTID                           | Optional | teletask2mqtt | The client id used for connecting to MQTT                                                                                                                         |
+| TELETASK_MQTT_PREFIX                             | Optional | teletask2mqtt | The MQTT message topic prefix                                                                                                                                     |
+| TELETASK_MQTT_RETAINED                           | Optional | false         | Indicates whether or not the messages should be retained by the broker                                                                                            |
+| TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                          |
+| TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                 |
+| TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL         | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds).                                                                             |
+| TELETASK_LOG_HACONFIG_ENABLED                    | Optional | false         | (Advanced) Log the homeassistant config messages                                                                                                                  |
+| TELETASK_LOG_TOPIC_ENABLED                       | Optional | false         | (Advanced) Add the topic name to the log message                                                                                                                  |
+| LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_MQTT   | Optional | INFO          | (Advanced) log level of messages going from/to teletask central unit. <br/>Can be ERROR (least log messages), WARN, INFO, DEBUG or TRACE (extensive log messages) |
+| LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_CLIENT | Optional | INFO          | (Advanced) log level of messages going from/to mqtt. <br/>Can be ERROR (least log messages), WARN, INFO, DEBUG or TRACE (extensive log messages)                  |
 
 ## Docker run
 
