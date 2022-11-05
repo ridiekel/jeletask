@@ -13,6 +13,7 @@ public class Teletask2MqttConfiguration {
     private String id;
     private int port;
     private LoggingConfiguration log;
+    private PublishConfiguration publish;
 
     public String getId() {
         return id;
@@ -60,6 +61,17 @@ public class Teletask2MqttConfiguration {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public PublishConfiguration getPublish() {
+        if (this.publish == null) {
+            this.publish = new PublishConfiguration();
+        }
+        return publish;
+    }
+
+    public void setPublish(PublishConfiguration publish) {
+        this.publish = publish;
     }
 
     public LoggingConfiguration getLog() {
@@ -166,6 +178,27 @@ public class Teletask2MqttConfiguration {
 
         public void setTopicEnabled(boolean topicEnabled) {
             this.topicEnabled = topicEnabled;
+        }
+    }
+
+    public static class PublishConfiguration {
+        private boolean motorPosition = true;
+        private Integer motorPositionInterval = 250;
+
+        public boolean isMotorPosition() {
+            return motorPosition;
+        }
+
+        public void setMotorPosition(boolean motorPosition) {
+            this.motorPosition = motorPosition;
+        }
+
+        public Integer getMotorPositionInterval() {
+            return motorPositionInterval;
+        }
+
+        public void setMotorPositionInterval(Integer motorPositionInterval) {
+            this.motorPositionInterval = motorPositionInterval;
         }
     }
 

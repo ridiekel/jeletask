@@ -157,5 +157,21 @@ public class ComponentSpec  {
     public int getPulses_per_unit() { return this.pulses_per_unit; }
     public void setPulses_per_unit(int pulses_per_unit) { this.pulses_per_unit = pulses_per_unit; }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
+        ComponentSpec that = (ComponentSpec) o;
+
+        if (number != that.number) return false;
+        return function == that.function;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = function.hashCode();
+        result = 31 * result + number;
+        return result;
+    }
 }
