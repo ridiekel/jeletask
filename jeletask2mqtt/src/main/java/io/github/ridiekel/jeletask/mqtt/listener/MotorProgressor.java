@@ -29,7 +29,8 @@ public class MotorProgressor extends TimerTask {
         }
     }
 
-    public void update(ComponentSpec motor, ComponentState state) {
+    public void update(ComponentSpec motor) {
+        ComponentState state = motor.getState();
         if (Objects.equals(state.getState(), "ON")) {
             try {
                 Progress progress = new Progress(this.processor.getConfiguration().getPublish().getMotorPositionInterval(), state);

@@ -34,39 +34,39 @@ public class HAConfig<T extends HAConfig<T>> {
                 .model(parameters.getCentralUnit().getCentralUnitType().getDisplayName());
     }
 
-    public final T baseTopic(String value) {
+    public T baseTopic(String value) {
         return this.put("~", value);
     }
 
-    public final T deviceIdentifier(String identifier) {
+    public T deviceIdentifier(String identifier) {
         return this.put(this.deviceIdentifiers, identifier);
     }
 
-    public final T deviceName(String name) {
+    public T deviceName(String name) {
         return this.putDeviceProperty("name", removeInvalid(name, "."));
     }
 
-    public final T manufacturer(String value) {
+    public T manufacturer(String value) {
         return this.putDeviceProperty("manufacturer", value);
     }
 
-    public final T model(String value) {
+    public T model(String value) {
         return this.putDeviceProperty("model", value);
     }
 
-    public final T uniqueId(String value) {
+    public T uniqueId(String value) {
         return this.put("unique_id", value);
     }
 
-    public final T objectId(String value) {
+    public T objectId(String value) {
         return this.put("object_id", value);
     }
 
-    public final T name(String value) {
+    public T name(String value) {
         return this.put("name", value);
     }
 
-    public final T stateTopic(String value) {
+    public T stateTopic(String value) {
         return this.put("state_topic", value);
     }
 
@@ -83,15 +83,23 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.self();
     }
 
+    public String getStringValue(String key) {
+        return this.config.get(key).asText();
+    }
+
     public T putBoolean(String key, boolean value) {
         return this.putBoolean(this.config, key, value);
     }
+
     private T putBoolean(ObjectNode node, String key, boolean value) {
         node.put(key, value);
         return this.self();
     }
 
-    public T putDouble(String key, Double value) { return this.putDouble(this.config, key, value); }
+    public T putDouble(String key, Double value) {
+        return this.putDouble(this.config, key, value);
+    }
+
     private T putDouble(ObjectNode node, String key, Double value) {
         node.put(key, value);
         return this.self();
@@ -122,7 +130,7 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.self();
     }
 
-    private static String id(HAConfigParameters parameters) {
+    protected String id(HAConfigParameters parameters) {
         String id = "teletask-" + parameters.getIdentifier() + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
         return removeInvalid(id, "_");
     }

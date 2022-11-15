@@ -34,6 +34,10 @@ public class ComponentSpec  {
     // For PULSECOUNTER
     private int pulses_per_unit = 1000;
 
+    // For INPUT
+    private int long_press_duration_millis = 2000;
+    private String HA_subtype = "button_1";
+
     public final Map<String, String> SensorTypesToHATypes = Map.of(
             "TEMPERATURE", "sensor",
             "LIGHT", "sensor",
@@ -156,6 +160,14 @@ public class ComponentSpec  {
 
     public int getPulses_per_unit() { return this.pulses_per_unit; }
     public void setPulses_per_unit(int pulses_per_unit) { this.pulses_per_unit = pulses_per_unit; }
+
+    public int getLong_press_duration_millis() {
+        return long_press_duration_millis;
+    }
+
+    public String getHA_subtype() {
+        return HA_subtype;
+    }
 
     @Override
     public boolean equals(Object o) {

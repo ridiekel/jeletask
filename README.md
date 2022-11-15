@@ -122,7 +122,8 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
     "INPUT": [
       {
         "number": 42,
-        "description": "State of TDS12117 input nr 3"
+        "description": "State of TDS12117 input nr 3",
+        "long_press_duration_millis" : 2000
       }
     ],
     "TIMEDFNC": [
@@ -604,9 +605,13 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 The following json attributes are provided on the /state MQTT topic:
 
-| Attribute         | Possible Values | Description                              |
-|-------------------|-----------------|------------------------------------------|
-| state             | OPEN<br/>CLOSED | Button is pressed<br/>Button is released |
+| Attribute                    | Possible Values                                                | Description                                                                                                                                                                                    |
+|------------------------------|----------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| state                        | OPEN<br/>CLOSED<br/>NOT_PRESSED<br/>LONG_PRESS<br/>SHORT_PRESS | Button is being pressed<br/>Button press finished<br/>Button is not being pressed<br/>Button was pressed for a long time (configurable)<br/>Button was pressed for a short time (configurable) |
+| open_time                    | long                                                           | The time the pressing started (when state is LONG_PRESS or SHORT_PRESS)                                                                                                                        |
+| close_time                   | long                                                           | The time the pressing ended (when state is LONG_PRESS or SHORT_PRESS)                                                                                                                          |
+| long_press_config_in_millis  | integer                                                        | The configured amount of time for long press to occur                                                                                                                                          |
+| press_duration_millis        | integer                                                        | The actual amount of time the button was pressed (when state is LONG_PRESS or SHORT_PRESS)                                                                                                     |
 
 ## Timed function
 
@@ -683,7 +688,7 @@ light.teletask_my_teletask_relay_36
 
 ### Relay
 
-The default type of a relay is ```light```, but can be overridden.
+The default type of relay is ```light```, but can be overridden.
 Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 
 ```json

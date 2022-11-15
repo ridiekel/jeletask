@@ -14,7 +14,7 @@ public class HARelayConfig extends HAReadWriteConfig<HARelayConfig> {
 
             this.put("state_value_template", "{% if value_json.state|upper == \"ON\" %}{\"state\": \"ON\"}{% else %}{\"state\": \"OFF\"}{% endif %}");
         } else {
-            this.put("value_template", "{{ value_json.state }}");
+            this.put("state_value_template", "{{ value_json.state }}");
             this.put("state_on", "ON");
             this.put("state_off", "OFF");
         }

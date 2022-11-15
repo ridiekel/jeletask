@@ -58,10 +58,12 @@ public class MqttProcessor implements StateChangeListener {
     private final String teletaskIdentifier;
 
     private final MotorProgressor motorProgressor;
+    private final LongPressInputCaptor longPressInputCaptor;
 
     public MqttProcessor(TeletaskService service) {
         this.service = service;
         this.motorProgressor = new MotorProgressor(this);
+        this.longPressInputCaptor = new LongPressInputCaptor(this);
 
         String host = service.getConfiguration().getMqtt().getHost();
         String port = Optional.ofNullable(service.getConfiguration().getMqtt().getPort()).orElse("1883");
@@ -86,13 +88,13 @@ public class MqttProcessor implements StateChangeListener {
 
         this.connOpts = new MqttConnectOptions();
         this.connOpts.setMaxInflight(100000);
-        
+
         // TODO:
         // Do we need CleanSession?
         // I have disabled it for now because it's not subscribing to the mqtt topics again
         // after a reconnect (for ex. when you restart your mqtt broker).
         this.connOpts.setCleanSession(false);
-        
+
         this.connOpts.setAutomaticReconnect(true);
         this.connOpts.setUserName(username);
         this.connOpts.setPassword(password);
@@ -198,46 +200,27 @@ public class MqttProcessor implements StateChangeListener {
     private void publishConfig() {
         LOG.info("Publishing config...");
         this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
-            this.toConfig(c).ifPresent(config -> {
-                this.publish("CREATE", c, createConfigTopic(c), config, this.service.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug);
+            this.toConfig(c).forEach((t,m) -> {
+                this.publish("CREATE", c, t, m, this.service.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug);
             });
         });
     }
 
-    private String createConfigTopic(ComponentSpec c) {
-        //<discovery_prefix>/<component>/[<node_id>/]<object_id>/config
-        return String.format("%s/%s/%s/%s/config",
-                haDiscoveryPrefix(),
-                haComponent(c),
-                haNodeId(),
-                haObjectId(c)
-        );
-    }
-
-    private String haObjectId(ComponentSpec c) {
-        return c.getFunction().toString().toLowerCase() + "_" + c.getNumber();
-    }
-
-    private String haNodeId() {
-        return this.teletaskIdentifier;
-    }
-
-    private String haComponent(ComponentSpec c) {
-        return Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getHAType(c)).orElse("light");
+    private Map<String, String> toConfig(ComponentSpec component) {
+        return Optional.ofNullable(component)
+                .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
+                        .map(f -> f.getConfigTopicsAndMessages(this.teletaskClient.getConfig(), c, this.baseTopic(c), this.teletaskIdentifier, this.haDiscoveryPrefix()))
+                ).orElse(new HashMap<>());
     }
 
     private String haDiscoveryPrefix() {
         return Optional.ofNullable(this.service.getConfiguration().getMqtt().getDiscoveryPrefix()).orElse("homeassistant");
     }
 
-    private Optional<String> toConfig(ComponentSpec component) {
-        return Optional.ofNullable(component).flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getConfig(this.teletaskClient.getConfig(), c, this.baseTopic(c), this.teletaskIdentifier)));
-    }
-
     private static final Map<Function, FunctionConfig> FUNCTION_TO_TYPE = Map.ofEntries(
             // COND and INPUT are readonly -> HA autodiscovery: binary_sensor
             Map.entry(Function.COND, f("binary_sensor", HABinarySensorConfig::new)),
-            Map.entry(Function.INPUT, f("binary_sensor", HABinarySensorConfig::new)),
+            Map.entry(Function.INPUT, f("sensor", HAInputTriggerConfig::new)),
             // Dimmers -> -> HA auto discovery: light
             Map.entry(Function.DIMMER, f("light", HADimmerConfig::new)),
             // Flags can be read + turned on/off -> HA auto discovery: switch
@@ -260,30 +243,60 @@ public class MqttProcessor implements StateChangeListener {
         return new FunctionConfig(type, config);
     }
 
-    private static final class FunctionConfig {
+    private static class FunctionConfig {
         private final java.util.function.Function<ComponentSpec, String> type;
-        private final java.util.function.Function<HAConfigParameters, HAConfig<?>> config;
+        private List<java.util.function.Function<HAConfigParameters, HAConfig<?>>> config;
 
-        private FunctionConfig(String typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
+        private FunctionConfig(String typeIfAbsent) {
             this.type = c -> Optional.ofNullable(c.getHAType()).orElse(typeIfAbsent);
-            this.config = config;
+            this.config = new ArrayList<>();
         }
 
-        public String getHAType(ComponentSpec componentSpec) {
+        private FunctionConfig(String typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
+            this(typeIfAbsent);
+            this.config = List.of(config);
+        }
+
+        protected String getHAType(ComponentSpec componentSpec, HAConfig<?> config) {
             return this.type.apply(componentSpec);
         }
 
-        public String getConfig(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String identifier) {
+        public Map<String, String> getConfigTopicsAndMessages(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String haNodeId, String haDiscoveryPrefix) {
             HAConfigParameters params = new HAConfigParameters(
                     centralUnit,
                     componentSpec,
                     baseTopic,
-                    this.getHAType(componentSpec),
-                    identifier
+                    haNodeId
             );
-            return Optional.ofNullable(this.config.apply(params)).map(HAConfig::toString).orElse(null);
+
+            Map<String, String> topics = new HashMap<>();
+            for (java.util.function.Function<HAConfigParameters, HAConfig<?>> c : this.config) {
+                HAConfig<?> haConfig = c.apply(params);
+                String topic = createConfigTopic(componentSpec, haConfig, haNodeId, haDiscoveryPrefix);
+                String message = Optional.ofNullable(haConfig).map(HAConfig::toString).orElse(null);
+                topics.put(topic, message);
+            }
+
+            return topics;
         }
 
+        private String createConfigTopic(ComponentSpec c, HAConfig<?> config, String haNodeId, String haDiscoveryPrefix) {
+            //<discovery_prefix>/<component>/[<node_id>/]<object_id>/config
+            return String.format("%s/%s/%s/%s/config",
+                    haDiscoveryPrefix,
+                    haComponent(c, config),
+                    haNodeId,
+                    haObjectId(c, config)
+            );
+        }
+
+        protected String haObjectId(ComponentSpec c, HAConfig<?> config) {
+            return c.getFunction().toString().toLowerCase() + "_" + c.getNumber();
+        }
+
+        protected String haComponent(ComponentSpec c, HAConfig<?> config) {
+            return Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction())).map(f -> f.getHAType(c, config)).orElse("light");
+        }
     }
 
     @Override
@@ -291,8 +304,11 @@ public class MqttProcessor implements StateChangeListener {
         components.forEach(c -> {
             publishState(c, c.getState());
 
-            if (c.getFunction() == Function.MOTOR)
-                this.motorProgressor.update(c, c.getState());
+            if (c.getFunction() == Function.MOTOR) {
+                this.motorProgressor.update(c);
+            } else if (c.getFunction() == Function.INPUT) {
+                this.longPressInputCaptor.update(c);
+            }
         });
     }
 
@@ -374,7 +390,7 @@ public class MqttProcessor implements StateChangeListener {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace(String.format("MQTT topic '%s' could not change state to: %s", topic, message), e);
                 } else {
-                    LOG.warn(String.format("MQTT topic '%s' could not change state to: %s -- %s", topic, message, e.getMessage()),e);
+                    LOG.warn(String.format("MQTT topic '%s' could not change state to: %s -- %s", topic, message, e.getMessage()), e);
                 }
             }
         }
@@ -391,11 +407,13 @@ public class MqttProcessor implements StateChangeListener {
     private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();
 
     static {
+        PAYLOAD_LOG_COLORS.put("OPEN", AnsiColor.GREEN);
         PAYLOAD_LOG_COLORS.put("UP", AnsiColor.GREEN);
         PAYLOAD_LOG_COLORS.put("DOWN", AnsiColor.GREEN);
         PAYLOAD_LOG_COLORS.put("STOP", AnsiColor.RED);
         PAYLOAD_LOG_COLORS.put("ON", AnsiColor.GREEN);
         PAYLOAD_LOG_COLORS.put("OFF", AnsiColor.RED);
+        PAYLOAD_LOG_COLORS.put("CLOSED", AnsiColor.RED);
         PAYLOAD_LOG_COLORS.put("0", AnsiColor.RED);
         for (int i = 1; i <= 100; i++) {
             PAYLOAD_LOG_COLORS.put(String.valueOf(i), AnsiColor.GREEN);
