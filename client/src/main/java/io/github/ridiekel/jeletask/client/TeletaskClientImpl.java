@@ -115,8 +115,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     @Override
     public void displaymessage(int number, ComponentState state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
         this.displaymessage(this.getComponent(Function.DISPLAYMESSAGE, number), state, onSucccess, onFailed);
-    }    
-    
+    }
+
     @Override
     public void get(Function function, int number, SuccessConsumer onSucccess, FailureConsumer onFailed) {
         this.get(this.getComponent(function, number), onSucccess, onFailed);
@@ -253,9 +253,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         for (Function function : Function.values()) {
 
             // No group get message for DISPLAYMESSAGE please
-            if (function != Function.DISPLAYMESSAGE)
-
+            if (function != Function.DISPLAYMESSAGE) {
                 this.groupGet(function);
+            }
         }
     }
 

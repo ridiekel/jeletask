@@ -109,13 +109,14 @@ public class MqttProcessor implements StateChangeListener {
     private void scheduleGroupGet(TeletaskService service) {
         if (service.getConfiguration().getPublish().getStatesInterval() > 0) {
             LOG.info(String.format("Scheduling force refresh every %s second(s)", service.getConfiguration().getPublish().getStatesInterval()));
+            long intervalMillis = TimeUnit.SECONDS.toMillis(service.getConfiguration().getPublish().getStatesInterval());
             new Timer("groupget-service").schedule(new TimerTask() {
                 @Override
                 public void run() {
                     LOG.info("Forcing refresh of states...");
                     teletaskClient.groupGet();
                 }
-            }, 0, TimeUnit.SECONDS.toMillis(service.getConfiguration().getPublish().getStatesInterval()));
+            }, intervalMillis, intervalMillis);
         }
     }
 
@@ -144,21 +145,8 @@ public class MqttProcessor implements StateChangeListener {
             this.connect();
             this.publishConfig();
             this.subscribe();
-            this.refreshStates();
             return true;
         });
-    }
-
-    @Scheduled(fixedRate = 30, timeUnit = TimeUnit.MINUTES)
-    public void refreshStates() {
-        LOG.info("Refreshing states...");
-        this.teletaskClient.groupGet();
-    }
-
-    @Scheduled(fixedRate = 4, timeUnit = TimeUnit.MINUTES, initialDelay = 45)
-    public void refreshConfig() {
-        LOG.info("Refreshing config...");
-        this.publishConfig();
     }
 
     private void subscribe() throws MqttException {
@@ -170,7 +158,7 @@ public class MqttProcessor implements StateChangeListener {
         });
         this.client.subscribe(remoteRefreshTopic(), 0, (topic, message) -> {
             LOG.debug("Refreshing states: {}", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>"));
-            refreshStates();
+            this.teletaskClient.groupGet();
         });
     }
 
