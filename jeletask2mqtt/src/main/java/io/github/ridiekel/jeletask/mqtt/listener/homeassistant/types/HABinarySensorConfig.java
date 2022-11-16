@@ -10,6 +10,6 @@ public class HABinarySensorConfig extends HAReadWriteConfig<HABinarySensorConfig
 
         this.put("payload_on", "OPEN");
         this.put("payload_off", "CLOSED");
-        this.put("state_value_template", "{{ value_json.state }}");
+        this.put("value_template", "{{ value_json.state }}");
     }
 }

@@ -46,13 +46,13 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             if (parameters.getComponentSpec().getHA_unit_of_measurement() != null)
                 this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
 
-            this.put("state_value_template", "{{ value_json.current }}");
+            this.put("value_template", "{{ value_json.current }}");
         } else {
             // Regular simple sensor
             if (parameters.getComponentSpec().getHA_unit_of_measurement() != null)
                 this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
 
-            this.put("state_value_template", "{{ value_json.state }}");
+            this.put("value_template", "{{ value_json.state }}");
         }
 
     }
