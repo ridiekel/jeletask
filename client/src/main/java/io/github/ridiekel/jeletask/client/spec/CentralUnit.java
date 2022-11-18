@@ -89,7 +89,7 @@ public class CentralUnit {
 
     public ComponentSpec getComponent(Function function, int number) {
         return this.componentsTypes.computeIfAbsent(function, k -> new ArrayList<>()).stream().filter(c -> c.getNumber() == number).peek(c -> c.setFunction(function)).findAny().orElseThrow(() -> {
-            LOG.info(
+            LOG.debug(
                     AnsiOutput.toString(AnsiColor.YELLOW, "[EVENT  ] - {}", AnsiColor.DEFAULT, " - {}"),
                     String.format("[%s] - [%s] - [%s]", StringUtils.rightPad(function.toString(), 10), StringUtils.leftPad(String.valueOf(number), 3), StringUtils.leftPad("", 40)),
                     AnsiOutput.toString(AnsiColor.BLUE, "Component not found in config json", AnsiColor.DEFAULT)
