@@ -9,7 +9,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableConfigurationProperties(Teletask2MqttConfiguration.class)
+@EnableConfigurationProperties(Teletask2MqttConfigurationProperties.class)
 @EnableScheduling
 public class Teletask2MqttNormal {
     private static final Logger LOG = LoggerFactory.getLogger(Teletask2MqttNormal.class);
@@ -19,7 +19,7 @@ public class Teletask2MqttNormal {
 
         ApplicationContext context = SpringApplication.run(Teletask2MqttNormal.class, args);
 
-        Teletask2MqttConfiguration configuration = context.getBean(Teletask2MqttConfiguration.class);
+        Teletask2MqttConfigurationProperties configuration = context.getBean(Teletask2MqttConfigurationProperties.class);
 
         LOG.info(String.format("Teletask2Mqtt %s started!", configuration.getVersion()));
 

@@ -1,8 +1,8 @@
 package io.github.ridiekel.jeletask.server;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
-import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
+import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
@@ -25,18 +25,21 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
      * Logger responsible for logging and debugging statements.
      */
     private static final Logger LOG = LoggerFactory.getLogger(TeletaskTestServer.class);
+    public static final byte[] ACKNOWLEDGE = {10};
 
     private final int port;
-    private final TeletaskClientImpl client;
+    private final CentralUnit centralUnit;
     private ServerSocket server;
     private Socket socket;
     private InputStream inputStream;
     private OutputStream outputStream;
     private final Timer timer = new Timer();
 
-    public TeletaskTestServer(int port, TeletaskClientImpl client) {
+    public TeletaskTestServer(int port, CentralUnit centralUnit) {
         this.port = port;
-        this.client = client;
+        this.centralUnit = centralUnit;
+
+        new Thread(this, "teletask-test-server").start();
     }
 
     @Override
@@ -53,8 +56,8 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
                         List<MessageSupport> messages = MessageUtilities.receive(LOG, TeletaskTestServer.this);
                         for (MessageSupport message : messages) {
                             LOG.debug("Processing message: {}", message.toString());
-                            TeletaskTestServer.this.outputStream.write(new byte[]{10});
-                            List<EventMessage> eventMessages = message.respond(TeletaskTestServer.this.getConfig(), TeletaskTestServer.this.getMessageHandler());
+                            TeletaskTestServer.this.outputStream.write(ACKNOWLEDGE);
+                            List<EventMessage> eventMessages = message.respond(TeletaskTestServer.this.getCentralUnit(), TeletaskTestServer.this.getMessageHandler());
                             if (eventMessages != null) {
                                 for (EventMessage eventMessage : eventMessages) {
                                     LOG.debug("Sending bytes to client: {}", Bytes.bytesToHex(eventMessage.getRawBytes()));
@@ -93,22 +96,18 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
         return this.port;
     }
 
-    public TeletaskClientImpl getClient() {
-        return this.client;
-    }
-
     @Override
     public InputStream getInputStream() {
         return this.inputStream;
     }
 
     @Override
-    public CentralUnit getConfig() {
-        return this.getClient().getConfig();
+    public CentralUnit getCentralUnit() {
+        return this.centralUnit;
     }
 
     @Override
     public MessageHandler getMessageHandler() {
-        return this.getClient().getMessageHandler();
+        return MessageHandlerFactory.getMessageHandler(this.getCentralUnit().getCentralUnitType());
     }
 }

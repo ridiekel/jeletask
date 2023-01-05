@@ -19,7 +19,7 @@ import java.util.LinkedHashMap;
         JSR47Logger.class //spring-native: Needed for paho mqtt client
 })
 @SpringBootApplication
-@EnableConfigurationProperties(Teletask2MqttConfiguration.class)
+@EnableConfigurationProperties(Teletask2MqttConfigurationProperties.class)
 @EnableScheduling
 public class Teletask2MqttNative {
     private static final Logger LOG = LoggerFactory.getLogger(Teletask2MqttNative.class);
@@ -29,7 +29,7 @@ public class Teletask2MqttNative {
 
         ApplicationContext context = SpringApplication.run(Teletask2MqttNative.class, args);
 
-        Teletask2MqttConfiguration configuration = context.getBean(Teletask2MqttConfiguration.class);
+        Teletask2MqttConfigurationProperties configuration = context.getBean(Teletask2MqttConfigurationProperties.class);
 
         LOG.info(String.format("Teletask2Mqtt %s started!", configuration.getVersion()));
 

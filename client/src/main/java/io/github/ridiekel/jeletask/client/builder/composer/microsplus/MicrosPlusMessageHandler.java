@@ -127,14 +127,14 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
 
         @Override
         public void execute(TeletaskClientImpl client) {
-            new MessageExecutor(new KeepAliveMessage(client.getConfig()), client).run();
+            new MessageExecutor(new KeepAliveMessage(client.getCentralUnit()), client).run();
         }
     }
 
     private static class MicrosPlusGroupGetStrategy implements GroupGetStrategy {
         @Override
         public void execute(TeletaskClientImpl client, Function function, int... numbers) {
-            new MessageExecutor(new GroupGetMessage(client.getConfig(), function, numbers), client).run();
+            new MessageExecutor(new GroupGetMessage(client.getCentralUnit(), function, numbers), client).run();
         }
     }
 }

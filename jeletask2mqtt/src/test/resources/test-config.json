@@ -1,0 +1,32 @@
+{
+  "type": "MICROS_PLUS",
+  "componentsTypes": {
+    "RELAY": [
+      { "number": 2, "description": "Relay 2" }
+    ],
+    "SENSOR": [
+      { "number": 3, "description": "Sensor (LIGHT)", "type": "LIGHT" }
+    ],
+    "COND": [
+      { "number": 4, "description": "Condition 1" }
+    ],
+    "FLAG": [
+      { "number": 5, "description": "Flag 1" }
+    ],
+    "GENMOOD": [
+      { "number": 6, "description": "General Mood 1" }
+    ],
+    "MOTOR": [
+      { "number": 7, "description": "Motor 1" }
+    ],
+    "LOCMOOD": [
+      { "number": 8, "description": "Local Mood 1" }
+    ],
+    "DIMMER": [
+      { "number": 9, "description": "Dimmer 1" }
+    ],
+    "INPUT": [
+      { "number": 10, "description": "Input 1" }
+    ]
+  }
+}

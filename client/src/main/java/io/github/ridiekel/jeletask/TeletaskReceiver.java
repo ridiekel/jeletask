@@ -10,5 +10,5 @@ public interface TeletaskReceiver {
 
     MessageHandler getMessageHandler();
 
-    CentralUnit getConfig();
+    CentralUnit getCentralUnit();
 }

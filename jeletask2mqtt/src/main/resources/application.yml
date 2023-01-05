@@ -1,9 +1,10 @@
 teletask:
-  host: "localhost"
-  port: 1234
-  id: "MAN_${teletask.host}_${teletask.port}"
-  configFile: "/teletask2mqtt/config.json"
-  version: "@gateway.version@"
+  central:
+    host: "localhost"
+    port: 1234
+    id: "MAN_${teletask.central.host}_${teletask.central.port}"
+    configFile: "file:/teletask2mqtt/config.json"
+    version: "@gateway.version@"
   mqtt:
     host: "localhost"
     port: 1883

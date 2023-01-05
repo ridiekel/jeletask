@@ -6,11 +6,15 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
-import io.github.ridiekel.jeletask.mqtt.Teletask2MqttConfiguration;
-import io.github.ridiekel.jeletask.mqtt.TeletaskService;
+import io.github.ridiekel.jeletask.mqtt.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HABinarySensorConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HADimmerConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HAInputTriggerConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HAMotorConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HARelayConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.HASensorConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -23,10 +27,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.ContextStartedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -49,39 +62,38 @@ public class MqttProcessor implements StateChangeListener {
         return AnsiOutput.toString(color, "[%s] - %s", AnsiColor.DEFAULT, " - %s");
     }
 
-    private final TeletaskClient teletaskClient;
+    private final CentralUnit centralUnit;
+    private TeletaskClient teletaskClient;
+    private final Teletask2MqttConfigurationProperties configuration;
 
-    private MqttClient client;
+    private MqttClient mqttClient;
     private final String prefix;
-    private final TeletaskService service;
     private final MqttConnectOptions connOpts;
     private final String teletaskIdentifier;
 
     private final MotorProgressor motorProgressor;
     private final LongPressInputCaptor longPressInputCaptor;
 
-    public MqttProcessor(TeletaskService service) {
-        this.service = service;
+    public MqttProcessor(CentralUnit centralUnit, TeletaskClient teletaskClient, Teletask2MqttConfigurationProperties configuration) {
+        this.centralUnit = centralUnit;
+        this.teletaskClient = teletaskClient;
+        this.teletaskClient.registerStateChangeListener(this);
+        this.configuration = configuration;
         this.motorProgressor = new MotorProgressor(this);
         this.longPressInputCaptor = new LongPressInputCaptor(this);
 
-        String host = service.getConfiguration().getMqtt().getHost();
-        String port = Optional.ofNullable(service.getConfiguration().getMqtt().getPort()).orElse("1883");
-        String username = Optional.ofNullable(service.getConfiguration().getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
-        char[] password = Optional.ofNullable(service.getConfiguration().getMqtt().getPassword()).map(String::toCharArray).orElse(null);
-        String clientId = Optional.ofNullable(service.getConfiguration().getMqtt().getClientId()).orElse("teletask2mqtt");
-        this.prefix = removeInvalid(service.getConfiguration().getMqtt().getPrefix(), clientId);
+        String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
+        char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
+        this.prefix = removeInvalid(configuration.getMqtt().getPrefix(), this.configuration.getMqtt().getClientId());
 
-        this.teletaskClient = service.createClient(this);
-
-        this.teletaskIdentifier = resolveTeletaskIdentifier(service, this.teletaskClient.getConfig());
+        this.teletaskIdentifier = resolveTeletaskIdentifier(centralUnit, configuration);
 
         LOG.info(String.format("teletask id: '%s'", this.teletaskIdentifier));
-        LOG.info(String.format("host: '%s'", host));
-        LOG.info(String.format("port: '%s'", port));
+        LOG.info(String.format("host: '%s'", this.configuration.getMqtt().getHost()));
+        LOG.info(String.format("port: '%s'", this.configuration.getMqtt().getPort()));
         LOG.info(String.format("username: '%s'", Optional.ofNullable(username).orElse("<not specified>")));
-        LOG.info(String.format("clientId: '%s'", clientId));
-        LOG.info(String.format("retained: '%s'", this.service.getConfiguration().getMqtt().isRetained()));
+        LOG.info(String.format("clientId: '%s'", this.configuration.getMqtt().getClientId()));
+        LOG.info(String.format("retained: '%s'", configuration.getMqtt().isRetained()));
         LOG.info(String.format("prefix: '%s'", this.prefix));
         LOG.info(String.format("Remote stop topic: '%s'", this.remoteStopTopic()));
         LOG.info(String.format("Remote refresh states topic: '%s'", this.remoteRefreshTopic()));
@@ -99,17 +111,13 @@ public class MqttProcessor implements StateChangeListener {
         this.connOpts.setUserName(username);
         this.connOpts.setPassword(password);
 
-        this.connect(clientId, host, port);
-
-        new Timer("motor-service").schedule(motorProgressor, 0, service.getConfiguration().getPublish().getMotorPositionInterval());
-
-        scheduleGroupGet(service);
+        new Timer("motor-service").schedule(motorProgressor, 0, configuration.getPublish().getMotorPositionInterval());
     }
 
-    private void scheduleGroupGet(TeletaskService service) {
-        if (service.getConfiguration().getPublish().getStatesInterval() > 0) {
-            LOG.info(String.format("Scheduling force refresh every %s second(s)", service.getConfiguration().getPublish().getStatesInterval()));
-            long intervalMillis = TimeUnit.SECONDS.toMillis(service.getConfiguration().getPublish().getStatesInterval());
+    private void scheduleGroupGet(Teletask2MqttConfigurationProperties configuration) {
+        if (configuration.getPublish().getStatesInterval() > 0) {
+            LOG.info(String.format("Scheduling force refresh every %s second(s)", configuration.getPublish().getStatesInterval()));
+            long intervalMillis = TimeUnit.SECONDS.toMillis(configuration.getPublish().getStatesInterval());
             new Timer("groupget-service").schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -120,29 +128,36 @@ public class MqttProcessor implements StateChangeListener {
         }
     }
 
-    public Teletask2MqttConfiguration getConfiguration() {
-        return this.service.getConfiguration();
+    @EventListener
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        this.configureAndConnectMqtt();
+        this.teletaskClient.groupGet();
+        scheduleGroupGet(configuration);
     }
 
-    private static String resolveTeletaskIdentifier(TeletaskService service, CentralUnit centralUnit) {
-        return removeInvalid(service.getConfiguration().getId(), removeInvalid(centralUnit.getHost() + "_" + centralUnit.getPort(), "impossible"));
+    public Teletask2MqttConfigurationProperties getConfiguration() {
+        return this.configuration;
+    }
+
+    private static String resolveTeletaskIdentifier(CentralUnit centralUnit, Teletask2MqttConfigurationProperties configuration) {
+        return removeInvalid(configuration.getCentral().getId(), removeInvalid(centralUnit.getHost() + "_" + centralUnit.getPort(), "impossible"));
     }
 
     private static String removeInvalid(String value, String defaultValue) {
         return Optional.ofNullable(value).map(String::trim).filter(u -> !u.isEmpty()).map(u -> INVALID_CHARS.matcher(u).replaceAll("_")).orElseGet(() -> removeInvalid(defaultValue, "<not_found>"));
     }
 
-    private void connect(String clientId, String host, String port) {
-        String broker = "tcp://" + host + ":" + port;
+    private void configureAndConnectMqtt() {
+        String broker = "tcp://" + this.configuration.getMqtt().getHost() + ":" + this.configuration.getMqtt().getPort();
         LOG.info("Connecting to MQTT broker...");
 
         try {
-            this.client = new MqttClient(broker, clientId, new MemoryPersistence());
+            this.mqttClient = new MqttClient(broker, this.configuration.getMqtt().getClientId(), new MemoryPersistence());
         } catch (MqttException e) {
             throw new RuntimeException(e);
         }
         Awaitility.await().atMost(TIMEOUT, TimeUnit.SECONDS).until(() -> {
-            this.connect();
+            this.connectMqtt();
             this.publishConfig();
             this.subscribe();
             return true;
@@ -151,12 +166,12 @@ public class MqttProcessor implements StateChangeListener {
 
     private void subscribe() throws MqttException {
         LOG.info("Subscribing to topics...");
-        this.client.subscribe(this.prefix + "/" + this.teletaskIdentifier + "/+/+/set", 0, new ChangeStateMqttCallback());
-        this.client.subscribe(remoteStopTopic(), 0, (topic, message) -> {
+        this.mqttClient.subscribe(this.prefix + "/" + this.teletaskIdentifier + "/+/+/set", 0, new ChangeStateMqttCallback());
+        this.mqttClient.subscribe(remoteStopTopic(), 0, (topic, message) -> {
             LOG.debug("Stopping the service: {}", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>"));
             System.exit(0);
         });
-        this.client.subscribe(remoteRefreshTopic(), 0, (topic, message) -> {
+        this.mqttClient.subscribe(remoteRefreshTopic(), 0, (topic, message) -> {
             LOG.debug("Refreshing states: {}", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>"));
             this.teletaskClient.groupGet();
         });
@@ -170,26 +185,26 @@ public class MqttProcessor implements StateChangeListener {
         return this.prefix + "/" + this.teletaskIdentifier + "/refresh";
     }
 
-    private synchronized void connect() {
-        if (!this.client.isConnected()) {
+    private synchronized void connectMqtt() {
+        if (!this.mqttClient.isConnected()) {
             try {
-                this.client.connect(this.connOpts);
+                this.mqttClient.connect(this.connOpts);
             } catch (MqttException e) {
                 LOG.debug("Connect warning: {}", e.getMessage());
             }
 
             Awaitility.await().pollDelay(100, TimeUnit.MILLISECONDS).atMost(TIMEOUT, TimeUnit.SECONDS).until(() -> {
                 LOG.info("Waiting for mqtt connection...");
-                return this.client.isConnected();
+                return this.mqttClient.isConnected();
             });
         }
     }
 
     private void publishConfig() {
         LOG.info("Publishing config...");
-        this.teletaskClient.getConfig().getAllComponents().forEach(c -> {
-            this.toConfig(c).forEach((t,m) -> {
-                this.publish("CREATE", c, t, m, this.service.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug);
+        this.centralUnit.getAllComponents().forEach(c -> {
+            this.toConfig(c).forEach((t, m) -> {
+                this.publish("CREATE", c, t, m, this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug);
             });
         });
     }
@@ -197,12 +212,12 @@ public class MqttProcessor implements StateChangeListener {
     private Map<String, String> toConfig(ComponentSpec component) {
         return Optional.ofNullable(component)
                 .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
-                        .map(f -> f.getConfigTopicsAndMessages(this.teletaskClient.getConfig(), c, this.baseTopic(c), this.teletaskIdentifier, this.haDiscoveryPrefix()))
+                        .map(f -> f.getConfigTopicsAndMessages(this.centralUnit, c, this.baseTopic(c), this.teletaskIdentifier, this.haDiscoveryPrefix()))
                 ).orElse(new HashMap<>());
     }
 
     private String haDiscoveryPrefix() {
-        return Optional.ofNullable(this.service.getConfiguration().getMqtt().getDiscoveryPrefix()).orElse("homeassistant");
+        return Optional.ofNullable(this.getConfiguration().getMqtt().getDiscoveryPrefix()).orElse("homeassistant");
     }
 
     private static final Map<Function, FunctionConfig> FUNCTION_TO_TYPE = Map.ofEntries(
@@ -309,13 +324,13 @@ public class MqttProcessor implements StateChangeListener {
         try {
             MqttMessage mqttMessage = new MqttMessage(message.getBytes());
             mqttMessage.setQos(0);
-            mqttMessage.setRetained(this.service.getConfiguration().getMqtt().isRetained());
+            mqttMessage.setRetained(this.getConfiguration().getMqtt().isRetained());
 
-            this.connect();
+            this.connectMqtt();
 
             LOG.debug(String.format("[%s] - %s - publishing topic '%s' -> %s", getWhat(what), getLoggingStringForComponent(componentSpec), topic, message));
             level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), getLoggingStringForComponent(componentSpec), topicToLogWithColors(topic) + payloadToLogWithColors(message)));
-            this.client.publish(topic, mqttMessage);
+            this.mqttClient.publish(topic, mqttMessage);
         } catch (Exception e) {
             LOG.warn(e.getMessage());
         }
@@ -336,7 +351,7 @@ public class MqttProcessor implements StateChangeListener {
     @Override
     public void stop() {
         try {
-            this.client.disconnect();
+            this.mqttClient.disconnect();
         } catch (MqttException e) {
             LOG.debug(e.getMessage());
         }
@@ -360,7 +375,7 @@ public class MqttProcessor implements StateChangeListener {
                     int number = Integer.parseInt(matcher.group(2));
                     ComponentState state = ComponentState.parse(function, message);
 
-                    String componentLog = getLoggingStringForComponent(MqttProcessor.this.teletaskClient.getConfig().getComponent(function, number));
+                    String componentLog = getLoggingStringForComponent(MqttProcessor.this.centralUnit.getComponent(function, number));
                     LOG.info(String.format(WHAT_LOG_PATTERNS.get("COMMAND"), getWhat("COMMAND"), componentLog, payloadToLogWithColors(new String(mqttMessage.getPayload()))));
 
                     if (function == Function.DISPLAYMESSAGE)
@@ -389,7 +404,7 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     private String topicToLogWithColors(String topic) {
-        return this.service.getConfiguration().getLog().isTopicEnabled() ? AnsiOutput.toString(AnsiColor.MAGENTA, "[" + StringUtils.rightPad(topic, 60) + "] - ", AnsiColor.DEFAULT) : "";
+        return this.getConfiguration().getLog().isTopicEnabled() ? AnsiOutput.toString(AnsiColor.MAGENTA, "[" + StringUtils.rightPad(topic, 60) + "] - ", AnsiColor.DEFAULT) : "";
     }
 
     private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();

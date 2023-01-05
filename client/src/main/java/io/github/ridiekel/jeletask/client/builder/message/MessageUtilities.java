@@ -51,7 +51,7 @@ public final class MessageUtilities {
     private static byte[] extractMessages(Logger logger, TeletaskReceiver teletaskReceiver, Collection<MessageSupport> responses, byte[] data, MessageSupport currentlyRunningMessage) throws Exception {
         logger.trace("Receive - Raw bytes: {}", Bytes.bytesToHex(data));
         MessageHandler messageHandler = teletaskReceiver.getMessageHandler();
-        CentralUnit config = teletaskReceiver.getConfig();
+        CentralUnit config = teletaskReceiver.getCentralUnit();
         byte[] overflow = new byte[0];
         for (int i = 0; i < data.length; i++) {
             byte b = data[i];

@@ -21,13 +21,5 @@ public interface TeletaskClient {
 
     void get(ComponentSpec component, SuccessConsumer onSuccess, FailureConsumer onFailed);
 
-    TeletaskClient start();
-
-    void restart();
-
-    void stop();
-
-    CentralUnit getConfig();
-
     void groupGet();
 }

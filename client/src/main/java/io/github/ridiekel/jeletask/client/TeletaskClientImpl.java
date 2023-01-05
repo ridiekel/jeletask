@@ -6,11 +6,11 @@ import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.executor.MessageExecutor;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
+import io.github.ridiekel.jeletask.client.builder.message.messages.impl.DisplayMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.LogMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
-import io.github.ridiekel.jeletask.client.builder.message.messages.impl.DisplayMessage;
 import io.github.ridiekel.jeletask.client.builder.message.strategy.KeepAliveStrategy;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
@@ -20,6 +20,8 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-
+@Service
 public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClient {
     /**
      * Logger responsible for logging and debugging statements.
@@ -50,7 +52,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private OutputStream outputStream;
     private InputStream inputStream;
 
-    private final CentralUnit config;
+    private final CentralUnit centralUnit;
 
     private ExecutorService ioService;
 
@@ -61,12 +63,88 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private EventMessageListener eventMessageListener;
 
     private final AtomicBoolean started = new AtomicBoolean(false);
+    private final AtomicBoolean starting = new AtomicBoolean(false);
 
-    public TeletaskClientImpl(CentralUnit config) {
-        this.config = config;
+    @Autowired
+    public TeletaskClientImpl(CentralUnit centralUnit) {
+        this.centralUnit = centralUnit;
     }
 
 // ################################################ PUBLIC API FUNCTIONS
+
+    @Override
+    public void get(ComponentSpec component, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        withStarted(() -> {
+            if (this.started.get()) {
+                this.execute(
+                        new GetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber()),
+                        m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                        (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+                );
+            }
+        });
+    }
+
+    @Override
+    public void set(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        withStarted(() -> {
+            if (this.started.get()) {
+                if (Objects.isNull(component.getState())) {
+                    this.get(component,
+                            (f, n, s) -> LOG.info("State for {} / {} was somehow null, we reset the state to: {}", component.getFunction(), component.getNumber(), component.getState()),
+                            (f, n, s, e) -> {
+                            });
+                    Awaitility.await("State update")
+                            .atMost(5, TimeUnit.SECONDS)
+                            .pollInSameThread()
+                            .pollInterval(10, TimeUnit.MILLISECONDS)
+                            .until(() -> !Objects.isNull(component.getState()));
+                }
+
+                if (!Objects.equals(component.getState(), state)) {
+                    this.execute(
+                            new SetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                            m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                            (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+                    );
+                }
+            }
+        });
+    }
+
+    @Override
+    public void displaymessage(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        withStarted(() -> {
+            this.execute(
+                    new DisplayMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                    m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                    (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+            );
+        });
+    }
+
+    @Override
+    public void groupGet() {
+        withStarted(() -> {
+            for (Function function : Function.values()) {
+                if (function.isIncludeInGroupGet()) {
+                    this.groupGet(function);
+                }
+            }
+        });
+    }
+
+    private void withStarted(Runnable runnable) {
+        if (!started.get()) {
+            if (!starting.get()) {
+                this.start();
+            }
+
+            Awaitility.await("Teletask Client Startup").atMost(30, TimeUnit.SECONDS).until(started::get);
+        }
+
+        runnable.run();
+    }
 
     @Override
     public void registerStateChangeListener(StateChangeListener listener) {
@@ -74,42 +152,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     @Override
-    public void set(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-        if (this.started.get()) {
-            if (Objects.isNull(component.getState())) {
-                this.get(component,
-                        (f, n, s) -> LOG.info("State for {} / {} was somehow null, we reset the state to: {}", component.getFunction(), component.getNumber(), component.getState()),
-                        (f, n, s, e) -> {
-                        });
-                Awaitility.await("State update")
-                        .atMost(5, TimeUnit.SECONDS)
-                        .pollInSameThread()
-                        .pollInterval(10, TimeUnit.MILLISECONDS)
-                        .until(() -> !Objects.isNull(component.getState()));
-            }
-
-            if (!Objects.equals(component.getState(), state)) {
-                this.execute(
-                        new SetMessage(this.getConfig(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
-                        m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
-                        (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-                );
-            }
-        }
-    }
-
-    @Override
     public void set(Function function, int number, ComponentState state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
         this.set(this.getComponent(function, number), state, onSucccess, onFailed);
-    }
-
-    @Override
-    public void displaymessage(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-        this.execute(
-                new DisplayMessage(this.getConfig(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
-                m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
-                (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-        );
     }
 
     @Override
@@ -122,19 +166,10 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.get(this.getComponent(function, number), onSucccess, onFailed);
     }
 
-    @Override
-    public void get(ComponentSpec component, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-        if (this.started.get()) {
-            this.execute(
-                    new GetMessage(this.getConfig(), component.getFunction(), component.getNumber()),
-                    m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
-                    (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-            );
-        }
-    }
+    public void start() {
+        this.starting.set(true);
+        this.started.set(false);
 
-    @Override
-    public TeletaskClient start() {
         LOG.info("Starting IO service...");
         this.startIoService();
 
@@ -165,7 +200,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         LOG.info("Performing group get...");
         this.getIoService().execute(() -> {
-            this.groupGet();
+//            this.groupGet();
 
             this.sendLogEventMessages(new ComponentState("ON"));
         });
@@ -174,13 +209,12 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.startKeepAlive();
 
         this.started.set(true);
-
-        return this;
+        this.starting.set(false);
     }
 
     private void connectAndWait() {
-        String host = this.getConfig().getHost();
-        int port = this.getConfig().getPort();
+        String host = this.getCentralUnit().getHost();
+        int port = this.getCentralUnit().getPort();
 
         Awaitility.await("Connect")
                 .pollInSameThread()
@@ -189,7 +223,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
                 .until(() -> this.connect(host, port));
     }
 
-    @Override
     public void restart() {
         this.started.set(false);
 
@@ -208,7 +241,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.started.set(true);
     }
 
-    @Override
     public void stop() {
         this.started.set(false);
         // close all log events to stop reporting
@@ -226,9 +258,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.runRunnables(runnables);
     }
 
-    @Override
-    public CentralUnit getConfig() {
-        return this.config;
+    public CentralUnit getCentralUnit() {
+        return this.centralUnit;
     }
 
     public void send(byte[] message, java.util.function.Function<byte[], String> logMessage) {
@@ -246,27 +277,16 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         public CommunicationException(String message, Throwable cause) {
             super(message, cause);
         }
-    }
 
-    @Override
-    public void groupGet() {
-        for (Function function : Function.values()) {
-
-            // No group get message for DISPLAYMESSAGE please
-            if (function != Function.DISPLAYMESSAGE) {
-                this.groupGet(function);
-            }
-        }
     }
 
     // ################################################ PRIVATE API FUNCTIONS
-
     public void groupGet(Function function, int... numbers) {
         new GroupGetTask(function, numbers).run();
     }
 
     public void groupGet(Function function) {
-        List<? extends ComponentSpec> components = this.getConfig().getComponents(function);
+        List<? extends ComponentSpec> components = this.getCentralUnit().getComponents(function);
         if (components != null && !components.isEmpty()) {
             this.groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray());
         }
@@ -287,12 +307,12 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     private <M extends MessageSupport> void execute(
             M message,
-            Consumer<M> onSucccess,
+            Consumer<M> onSuccess,
             BiConsumer<M, Exception> onFailed) {
         try {
             this.getIoService()
                     .execute(new MessageExecutor(message, this));
-            onSucccess.accept(message);
+            onSuccess.accept(message);
         } catch (Exception e) {
             LOG.debug("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage());
             onFailed.accept(message, e);
@@ -316,7 +336,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         LOG.debug("Connecting to {}:{}", host, port);
 
         try {
-            this.socket = new Socket(host, port);
+            this.socket = createSocket(host, port);
             this.socket.setKeepAlive(true);
             this.socket.setSoTimeout(2000);
             connected = true;
@@ -338,6 +358,10 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         return connected;
     }
 
+    protected Socket createSocket(String host, int port) throws IOException {
+        return new Socket(host, port);
+    }
+
     private void startKeepAlive() {
         KeepAliveStrategy keepAliveStrategy = this.getMessageHandler().getKeepAliveStrategy();
         this.keepAliveTimer = new Timer("keep-alive");
@@ -346,11 +370,11 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     @Override
     public MessageHandler getMessageHandler() {
-        return MessageHandlerFactory.getMessageHandler(this.getConfig().getCentralUnitType());
+        return MessageHandlerFactory.getMessageHandler(this.getCentralUnit().getCentralUnitType());
     }
 
     private void sendLogEventMessage(Function function, ComponentState state) {
-        new LogMessage(this.getConfig(), function, state).execute(this);
+        new LogMessage(this.getCentralUnit(), function, state).execute(this);
     }
 
     /**
@@ -393,7 +417,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         for (MessageSupport message : messages) {
             if (message instanceof EventMessage) {
                 EventMessage eventMessage = (EventMessage) message;
-                this.handleReceiveEvent(this.getConfig(), eventMessage);
+                this.handleReceiveEvent(this.getCentralUnit(), eventMessage);
                 components.add(this.getComponent(eventMessage.getFunction(), eventMessage.getNumber()));
             }
         }
@@ -406,7 +430,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private ComponentSpec getComponent(Function function, int number) {
-        return this.getConfig().getComponent(function, number);
+        return this.getCentralUnit().getComponent(function, number);
     }
 
 

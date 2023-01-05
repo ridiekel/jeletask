@@ -2,7 +2,6 @@ package io.github.ridiekel.jeletask.client.spec;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -11,13 +10,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * POJO representation of the TDS config JSON file.
@@ -34,17 +30,6 @@ public class CentralUnit {
     private Map<Function, List<ComponentSpec>> componentsTypes = new LinkedHashMap<>();
     private List<ComponentSpec> allComponents;
     private CentralUnitType type;
-
-    /**
-     * Default constructor.
-     */
-    private CentralUnit() {
-    }
-
-    public CentralUnit(String host, int port) {
-        this.host = host;
-        this.port = port;
-    }
 
     public String getHost() {
         return this.host;
@@ -112,20 +97,6 @@ public class CentralUnit {
             }
         }
         return this.allComponents;
-    }
-
-    public static CentralUnit read(InputStream jsonData) throws IOException {
-
-        //create ObjectMapper instance
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        //convert json string to object
-        CentralUnit clientConfig = objectMapper.readValue(jsonData, CentralUnit.class);
-        LOG.debug("JSON Config loaded: TDS HOST: {}:{}", clientConfig.getHost(), clientConfig.getPort());
-
-        LOG.debug("CentralUnit initialized.");
-
-        return clientConfig;
     }
 
     public static final class ComponentNotFoundInConfigException extends RuntimeException {
