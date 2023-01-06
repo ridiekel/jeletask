@@ -2,7 +2,11 @@ package io.github.ridiekel.jeletask.client.spec;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
+import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
@@ -99,6 +103,11 @@ public class CentralUnit {
         return this.allComponents;
     }
 
+    @JsonIgnore
+    public MessageHandler getMessageHandler() {
+        return MessageHandlerFactory.getMessageHandler(this.getCentralUnitType());
+    }
+
     public static final class ComponentNotFoundInConfigException extends RuntimeException {
         public ComponentNotFoundInConfigException(String message) {
             super(message);
@@ -108,6 +117,22 @@ public class CentralUnit {
     @Override
     public String toString() {
         return new ReflectionToStringBuilder(this, ToStringStyle.JSON_STYLE).setExcludeFieldNames("componentsTypes", "allComponents").toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CentralUnit that = (CentralUnit) o;
+
+        return new EqualsBuilder().append(port, that.port).append(host, that.host).append(type, that.type).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).append(host).append(port).append(type).toHashCode();
     }
 }
 

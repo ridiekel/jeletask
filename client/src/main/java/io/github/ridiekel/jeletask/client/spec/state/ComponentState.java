@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -273,5 +275,21 @@ public class ComponentState {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ComponentState that = (ComponentState) o;
+
+        return new EqualsBuilder().append(state, that.state).append(lastDirection, that.lastDirection).append(protection, that.protection).append(position, that.position).append(currentPosition, that.currentPosition).append(secondsToFinish, that.secondsToFinish).append(correctionAtZeroPercentInSeconds, that.correctionAtZeroPercentInSeconds).append(correctionAtHundredPercentInSeconds, that.correctionAtHundredPercentInSeconds).append(brightness, that.brightness).append(currentTemperature, that.currentTemperature).append(targetTemperature, that.targetTemperature).append(dayPresetTemperature, that.dayPresetTemperature).append(nightAtHeatingPresetTemperature, that.nightAtHeatingPresetTemperature).append(nightAtCoolingPresetTemperature, that.nightAtCoolingPresetTemperature).append(ecoPresetOffset, that.ecoPresetOffset).append(preset, that.preset).append(mode, that.mode).append(fanspeed, that.fanspeed).append(windowOpen, that.windowOpen).append(swingDirection, that.swingDirection).append(outputState, that.outputState).append(messageLine1, that.messageLine1).append(messageLine2, that.messageLine2).append(messageBeeps, that.messageBeeps).append(messageType, that.messageType).append(current, that.current).append(total, that.total).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).append(state).append(lastDirection).append(protection).append(position).append(currentPosition).append(secondsToFinish).append(correctionAtZeroPercentInSeconds).append(correctionAtHundredPercentInSeconds).append(brightness).append(currentTemperature).append(targetTemperature).append(dayPresetTemperature).append(nightAtHeatingPresetTemperature).append(nightAtCoolingPresetTemperature).append(ecoPresetOffset).append(preset).append(mode).append(fanspeed).append(windowOpen).append(swingDirection).append(outputState).append(messageLine1).append(messageLine2).append(messageBeeps).append(messageType).append(current).append(total).toHashCode();
     }
 }

@@ -1,8 +1,6 @@
 package io.github.ridiekel.jeletask.server;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
-import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
-import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
@@ -17,8 +15,14 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class TeletaskTestServer implements Runnable, TeletaskReceiver {
     /**
@@ -26,6 +30,7 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
      */
     private static final Logger LOG = LoggerFactory.getLogger(TeletaskTestServer.class);
     public static final byte[] ACKNOWLEDGE = {10};
+    private static final Executor RESPONSE_EXECUTOR = Executors.newSingleThreadExecutor(r -> new Thread(r, "teletask-test-server-responder"));
 
     private final int port;
     private final CentralUnit centralUnit;
@@ -34,12 +39,21 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
     private InputStream inputStream;
     private OutputStream outputStream;
     private final Timer timer = new Timer();
+    private Map<TestServerCommand, List<TestServerResponse>> mocks;
 
     public TeletaskTestServer(int port, CentralUnit centralUnit) {
         this.port = port;
         this.centralUnit = centralUnit;
 
         new Thread(this, "teletask-test-server").start();
+    }
+
+    public void mock(Consumer<ExpectationBuilder> mockDefinition) {
+        ExpectationBuilder expectationBuilder = new ExpectationBuilder(this.centralUnit);
+
+        mockDefinition.accept(expectationBuilder);
+
+        this.mocks = expectationBuilder.getMocks().stream().collect(Collectors.toMap(TestServerExpectation::command, TestServerExpectation::responses));
     }
 
     @Override
@@ -57,14 +71,21 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
                         for (MessageSupport message : messages) {
                             LOG.debug("Processing message: {}", message.toString());
                             TeletaskTestServer.this.outputStream.write(ACKNOWLEDGE);
-                            List<EventMessage> eventMessages = message.respond(TeletaskTestServer.this.getCentralUnit(), TeletaskTestServer.this.getMessageHandler());
-                            if (eventMessages != null) {
-                                for (EventMessage eventMessage : eventMessages) {
-                                    LOG.debug("Sending bytes to client: {}", Bytes.bytesToHex(eventMessage.getRawBytes()));
-                                    TeletaskTestServer.this.outputStream.write(eventMessage.getRawBytes());
-                                    TeletaskTestServer.this.outputStream.flush();
-                                }
-                            }
+
+                            getMocks().getOrDefault(new TestServerCommand(message), List.of())
+                                    .forEach(response -> {
+                                        EventMessage eventMessage = response.create(centralUnit, message);
+                                        RESPONSE_EXECUTOR.execute(() -> {
+                                            try {
+                                                LOG.debug("Sending bytes to client: {}", Bytes.bytesToHex(eventMessage.getRawBytes()));
+                                                TeletaskTestServer.this.outputStream.write(eventMessage.getRawBytes());
+                                                TeletaskTestServer.this.outputStream.flush();
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                        });
+                                    });
+
                             TeletaskTestServer.this.outputStream.flush();
                         }
                     } catch (Exception e) {
@@ -92,6 +113,10 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
         LOG.debug("Stopped test server.");
     }
 
+    public Map<TestServerCommand, List<TestServerResponse>> getMocks() {
+        return Optional.ofNullable(mocks).orElseGet(Map::of);
+    }
+
     public int getPort() {
         return this.port;
     }
@@ -104,10 +129,5 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
     @Override
     public CentralUnit getCentralUnit() {
         return this.centralUnit;
-    }
-
-    @Override
-    public MessageHandler getMessageHandler() {
-        return MessageHandlerFactory.getMessageHandler(this.getCentralUnit().getCentralUnitType());
     }
 }

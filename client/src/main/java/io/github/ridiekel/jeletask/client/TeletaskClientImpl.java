@@ -363,15 +363,11 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private void startKeepAlive() {
-        KeepAliveStrategy keepAliveStrategy = this.getMessageHandler().getKeepAliveStrategy();
+        KeepAliveStrategy keepAliveStrategy = this.getCentralUnit().getMessageHandler().getKeepAliveStrategy();
         this.keepAliveTimer = new Timer("keep-alive");
         this.keepAliveTimer.schedule(new KeepAliveService(keepAliveStrategy), 0, keepAliveStrategy.getIntervalMillis());
     }
 
-    @Override
-    public MessageHandler getMessageHandler() {
-        return MessageHandlerFactory.getMessageHandler(this.getCentralUnit().getCentralUnitType());
-    }
 
     private void sendLogEventMessage(Function function, ComponentState state) {
         new LogMessage(this.getCentralUnit(), function, state).execute(this);
@@ -434,8 +430,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
 
-    private void handleReceiveEvent(CentralUnit config, EventMessage eventMessage) {
-        ComponentSpec component = config.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
+    private void handleReceiveEvent(CentralUnit centralUnit, EventMessage eventMessage) {
+        ComponentSpec component = centralUnit.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
         if (component != null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Event - Component: {}, Current State: {} - {}", component.getDescription(), component.getState(), eventMessage.getLogInfo(eventMessage.getRawBytes()));
@@ -567,7 +563,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         @Override
         public void run() {
             getIoService().execute(() -> {
-                TeletaskClientImpl.this.getMessageHandler().getGroupGetStrategy().execute(TeletaskClientImpl.this, function, numbers);
+                TeletaskClientImpl.this.getCentralUnit().getMessageHandler().getGroupGetStrategy().execute(TeletaskClientImpl.this, function, numbers);
             });
         }
     }

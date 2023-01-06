@@ -7,6 +7,8 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +26,8 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
 
     private final int[] numbers;
 
-    protected GetMessageSupport(Function function, CentralUnit clientConfig, int... numbers) {
-        super(clientConfig, function);
+    protected GetMessageSupport(Function function, CentralUnit centralUnit, int... numbers) {
+        super(centralUnit, function);
         this.numbers = numbers;
     }
 
@@ -49,27 +51,23 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
     }
 
     @Override
-    public List<EventMessage> respond(CentralUnit config, MessageHandler messageHandler) {
-        Collection<MessageHandler.OutputState> states = new ArrayList<>();
-        for (int number : this.getNumbers()) {
-
-            ComponentSpec component = config.getComponent(this.getFunction(), number);
-
-            if (component != null) {
-                if (component.getState() == null) {
-                    component.setState(messageHandler.getFunctionConfig(this.getFunction()).getStateCalculator(component).getDefaultState(component));
-                }
-
-                states.add(new MessageHandler.OutputState(number, component.getState()));
-            } else {
-                LOG.debug("Component {}:{} not found.", this.getFunction(), number);
-            }
-        }
-        return messageHandler.createResponseEventMessage(config, this.getFunction(), states.toArray(MessageHandler.OutputState[]::new));
+    protected String getId() {
+        return "GET " + super.getId() + "(" + Arrays.stream(this.numbers).mapToObj(String::valueOf).collect(Collectors.joining(",")) + ")";
     }
 
     @Override
-    protected String getId() {
-        return "GET " + super.getId() + "(" + Arrays.stream(this.numbers).mapToObj(String::valueOf).collect(Collectors.joining(",")) + ")";
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GetMessageSupport that = (GetMessageSupport) o;
+
+        return new EqualsBuilder().appendSuper(super.equals(o)).append(numbers, that.numbers).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(numbers).toHashCode();
     }
 }

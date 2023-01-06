@@ -38,7 +38,7 @@ public final class MessageUtilities {
                 byte[] read = new byte[available];
                 inputStream.read(read, 0, available);
                 byte[] data = overflow == null ? read : Bytes.concat(overflow, read);
-                overflow = extractMessages(logger, teletaskReceiver, responses, data, currentlyRunningMessage);
+                overflow = extractMessages(logger, teletaskReceiver.getCentralUnit(), responses, data, currentlyRunningMessage);
             } else {
                 overflow = new byte[0];
             }
@@ -48,10 +48,9 @@ public final class MessageUtilities {
         return responses;
     }
 
-    private static byte[] extractMessages(Logger logger, TeletaskReceiver teletaskReceiver, Collection<MessageSupport> responses, byte[] data, MessageSupport currentlyRunningMessage) throws Exception {
+    private static byte[] extractMessages(Logger logger, CentralUnit centralUnit, Collection<MessageSupport> responses, byte[] data, MessageSupport currentlyRunningMessage) throws Exception {
         logger.trace("Receive - Raw bytes: {}", Bytes.bytesToHex(data));
-        MessageHandler messageHandler = teletaskReceiver.getMessageHandler();
-        CentralUnit config = teletaskReceiver.getCentralUnit();
+        MessageHandler messageHandler = centralUnit.getMessageHandler();
         byte[] overflow = new byte[0];
         for (int i = 0; i < data.length; i++) {
             byte b = data[i];
@@ -73,7 +72,7 @@ public final class MessageUtilities {
 
                     logger.trace("Receive - Found message bytes: {}", Bytes.bytesToHex(event));
                     try {
-                        MessageSupport parse = messageHandler.parse(config, event);
+                        MessageSupport parse = messageHandler.parse(centralUnit, event);
                         if (parse != null) {
                             responses.add(parse);
                         }

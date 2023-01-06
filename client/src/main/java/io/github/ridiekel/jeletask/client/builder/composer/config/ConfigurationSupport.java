@@ -28,8 +28,8 @@ public abstract class ConfigurationSupport<T, C extends Configurable<T>, K> {
         this.config = config;
     }
 
-    public static ComponentState getState(MessageHandler messageHandler, CentralUnit config, Function function, int number, byte[] payload, int startIndex) {
-        ComponentSpec component = config.getComponent(function, number);
+    public static ComponentState getState(MessageHandler messageHandler, CentralUnit centralUnit, Function function, int number, byte[] payload, int startIndex) {
+        ComponentSpec component = centralUnit.getComponent(function, number);
 
         StateCalculator stateCalculator = messageHandler.getFunctionConfig(function).getStateCalculator(component);
 

@@ -2,6 +2,7 @@
   "type": "MICROS_PLUS",
   "componentsTypes": {
     "RELAY": [
+      { "number": 1, "description": "Relay 1" },
       { "number": 2, "description": "Relay 2" }
     ],
     "SENSOR": [

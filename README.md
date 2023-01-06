@@ -150,9 +150,9 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
 
 | Variable                                         | Type     | Default value | Description                                                                                                                                                       |
 |--------------------------------------------------|----------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| TELETASK_HOST                                    | Required |               | The ip address or hostname of your central unit                                                                                                                   |
-| TELETASK_PORT                                    | Required |               | The port of your central unit, probably 55957                                                                                                                     |
-| TELETASK_ID                                      | Required |               | The id used in mqtt messages of the central unit                                                                                                                  |     
+| TELETASK_CENTRAL_HOST                            | Required |               | The ip address or hostname of your central unit                                                                                                                   |
+| TELETASK_CENTRAL_PORT                            | Required |               | The port of your central unit, probably 55957                                                                                                                     |
+| TELETASK_CENTRAL_ID                              | Required |               | The id used in mqtt messages of the central unit                                                                                                                  |     
 | TELETASK_MQTT_HOST                               | Required |               | The host of your MQTT broker                                                                                                                                      |     
 | TELETASK_MQTT_PORT                               | Optional | 1883          | The port of your MQTT broker                                                                                                                                      |     
 | TELETASK_MQTT_USERNAME                           | Optional | <empty>       | The MQTT broker username                                                                                                                                          |
@@ -189,9 +189,9 @@ You should be able to run using following minimal command:
 ```shell
 docker run --name jeletask2mqtt \
   -v "<path_to_your_confg_json>:/teletask2mqtt/config.json" \
-  -e TELETASK_HOST="<teletask_ip_address>" \
-  -e TELETASK_PORT="<teletask_port>" \
-  -e TELETASK_ID="<teletask_id>" \
+  -e TELETASK_CENTRAL_HOST="<teletask_central_ip_address>" \
+  -e TELETASK_CENTRAL_PORT="<teletask_central_port>" \
+  -e TELETASK_CENTRAL_ID="<teletask_central_id>" \
   -e TELETASK_MQTT_HOST="<mqtt_host>" \
   ridiekel/jeletask2mqtt:latest
 ```
@@ -219,9 +219,9 @@ services:
     volumes:
       - $HOME/.jeletask/teletask2mqtt/config.json:/teletask2mqtt/config.json
     environment:
-      TELETASK_HOST: 192.168.0.123
-      TELETASK_PORT: 55957
-      TELETASK_ID: my_teletask
+      TELETASK_CENTRAL_HOST: 192.168.0.123
+      TELETASK_CENTRAL_PORT: 55957
+      TELETASK_CENTRAL_ID: my_teletask
       TELETASK_MQTT_HOST: mqtt
     depends_on:
       - mqtt
@@ -248,7 +248,7 @@ sudo apt install -y mosquitto-clients
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/relay/1/state
 ```
 
 ### Change the state
@@ -257,7 +257,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/relay/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -265,7 +265,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/relay/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -275,7 +275,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/locmood/1/state
 ```
 
 ### Change the state
@@ -284,7 +284,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/locmood/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -292,7 +292,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/locmood/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -302,7 +302,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/genmood/1/state
 ```
 
 ### Change the state
@@ -311,7 +311,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/genmood/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -319,7 +319,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/genmood/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -329,7 +329,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedmood/1/state
 ```
 
 ### Change the state
@@ -338,7 +338,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedmood/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -346,7 +346,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedmood/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -356,7 +356,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/state
 ```
 
 ### Change the state
@@ -367,7 +367,7 @@ For turning on you can use `ON` (goes to 100%), `OFF` (goes to 0%), `PREVIOUS_ST
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -375,7 +375,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"75"}'
 ```
 
@@ -383,7 +383,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"ON", "brightness": "60"}'
 ```
 
@@ -393,7 +393,7 @@ For turning off, you can use either `OFF` or `0`
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -401,7 +401,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"0"}'
 ```
 
@@ -409,7 +409,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"brightness":"0"}'
 ```
 
@@ -419,7 +419,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/state
 ```
 
 The following json attributes are provided on the /state MQTT topic:
@@ -441,19 +441,19 @@ You can send either `UP`, `DOWN` or `STOP` to the motor function.
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"state":"UP"}'
 ```
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"state":"STOP"}'
 ```
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"state":"DOWN"}'
 ```
 
@@ -464,7 +464,7 @@ Position can be anything between `0` and `100`.
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"position": 25}'
 ```
 
@@ -474,7 +474,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/flag/1/state
 ```
 
 ### Change the state
@@ -483,7 +483,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/flag/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -491,7 +491,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/flag/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -501,7 +501,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/sensor/1/state
 ```
 
 The following sensor types are currently supported:
@@ -600,7 +600,7 @@ You can also set the target temperature by sending the desired temperature to th
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/input/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/input/1/state
 ```
 
 The following json attributes are provided on the /state MQTT topic:
@@ -619,7 +619,7 @@ The following json attributes are provided on the /state MQTT topic:
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedfnc/1/state
 ```
 
 ### Starting / stopping a timed function
@@ -628,7 +628,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedfnc/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -636,7 +636,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedfnc/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -660,7 +660,7 @@ They contain the Teletask bus number(s) and Teletask interface address(es) of th
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/displaymessage/1000/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
     -m '{"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!", "message_beeps":"10","message_type="message"}'
 ```
 
@@ -675,7 +675,7 @@ Auto configuration should work with relays, dimmers, motors, sensors, timed func
 Other types are not yet supported, work in progress.
 Pleas log an issue when having trouble with auto configuration in HA.
 
-The bridge creates 1 device with id ```teletask-<TELETASK_ID>```, and adds entities with the following entity id pattern: ```light.teletask_<TELETASK_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
+The bridge creates 1 device with id ```teletask-<TELETASK_CENTRAL_ID>```, and adds entities with the following entity id pattern: ```light.teletask_<TELETASK_CENTRAL_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
 
 Examples:
 
@@ -711,21 +711,21 @@ Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 
 ## Config message
 
-The config message is published to topic: ```<TELETASK_MQTT_DISCOVERY_PREFIX>/<HA_COMPONENT_TYPE>/<TELETASK_ID>/<FUNCTION_TYPE>_<COMPONENT_NUMBER>/config```
+The config message is published to topic: ```<TELETASK_MQTT_DISCOVERY_PREFIX>/<HA_COMPONENT_TYPE>/<TELETASK_CENTRAL_ID>/<FUNCTION_TYPE>_<COMPONENT_NUMBER>/config```
 
 ```json
 {
   "device": {
     "identifiers": [
-      "<TELETASK_ID>"
+      "<TELETASK_CENTRAL_ID>"
     ],
     "manufacturer": "teletask",
-    "name": "teletask-<TELETASK_ID>",
+    "name": "teletask-<TELETASK_CENTRAL_ID>",
     "model": "<Your model type>"
   },
-  "~": "<TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1",
+  "~": "<TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/relay/1",
   "state_topic": "~/state",
-  "unique_id": "<TELETASK_ID>-<FUNCTION_TYPE>-<COMPONENT_NUMBER>",
+  "unique_id": "<TELETASK_CENTRAL_ID>-<FUNCTION_TYPE>-<COMPONENT_NUMBER>",
   "name": "<COMPONENT_DESCRIPTION>",
   "command_topic": "~/set"
 }

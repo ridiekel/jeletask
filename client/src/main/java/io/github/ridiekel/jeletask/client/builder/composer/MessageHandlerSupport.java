@@ -53,7 +53,7 @@ public abstract class MessageHandlerSupport implements MessageHandler {
     }
 
     @Override
-    public MessageSupport parse(CentralUnit config, byte[] message) {
+    public MessageSupport parse(CentralUnit centralUnit, byte[] message) {
         int length = message[1];
         int command = message[2];
 
@@ -71,7 +71,7 @@ public abstract class MessageHandlerSupport implements MessageHandler {
             throw new IllegalArgumentException("Checksum not correct. Received '" + Bytes.bytesToHex(checksum) + "' but expected '" + Bytes.bytesToHex(sum) + "'");
         }
 
-        return this.getCommandConfig(this.getCommand(command)).parse(config, this, message, payload);
+        return this.getCommandConfig(this.getCommand(command)).parse(centralUnit, this, message, payload);
     }
 
     @Override
@@ -123,15 +123,15 @@ public abstract class MessageHandlerSupport implements MessageHandler {
         rawBytes[rawBytes.length - 1] = checksum;
     }
 
-    protected byte[] getStateBytes(CentralUnit config, Function function, OutputState outputState) {
+    protected byte[] getStateBytes(CentralUnit centralUnit, Function function, OutputState outputState) {
         int number = outputState.number();
         FunctionConfigurable functionConfig = this.getFunctionConfig(function);
-        ComponentSpec component = config.getComponent(function, number);
+        ComponentSpec component = centralUnit.getComponent(function, number);
         return functionConfig.getStateCalculator(component).toBytes(outputState.state());
     }
 
-    protected ComponentState parseState(byte[] message, int counter, CentralUnit config, Function function, int number) {
-        return ConfigurationSupport.getState(this, config, function, number, message, counter);
+    protected ComponentState parseState(byte[] message, int counter, CentralUnit centralUnit, Function function, int number) {
+        return ConfigurationSupport.getState(this, centralUnit, function, number, message, counter);
     }
 
     @Override

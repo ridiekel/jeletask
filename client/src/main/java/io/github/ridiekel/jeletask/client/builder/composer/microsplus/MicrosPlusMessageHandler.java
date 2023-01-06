@@ -16,8 +16,6 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 public class MicrosPlusMessageHandler extends MessageHandlerSupport {
     public static final MicrosPlusKeepAliveStrategy KEEP_ALIVE_STRATEGY = new MicrosPlusKeepAliveStrategy();
@@ -60,16 +58,16 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
     }
 
     @Override
-    public EventMessage parseEvent(CentralUnit config, byte[] message) {
+    public EventMessage parseEvent(CentralUnit centralUnit, byte[] message) {
         //02 09 10 01 01 00 03 00 00 20
         int counter = 3; //We skip first 4 since they are of no use to us at this time.
         Function function = this.getFunction(message[++counter]);
         int number = ByteBuffer.wrap(new byte[]{message[++counter], message[++counter]}).getShort();
         ++counter; // This is the ErrorState, not used at this time
 
-        ComponentState state = this.parseState(message, ++counter, config, function, number);
+        ComponentState state = this.parseState(message, ++counter, centralUnit, function, number);
 
-        return new EventMessage(config, message, function, number, state);
+        return new EventMessage(centralUnit, message, function, number, state);
     }
 
     @Override
@@ -93,30 +91,24 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
     }
 
     @Override
-    public List<EventMessage> createResponseEventMessage(CentralUnit config, Function function, OutputState... numbers) {
-        List<EventMessage> eventMessages = new ArrayList<>();
+    public EventMessage createResponseEventMessage(CentralUnit centralUnit, Function function, OutputState outputState) {
 
-        for (OutputState number : numbers) {
-            byte[] numberBytes = this.composeOutput(number.number());
+        byte[] numberBytes = this.composeOutput(outputState.number());
 
-            byte[] rawBytes = new byte[]{(byte) this.getStxValue(), 0};
-            rawBytes = Bytes.concat(rawBytes, this.getCommandConfig(Command.EVENT).getBytes());
-            rawBytes = Bytes.concat(rawBytes, new byte[]{CENTRAL_UNIT});
-            rawBytes = Bytes.concat(rawBytes, this.getFunctionConfig(function).getBytes());
-            rawBytes = Bytes.concat(rawBytes, numberBytes);
-            rawBytes = Bytes.concat(rawBytes, new byte[]{0});
-            rawBytes = Bytes.concat(rawBytes, this.getStateBytes(config, function, number));
-            rawBytes = Bytes.concat(rawBytes, new byte[]{0});
+        byte[] rawBytes = new byte[]{(byte) this.getStxValue(), 0};
+        rawBytes = Bytes.concat(rawBytes, this.getCommandConfig(Command.EVENT).getBytes());
+        rawBytes = Bytes.concat(rawBytes, new byte[]{CENTRAL_UNIT});
+        rawBytes = Bytes.concat(rawBytes, this.getFunctionConfig(function).getBytes());
+        rawBytes = Bytes.concat(rawBytes, numberBytes);
+        rawBytes = Bytes.concat(rawBytes, new byte[]{0});
+        rawBytes = Bytes.concat(rawBytes, this.getStateBytes(centralUnit, function, outputState));
+        rawBytes = Bytes.concat(rawBytes, new byte[]{0});
 
-            this.setLengthAndCheckSum(rawBytes);
+        this.setLengthAndCheckSum(rawBytes);
 
-            ComponentSpec component = config.getComponent(function, number.number());
+        ComponentSpec component = centralUnit.getComponent(function, outputState.number());
 
-            eventMessages.add(new EventMessage(config, rawBytes, function, number.number(), component.getState()));
-        }
-
-
-        return eventMessages;
+        return new EventMessage(centralUnit, rawBytes, function, outputState.number(), component.getState());
     }
 
     private static class MicrosPlusKeepAliveStrategy implements KeepAliveStrategy {

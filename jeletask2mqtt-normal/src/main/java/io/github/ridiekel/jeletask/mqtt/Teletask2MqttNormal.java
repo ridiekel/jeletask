@@ -21,7 +21,7 @@ public class Teletask2MqttNormal {
 
         Teletask2MqttConfigurationProperties configuration = context.getBean(Teletask2MqttConfigurationProperties.class);
 
-        LOG.info(String.format("Teletask2Mqtt %s started!", configuration.getVersion()));
+        LOG.info(String.format("Teletask2Mqtt %s started!", configuration.getCentral().getVersion()));
 
         Thread.currentThread().join();
     }

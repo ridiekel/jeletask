@@ -11,6 +11,8 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +29,12 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport {
     private final byte[] bus_and_address_bytes;
     private final byte[] displaymessage_bytes;
 
-    public DisplayMessage(CentralUnit clientConfig, Function function, int number, ComponentState state) {
-        super(clientConfig, function, state);
+    public DisplayMessage(CentralUnit centralUnit, Function function, int number, ComponentState state) {
+        super(centralUnit, function, state);
         this.number = number;
 
         FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
-        ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
+        ComponentSpec component = this.getCentralUnit().getComponent(this.getFunction(), this.getNumber());
 
         if (component.getAddressNumbers() == null || component.getBusNumbers() == null)
             throw new IllegalArgumentException("Address or bus numbers are missing");
@@ -85,11 +87,6 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport {
     }
 
     @Override
-    public List<EventMessage> respond(CentralUnit config, MessageHandler messageHandler) {
-        return messageHandler.createResponseEventMessage(config, this.getFunction(), new MessageHandler.OutputState(this.getNumber(), this.getState()));
-    }
-
-    @Override
     protected String getId() {
         return "DISPLAYMESSAGE " + super.getId() + "(" + this.number + ")";
     }
@@ -97,6 +94,22 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport {
     @Override
     protected boolean isValid() {
         FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
-        return functionConfig.isValidState(this.getClientConfig().getComponent(this.getFunction(), this.getNumber()), this.getState());
+        return functionConfig.isValidState(this.getCentralUnit().getComponent(this.getFunction(), this.getNumber()), this.getState());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DisplayMessage that = (DisplayMessage) o;
+
+        return new EqualsBuilder().appendSuper(super.equals(o)).append(number, that.number).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(number).toHashCode();
     }
 }

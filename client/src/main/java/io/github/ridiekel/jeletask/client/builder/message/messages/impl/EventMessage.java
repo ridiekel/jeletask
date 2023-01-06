@@ -9,6 +9,8 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class EventMessage extends FunctionBasedMessageSupport {
     private final int number;
@@ -17,8 +19,8 @@ public class EventMessage extends FunctionBasedMessageSupport {
 
     private final byte[] stateBytes;
 
-    public EventMessage(CentralUnit clientConfig, byte[] rawBytes, Function function, int number, ComponentState state) {
-        super(clientConfig, function);
+    public EventMessage(CentralUnit centralUnit, byte[] rawBytes, Function function, int number, ComponentState state) {
+        super(centralUnit, function);
         this.rawBytes = rawBytes;
         this.number = number;
         this.state = state;
@@ -58,5 +60,21 @@ public class EventMessage extends FunctionBasedMessageSupport {
     @Override
     protected String getId() {
         return "EVENT " + super.getId() + "(" + this.number + ")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        EventMessage that = (EventMessage) o;
+
+        return new EqualsBuilder().appendSuper(super.equals(o)).append(number, that.number).append(state, that.state).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(number).append(state).toHashCode();
     }
 }

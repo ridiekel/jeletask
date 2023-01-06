@@ -6,8 +6,8 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 
 public class GroupGetMessage extends GetMessageSupport {
-    public GroupGetMessage(CentralUnit clientConfig, Function function, int... number) {
-        super(function, clientConfig, number);
+    public GroupGetMessage(CentralUnit centralUnit, Function function, int... number) {
+        super(function, centralUnit, number);
     }
 
     @Override

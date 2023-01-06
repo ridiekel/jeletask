@@ -14,7 +14,7 @@ public class GroupGetCommandConfigurable extends CommandConfigurable<GroupGetMes
     }
 
     @Override
-    public GroupGetMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
+    public GroupGetMessage parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
         int outputByteSize = messageHandler.getOutputByteSize();
 
         int[] numbers = new int[(payload.length - 2) / outputByteSize];
@@ -26,6 +26,6 @@ public class GroupGetCommandConfigurable extends CommandConfigurable<GroupGetMes
             numbers[numberCounter++] = ByteBuffer.wrap(bytes).getInt();
         }
 
-        return new GroupGetMessage(config, messageHandler.getFunction(payload[1]), numbers);
+        return new GroupGetMessage(centralUnit, messageHandler.getFunction(payload[1]), numbers);
     }
 }

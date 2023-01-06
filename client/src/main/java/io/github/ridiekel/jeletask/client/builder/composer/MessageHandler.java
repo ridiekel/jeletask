@@ -24,7 +24,7 @@ public interface MessageHandler {
 
     int getStxValue();
 
-    EventMessage parseEvent(CentralUnit config, byte[] message);
+    EventMessage parseEvent(CentralUnit centralUnit, byte[] message);
 
     Function getFunction(int function);
 
@@ -42,11 +42,11 @@ public interface MessageHandler {
 
     GroupGetStrategy getGroupGetStrategy();
 
-    MessageSupport parse(CentralUnit config, byte[] message);
+    MessageSupport parse(CentralUnit centralUnit, byte[] message);
 
     int getOutputByteSize();
 
-    List<EventMessage> createResponseEventMessage(CentralUnit config, Function function, OutputState... numbers);
+    EventMessage createResponseEventMessage(CentralUnit centralUnit, Function function, OutputState outputState);
 
     int getLogStateByte(ComponentState state);
 

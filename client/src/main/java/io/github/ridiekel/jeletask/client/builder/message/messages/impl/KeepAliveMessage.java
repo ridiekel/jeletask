@@ -5,8 +5,8 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 
 public class KeepAliveMessage extends MessageSupport {
-    public KeepAliveMessage(CentralUnit clientConfig) {
-        super(clientConfig);
+    public KeepAliveMessage(CentralUnit centralUnit) {
+        super(centralUnit);
     }
 
     @Override
@@ -28,4 +28,5 @@ public class KeepAliveMessage extends MessageSupport {
     protected String getId() {
         return "KEEPALIVE";
     }
+
 }

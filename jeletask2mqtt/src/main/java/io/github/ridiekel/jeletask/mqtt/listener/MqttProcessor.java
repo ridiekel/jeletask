@@ -407,6 +407,14 @@ public class MqttProcessor implements StateChangeListener {
         return this.getConfiguration().getLog().isTopicEnabled() ? AnsiOutput.toString(AnsiColor.MAGENTA, "[" + StringUtils.rightPad(topic, 60) + "] - ", AnsiColor.DEFAULT) : "";
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public String getTeletaskIdentifier() {
+        return teletaskIdentifier;
+    }
+
     private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();
 
     static {

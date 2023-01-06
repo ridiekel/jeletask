@@ -13,7 +13,7 @@ public class DisplayMessageCommandConfigurable extends CommandConfigurable<Displ
     }
 
     @Override
-    public DisplayMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
+    public DisplayMessage parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
         // Not implemented. Not needed for DisplayMessage?
         return null;
     }

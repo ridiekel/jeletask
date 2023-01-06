@@ -5,7 +5,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
 
 public class GetMessage extends GetMessageSupport {
-    public GetMessage(CentralUnit clientConfig, Function function, int number) {
-        super(function, clientConfig, number);
+    public GetMessage(CentralUnit centralUnit, Function function, int number) {
+        super(function, centralUnit, number);
     }
 }

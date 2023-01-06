@@ -34,7 +34,7 @@ public abstract class CommandConfigurable<M extends MessageSupport> extends Conf
         return this.needsCentralUnitParameter;
     }
 
-    public abstract M parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload);
+    public abstract M parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload);
 
     public int getOutputNumber(MessageHandler messageHandler, byte[] payload, int fromByte) {
         byte[] output = new byte[4];

@@ -8,7 +8,5 @@ import java.io.InputStream;
 public interface TeletaskReceiver {
     InputStream getInputStream();
 
-    MessageHandler getMessageHandler();
-
     CentralUnit getCentralUnit();
 }

@@ -12,7 +12,7 @@ public class KeepAliveCommandConfigurable extends CommandConfigurable<KeepAliveM
     }
 
     @Override
-    public KeepAliveMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
-        return new KeepAliveMessage(config);
+    public KeepAliveMessage parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
+        return new KeepAliveMessage(centralUnit);
     }
 }

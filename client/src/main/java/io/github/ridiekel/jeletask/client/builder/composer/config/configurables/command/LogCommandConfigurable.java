@@ -14,8 +14,8 @@ public class LogCommandConfigurable extends CommandConfigurable<LogMessage> {
     }
 
     @Override
-    public LogMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
+    public LogMessage parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
         Function function = messageHandler.getFunction(payload[0]);
-        return new LogMessage(config, function, new ComponentState(payload[1] == 0 ? "OFF" : "ON"));
+        return new LogMessage(centralUnit, function, new ComponentState(payload[1] == 0 ? "OFF" : "ON"));
     }
 }

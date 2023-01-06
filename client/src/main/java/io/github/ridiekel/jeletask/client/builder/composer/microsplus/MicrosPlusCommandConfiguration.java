@@ -44,11 +44,11 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
         }
 
         @Override
-        public EventMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
+        public EventMessage parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
             Function function = messageHandler.getFunction(payload[1]);
             int number = this.getOutputNumber(messageHandler, payload, 2);
-            ComponentState state = getState(messageHandler, config, function, number, payload, 5);
-            return new EventMessage(config, rawBytes, function, number, state);
+            ComponentState state = getState(messageHandler, centralUnit, function, number, payload, 5);
+            return new EventMessage(centralUnit, rawBytes, function, number, state);
         }
     }
 
@@ -58,8 +58,8 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
         }
 
         @Override
-        public GetMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
-            return new GetMessage(config, messageHandler.getFunction(payload[1]), this.getOutputNumber(messageHandler, payload, 2));
+        public GetMessage parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
+            return new GetMessage(centralUnit, messageHandler.getFunction(payload[1]), this.getOutputNumber(messageHandler, payload, 2));
         }
     }
 
@@ -69,11 +69,11 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
         }
 
         @Override
-        public SetMessage parse(CentralUnit config, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
+        public SetMessage parse(CentralUnit centralUnit, MessageHandler messageHandler, byte[] rawBytes, byte[] payload) {
             Function function = messageHandler.getFunction(payload[1]);
             int number = this.getOutputNumber(messageHandler, payload, 2);
-            ComponentState state = getState(messageHandler, config, function, number, payload, messageHandler.getOutputByteSize() + 2);
-            return new SetMessage(config, function, number, state);
+            ComponentState state = getState(messageHandler, centralUnit, function, number, payload, messageHandler.getOutputByteSize() + 2);
+            return new SetMessage(centralUnit, function, number, state);
         }
     }
 }

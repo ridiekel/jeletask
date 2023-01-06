@@ -2,7 +2,6 @@ package io.github.ridiekel.jeletask.client.builder.message.messages;
 
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
-import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
@@ -10,6 +9,8 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.awaitility.Awaitility;
@@ -35,12 +36,12 @@ public abstract class MessageSupport {
     private static final Pattern INSERT_PLACEHOLDERS = Pattern.compile("\\|   ");
     public static final int ACK_WAIT_TIME = 2000;
 
-    private final CentralUnit clientConfig;
+    private final CentralUnit centralUnit;
 
     private boolean acknowledged = false;
 
-    protected MessageSupport(CentralUnit clientConfig) {
-        this.clientConfig = clientConfig;
+    protected MessageSupport(CentralUnit centralUnit) {
+        this.centralUnit = centralUnit;
     }
 
     public void execute(TeletaskClientImpl client) throws AcknowledgeException {
@@ -89,8 +90,8 @@ public abstract class MessageSupport {
         return true;
     }
 
-    protected CentralUnit getClientConfig() {
-        return this.clientConfig;
+    protected CentralUnit getCentralUnit() {
+        return this.centralUnit;
     }
 
     /**
@@ -181,7 +182,7 @@ public abstract class MessageSupport {
     }
 
     protected MessageHandler getMessageHandler() {
-        return MessageHandlerFactory.getMessageHandler(this.getClientConfig().getCentralUnitType());
+        return this.getCentralUnit().getMessageHandler();
     }
 
     protected String formatFunction(Function function) {
@@ -207,10 +208,6 @@ public abstract class MessageSupport {
         return ReflectionToStringBuilder.toString(this, ToStringStyle.JSON_STYLE);
     }
 
-    public List<EventMessage> respond(CentralUnit config, MessageHandler messageHandler) {
-        return null;
-    }
-
     public boolean isAcknowledged() {
         return this.acknowledged;
     }
@@ -220,4 +217,20 @@ public abstract class MessageSupport {
     }
 
     protected abstract String getId();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MessageSupport that = (MessageSupport) o;
+
+        return new EqualsBuilder().append(centralUnit, that.centralUnit).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).append(centralUnit).toHashCode();
+    }
 }

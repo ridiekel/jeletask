@@ -19,4 +19,4 @@ logging:
   level:
     root: ERROR
     org.springframework: ERROR
-    io.github.ridiekel.jeletask.client: TRACE
+    io.github.ridiekel.jeletask: DEBUG
