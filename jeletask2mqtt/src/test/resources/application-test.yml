@@ -13,10 +13,9 @@ teletask:
     retained: "false"
     clientId: "test_client_id_teletask2mqtt"
     prefix: "test_prefix_teletask2mqtt"
-    discovery_prefix: "test_discovery_prefix_homeassistant"
 
 logging:
   level:
     root: ERROR
     org.springframework: ERROR
-    io.github.ridiekel.jeletask: DEBUG
+    io.github.ridiekel.jeletask: ERROR

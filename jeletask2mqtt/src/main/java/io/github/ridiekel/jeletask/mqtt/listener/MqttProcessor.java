@@ -200,7 +200,7 @@ public class MqttProcessor implements StateChangeListener {
         }
     }
 
-    private void publishConfig() {
+    public void publishConfig() {
         LOG.info("Publishing config...");
         this.centralUnit.getAllComponents().forEach(c -> {
             this.toConfig(c).forEach((t, m) -> {

@@ -1,0 +1,23 @@
+homeassistant:
+  name: test
+  latitude: 52.3731339
+  longitude: 4.8903147
+  elevation: 0
+  unit_system: metric
+  time_zone: Europe/Brussels
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
