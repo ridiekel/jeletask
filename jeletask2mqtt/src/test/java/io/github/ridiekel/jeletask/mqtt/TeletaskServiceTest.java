@@ -1,17 +1,13 @@
 package io.github.ridiekel.jeletask.mqtt;
 
-import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.spec.Function;
-import io.github.ridiekel.jeletask.mqtt.container.TestContainers;
 import io.github.ridiekel.jeletask.mqtt.container.ha.HomeAssistantContainer;
-import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import io.github.ridiekel.jeletask.server.TeletaskTestServer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.io.IOException;
 import java.util.stream.Collectors;
 
 import static io.github.ridiekel.jeletask.server.ExpectationBuilder.WhenBuilder.state;
