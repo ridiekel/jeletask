@@ -4,13 +4,14 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionBasedMessageSupport;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
-import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class EventMessage extends FunctionBasedMessageSupport {
     private final int number;
@@ -76,5 +77,14 @@ public class EventMessage extends FunctionBasedMessageSupport {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(number).append(state).toHashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("function", this.getFunction())
+                .append("number", number)
+                .append("state", state)
+                .toString();
     }
 }

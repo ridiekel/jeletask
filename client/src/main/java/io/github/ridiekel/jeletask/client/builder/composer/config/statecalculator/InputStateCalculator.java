@@ -1,20 +1,14 @@
 
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
-import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
-import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
-public class InputStateCalculator extends SimpleStateCalculator {
+import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
+
+public class InputStateCalculator extends MappingStateCalculator {
 
     public InputStateCalculator(NumberConverter numberConverter) {
-        super(numberConverter);
+        super(numberConverter,
+                new StateMapping("OPEN", 0),
+                new StateMapping("CLOSED", 255)
+        );
     }
-
-
-    @Override
-    public ComponentState toComponentState(ComponentSpec component, byte[] dataBytes) {
-        boolean closed = (dataBytes[0] & (byte)1) == 1;
-        return new ComponentState( closed ? "CLOSED" : "OPEN");
-    }
-
 }

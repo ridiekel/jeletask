@@ -3,6 +3,8 @@ package io.github.ridiekel.jeletask.server;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GroupGetMessage;
+import io.github.ridiekel.jeletask.client.builder.message.messages.impl.KeepAliveMessage;
+import io.github.ridiekel.jeletask.client.builder.message.messages.impl.LogMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
@@ -43,6 +45,13 @@ public class ExpectationBuilder {
 
     public static java.util.function.Function<WhenBuilder, TestServerCommand> groupGet(Function function, int... numbers) {
         return c -> new TestServerCommand(new GroupGetMessage(c.getBuilder().centralUnit, function, numbers));
+    }
+    public static java.util.function.Function<WhenBuilder, TestServerCommand> log(Function function, String state) {
+        return c -> new TestServerCommand(new LogMessage(c.getBuilder().centralUnit, function, new ComponentState(state)));
+    }
+
+    public static java.util.function.Function<WhenBuilder, TestServerCommand> keepAlive() {
+        return c -> new TestServerCommand(new KeepAliveMessage(c.getBuilder().centralUnit));
     }
 
     public List<TestServerExpectation> getMocks() {
@@ -87,18 +96,6 @@ public class ExpectationBuilder {
             return number;
         }
 
-        public void toOn() {
-            toState("ON");
-        }
-
-        public void toOff() {
-            toState("OFF");
-        }
-
-        public void toState(String state) {
-            this.when(set(state)).thenRespond(state);
-        }
-
         public static class ResponseBuilder {
             private final java.util.function.Function<WithBuilder, TestServerCommand> command;
             private final List<TestServerExpectation> mocks;
@@ -108,10 +105,6 @@ public class ExpectationBuilder {
                 this.builder = builder;
                 this.command = command;
                 this.mocks = mocks;
-            }
-
-            public java.util.function.Function<WithBuilder, TestServerCommand> getCommand() {
-                return command;
             }
 
             public void thenRespond(String state) {
@@ -124,6 +117,10 @@ public class ExpectationBuilder {
 
             public void thenRespond(java.util.function.Function<WithBuilder, TestServerResponse> response) {
                 this.mocks.add(new TestServerExpectation(this.command.apply(this.builder), Collections.singletonList(response.apply(this.builder))));
+            }
+
+            public static java.util.function.Function<WithBuilder, TestServerResponse> cachedState() {
+                return b -> ExpectationBuilder.WithBuilder.ResponseBuilder.state(b.getCentralUnit().getComponent(b.getFunction(), b.getNumber()).getState()).apply(b);
             }
 
             public static java.util.function.Function<WithBuilder, TestServerResponse> state(String state) {

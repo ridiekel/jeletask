@@ -1,7 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
-import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
 import io.github.ridiekel.jeletask.client.builder.message.messages.AcknowledgeException;
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionStateBasedMessageSupport;
@@ -13,17 +12,10 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class DisplayMessage extends FunctionStateBasedMessageSupport {
-    /**
-     * Logger responsible for logging and debugging statements.
-     */
-    private static final Logger LOG = LoggerFactory.getLogger(DisplayMessage.class);
-
     private final int number;
 
     private final byte[] bus_and_address_bytes;
@@ -111,5 +103,14 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(number).toHashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("function", this.getFunction())
+                .append("number", number)
+                .append("state", this.getState())
+                .toString();
     }
 }

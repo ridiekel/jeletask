@@ -1,21 +1,17 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages;
 
-import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
-import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
-import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
@@ -69,5 +65,13 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(numbers).toHashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("function", this.getFunction())
+                .append("numbers", numbers)
+                .toString();
     }
 }

@@ -1,7 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
-import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
 import io.github.ridiekel.jeletask.client.builder.message.messages.AcknowledgeException;
@@ -14,41 +13,54 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class SetMessage extends FunctionStateBasedMessageSupport {
-    /**
-     * Logger responsible for logging and debugging statements.
-     */
-    private static final Logger LOG = LoggerFactory.getLogger(SetMessage.class);
 
     private final int number;
 
-    private final byte[] functionBytes;
-    private final byte[] outputBytes;
-    private final byte[] stateBytes;
+    private byte[] functionBytes;
+    private byte[] outputBytes;
+    private byte[] stateBytes;
 
     public SetMessage(CentralUnit centralUnit, Function function, int number, ComponentState state) {
         super(centralUnit, function, state);
         this.number = number;
+    }
 
-        FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
-        ComponentSpec component = this.getCentralUnit().getComponent(this.getFunction(), this.getNumber());
-        this.functionBytes = new byte[]{(byte) functionConfig.getNumber()};
-        this.outputBytes = MessageHandlerFactory.getMessageHandler(this.getCentralUnit().getCentralUnitType()).composeOutput(this.getNumber());
-        this.stateBytes = functionConfig.getStateCalculator(component).toBytes(this.getState());
+    private void init() {
+        if (this.functionBytes == null) {
+            FunctionConfigurable functionConfig = this.getMessageHandler().getFunctionConfig(this.getFunction());
+            ComponentSpec component = this.getCentralUnit().getComponent(this.getFunction(), this.getNumber());
+            this.functionBytes = new byte[]{(byte) functionConfig.getNumber()};
+            this.outputBytes = MessageHandlerFactory.getMessageHandler(this.getCentralUnit().getCentralUnitType()).composeOutput(this.getNumber());
+            this.stateBytes = functionConfig.getStateCalculator(component).toBytes(this.getState());
+        }
     }
 
     public int getNumber() {
         return this.number;
     }
 
+    public byte[] getFunctionBytes() {
+        init();
+        return functionBytes;
+    }
+
+    public byte[] getOutputBytes() {
+        init();
+        return outputBytes;
+    }
+
+    public byte[] getStateBytes() {
+        init();
+        return stateBytes;
+    }
+
     @Override
     protected byte[] getPayload() {
-        return Bytes.concat(functionBytes, outputBytes, stateBytes);
+        return Bytes.concat(getFunctionBytes(), getOutputBytes(), getStateBytes());
     }
 
     @Override
@@ -86,7 +98,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
         return new String[]{
                 this.formatFunction(this.getFunction()),
                 this.formatOutput(this.getNumber()),
-                this.formatState(this.stateBytes, this.getState())
+                this.formatState(this.getStateBytes(), this.getState())
         };
     }
 
@@ -115,5 +127,14 @@ public class SetMessage extends FunctionStateBasedMessageSupport {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(number).toHashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("function", this.getFunction())
+                .append("number", number)
+                .append("state", this.getState())
+                .toString();
     }
 }

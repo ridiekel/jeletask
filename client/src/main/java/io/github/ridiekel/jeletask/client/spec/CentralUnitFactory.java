@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +18,7 @@ public class CentralUnitFactory {
     private static final Logger LOG = LoggerFactory.getLogger(CentralUnitFactory.class);
 
     @Bean
+    @Order(10)
     public CentralUnit centralUnit(TeletaskConfigurationProperties configuration)  {
         //create ObjectMapper instance
         ObjectMapper objectMapper = new ObjectMapper();
@@ -37,6 +39,8 @@ public class CentralUnitFactory {
 
         LOG.info("host: {}", host);
         LOG.info("port: {}", port);
+
+        centralUnit.getAllComponents(); //Needed for function init on ComponentSpec
 
         LOG.debug("CentralUnit initialized.");
 

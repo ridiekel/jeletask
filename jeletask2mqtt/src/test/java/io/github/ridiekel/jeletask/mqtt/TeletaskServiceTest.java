@@ -13,9 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import static io.github.ridiekel.jeletask.server.ExpectationBuilder.WithBuilder.get;
-import static io.github.ridiekel.jeletask.server.ExpectationBuilder.WithBuilder.set;
-
 @ActiveProfiles("test")
 @SpringBootTest
 class TeletaskServiceTest {
@@ -28,13 +25,7 @@ class TeletaskServiceTest {
 
     @Test
     void one() {
-        this.server.mock(e -> {
-                    e.with(Function.RELAY, 1).when(get()).thenRespond("ON");
-                    e.with(Function.RELAY, 1).when(set("OFF")).thenRespond("OFF");
-                    e.with(Function.RELAY, 1).when(set("ON")).thenRespond("ON");
-                }
-        );
-
+        System.out.println(ha.state("light.teletask_man_test_localhost_1234_relay_1"));
 
         this.client.set(Function.RELAY, 1, new ComponentState("OFF"), onSuccess(), onFail());
 

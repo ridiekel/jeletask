@@ -89,7 +89,7 @@ public class CentralUnit {
 
     @JsonIgnore
     public List<? extends ComponentSpec> getComponents(Function function) {
-        return this.componentsTypes.get(function);
+        return this.componentsTypes.getOrDefault(function, List.of());
     }
 
     @JsonIgnore
