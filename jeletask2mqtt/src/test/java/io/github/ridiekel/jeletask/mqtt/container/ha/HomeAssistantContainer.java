@@ -25,19 +25,16 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class HomeAssistantContainer {
-
-    private final GenericContainer container;
+public class HomeAssistantContainer extends GenericContainer<HomeAssistantContainer> {
     private WebClient haWebClient;
     private final MqttProcessor mqttProcessor;
 
     public HomeAssistantContainer(MqttProcessor mqttProcessor, MqttContainer mqttContainer) {
+        super(DockerImageName.parse("ghcr.io/home-assistant/home-assistant:stable"));
         this.mqttProcessor = mqttProcessor;
 
-        container = new GenericContainer(DockerImageName.parse("ghcr.io/home-assistant/home-assistant:stable"))
-                .withExposedPorts(8123)
+        this.withExposedPorts(8123)
                 .withNetwork(mqttContainer.getNetwork());
-
     }
 
     @EventListener(classes = {ContextRefreshedEvent.class})
@@ -45,12 +42,12 @@ public class HomeAssistantContainer {
     public void start() {
         Path configDir = prepareTempHaConfigDir();
 
-        container.withFileSystemBind(configDir.toString(), "/config", BindMode.READ_WRITE);
+        this.withFileSystemBind(configDir.toString(), "/config", BindMode.READ_WRITE);
 
-        container.start();
+        super.start();
 
         this.haWebClient = WebClient.builder()
-                .baseUrl("http://localhost:" + container.getFirstMappedPort() + "/api")
+                .baseUrl("http://localhost:" + this.getFirstMappedPort() + "/api")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJiZmQ2ZTAzNjMyNDk0YWJmYmVlN2ViMDdmYTgyZDM3ZCIsImlhdCI6MTY3MzUzMjY5MSwiZXhwIjoxOTg4ODkyNjkxfQ.dVwwMYpmTiTHmN5LqS3apU2mbmwtml5gPzvgaDTWikQ")
                 .build();
@@ -90,7 +87,7 @@ public class HomeAssistantContainer {
     }
 
     public Integer getPort() {
-        return container.getFirstMappedPort();
+        return this.getFirstMappedPort();
     }
 
     public List<Entity> states() {
