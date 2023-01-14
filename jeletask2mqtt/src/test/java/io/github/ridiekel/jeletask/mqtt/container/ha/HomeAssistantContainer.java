@@ -90,6 +90,10 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         return this.getFirstMappedPort();
     }
 
+    public Entity state(String id) {
+        return haWebClient.get().uri("/states/" + id).retrieve().toEntity(Entity.class).block().getBody();
+    }
+
     public List<Entity> states() {
         return haWebClient.get().uri("/states").retrieve().toEntityList(Entity.class).block().getBody();
     }

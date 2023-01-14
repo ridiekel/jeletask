@@ -21,3 +21,4 @@ logging:
     io.github.ridiekel.jeletask: ERROR
     org.testcontainers: INFO
     com.github.dockerjava: INFO
+    io.github.ridiekel.jeletask.server.TeletaskTestServer: DEBUG

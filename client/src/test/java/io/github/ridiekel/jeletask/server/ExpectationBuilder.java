@@ -87,6 +87,18 @@ public class ExpectationBuilder {
             return number;
         }
 
+        public void toOn() {
+            toState("ON");
+        }
+
+        public void toOff() {
+            toState("OFF");
+        }
+
+        public void toState(String state) {
+            this.when(set(state)).thenRespond(state);
+        }
+
         public static class ResponseBuilder {
             private final java.util.function.Function<WithBuilder, TestServerCommand> command;
             private final List<TestServerExpectation> mocks;

@@ -16,6 +16,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -72,19 +73,25 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
                             LOG.debug("Processing message: {}", message.toString());
                             TeletaskTestServer.this.outputStream.write(ACKNOWLEDGE);
 
-                            getMocks().getOrDefault(new TestServerCommand(message), List.of())
-                                    .forEach(response -> {
-                                        EventMessage eventMessage = response.create(centralUnit, message);
-                                        RESPONSE_EXECUTOR.execute(() -> {
-                                            try {
-                                                LOG.debug("Sending bytes to client: {}", Bytes.bytesToHex(eventMessage.getRawBytes()));
-                                                TeletaskTestServer.this.outputStream.write(eventMessage.getRawBytes());
-                                                TeletaskTestServer.this.outputStream.flush();
-                                            } catch (IOException e) {
-                                                throw new RuntimeException(e);
-                                            }
+                            TestServerCommand command = new TestServerCommand(message);
+
+                            List<TestServerResponse> responses = getMocks().get(command);
+                            if (responses != null) {
+                                responses.forEach(response -> {
+                                            EventMessage eventMessage = response.create(centralUnit, message);
+                                            RESPONSE_EXECUTOR.execute(() -> {
+                                                try {
+                                                    LOG.debug("Sending bytes to client: {}", Bytes.bytesToHex(eventMessage.getRawBytes()));
+                                                    TeletaskTestServer.this.outputStream.write(eventMessage.getRawBytes());
+                                                    TeletaskTestServer.this.outputStream.flush();
+                                                } catch (IOException e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                            });
                                         });
-                                    });
+                            } else {
+                                LOG.debug("No expectations found for:\n\t{} in \n\t\t{}", command.toString(), getMocks().keySet().stream().map(Objects::toString).collect(Collectors.joining("\n\t\t")));
+                            }
 
                             TeletaskTestServer.this.outputStream.flush();
                         }

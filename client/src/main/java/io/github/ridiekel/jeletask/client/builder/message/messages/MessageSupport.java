@@ -3,7 +3,6 @@ package io.github.ridiekel.jeletask.client.builder.message.messages;
 import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
-import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
@@ -205,7 +204,7 @@ public abstract class MessageSupport {
 
     @Override
     public String toString() {
-        return ReflectionToStringBuilder.toString(this, ToStringStyle.JSON_STYLE);
+        return ReflectionToStringBuilder.toString(this, ToStringStyle.SHORT_PREFIX_STYLE);
     }
 
     public boolean isAcknowledged() {
