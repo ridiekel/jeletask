@@ -19,3 +19,5 @@ logging:
     root: ERROR
     org.springframework: ERROR
     io.github.ridiekel.jeletask: ERROR
+    org.testcontainers: INFO
+    com.github.dockerjava: INFO

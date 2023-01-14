@@ -30,6 +30,7 @@ import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.ContextStartedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -128,8 +129,9 @@ public class MqttProcessor implements StateChangeListener {
         }
     }
 
-    @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    @EventListener(classes = { ContextRefreshedEvent.class })
+    @Order(200)
+    public void onApplicationEvent() {
         this.configureAndConnectMqtt();
         this.teletaskClient.groupGet();
         scheduleGroupGet(configuration);

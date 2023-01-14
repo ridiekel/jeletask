@@ -10,9 +10,8 @@ import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-
-import static io.github.ridiekel.jeletask.server.ExpectationBuilder.ExpectationResponseBuilder.state;
 
 public class ExpectationBuilder {
     private final CentralUnit centralUnit;
@@ -22,8 +21,12 @@ public class ExpectationBuilder {
         this.centralUnit = centralUnit;
     }
 
-    public ExpectationResponseBuilder when(java.util.function.Function<CentralUnit, TestServerCommand> command) {
-        return new ExpectationResponseBuilder(centralUnit, command, mocks);
+    public WithBuilder with(Function function, Integer number) {
+        return new WithBuilder(centralUnit, mocks, function, number);
+    }
+
+    public WhenBuilder when(java.util.function.Function<WhenBuilder, TestServerCommand> command) {
+        return new WhenBuilder(this, mocks, command);
     }
 
     public static java.util.function.Function<CentralUnit, TestServerCommand> set(Function function, int number, String state) {
@@ -38,43 +41,110 @@ public class ExpectationBuilder {
         return c -> new TestServerCommand(new GetMessage(c, function, number));
     }
 
-    public static java.util.function.Function<CentralUnit, TestServerCommand> groupGet(Function function, int... numbers) {
-        return c -> new TestServerCommand(new GroupGetMessage(c, function, numbers));
+    public static java.util.function.Function<WhenBuilder, TestServerCommand> groupGet(Function function, int... numbers) {
+        return c -> new TestServerCommand(new GroupGetMessage(c.getBuilder().centralUnit, function, numbers));
     }
 
     public List<TestServerExpectation> getMocks() {
         return this.mocks;
     }
 
-    public void expect(Function function, int number, String state) {
-        this.expect(function, number, state, state);
-    }
+    public static class WithBuilder {
 
-    public void expect(Function function, int number, String state, String resultingState) {
-        when(set(function, number, state)).thenRespond(state(function, number, resultingState));
-    }
-
-    public void expect(Function function, int number, ComponentState state) {
-        this.expect(function, number, state, state);
-    }
-
-    public void expect(Function function, int number, ComponentState state, ComponentState resultingState) {
-        when(set(function, number, state)).thenRespond(state(function, number, resultingState));
-    }
-
-    public static class ExpectationResponseBuilder {
         private final CentralUnit centralUnit;
-        private final java.util.function.Function<CentralUnit, TestServerCommand> command;
         private final List<TestServerExpectation> mocks;
+        private final Function function;
+        private final Integer number;
 
-        public ExpectationResponseBuilder(CentralUnit centralUnit, java.util.function.Function<CentralUnit, TestServerCommand> command, List<TestServerExpectation> mocks) {
+        public WithBuilder(CentralUnit centralUnit, List<TestServerExpectation> mocks, Function function, Integer number) {
             this.centralUnit = centralUnit;
+            this.mocks = mocks;
+            this.function = function;
+            this.number = number;
+        }
+
+        public ResponseBuilder when(java.util.function.Function<WithBuilder, TestServerCommand> command) {
+            return new ResponseBuilder(this, mocks, command);
+        }
+
+        public static java.util.function.Function<WithBuilder, TestServerCommand> set(String state) {
+            return b -> new TestServerCommand(new SetMessage(b.getCentralUnit(), b.getFunction(), b.getNumber(), new ComponentState(state)));
+        }
+
+        public static java.util.function.Function<WithBuilder, TestServerCommand> get() {
+            return b -> new TestServerCommand(new GetMessage(b.getCentralUnit(), b.getFunction(), b.getNumber()));
+        }
+
+        public CentralUnit getCentralUnit() {
+            return centralUnit;
+        }
+
+        public Function getFunction() {
+            return function;
+        }
+
+        public Integer getNumber() {
+            return number;
+        }
+
+        public static class ResponseBuilder {
+            private final java.util.function.Function<WithBuilder, TestServerCommand> command;
+            private final List<TestServerExpectation> mocks;
+            private final WithBuilder builder;
+
+            public ResponseBuilder(WithBuilder builder, List<TestServerExpectation> mocks, java.util.function.Function<WithBuilder, TestServerCommand> command) {
+                this.builder = builder;
+                this.command = command;
+                this.mocks = mocks;
+            }
+
+            public java.util.function.Function<WithBuilder, TestServerCommand> getCommand() {
+                return command;
+            }
+
+            public void thenRespond(String state) {
+                thenRespond(state(state));
+            }
+
+            public void thenRespond(ComponentState state) {
+                thenRespond(state(state));
+            }
+
+            public void thenRespond(java.util.function.Function<WithBuilder, TestServerResponse> response) {
+                this.mocks.add(new TestServerExpectation(this.command.apply(this.builder), Collections.singletonList(response.apply(this.builder))));
+            }
+
+            public static java.util.function.Function<WithBuilder, TestServerResponse> state(String state) {
+                return state(new ComponentState(state));
+            }
+
+            public static java.util.function.Function<WithBuilder, TestServerResponse> state(ComponentState state) {
+                return b-> (centralUnit, message) -> centralUnit.getMessageHandler().createResponseEventMessage(centralUnit, b.getFunction(), new MessageHandler.OutputState(b.getNumber(), state));
+            }
+        }
+    }
+
+    public static class WhenBuilder {
+        private final java.util.function.Function<WhenBuilder, TestServerCommand> command;
+        private final List<TestServerExpectation> mocks;
+        private final ExpectationBuilder builder;
+
+        public WhenBuilder(ExpectationBuilder builder, List<TestServerExpectation> mocks, java.util.function.Function<WhenBuilder, TestServerCommand> command) {
+            this.builder = builder;
             this.command = command;
             this.mocks = mocks;
         }
 
+        public ExpectationBuilder getBuilder() {
+            return builder;
+        }
+
         public void thenRespond(TestServerResponse... responses) {
-            this.mocks.add(new TestServerExpectation(this.command.apply(centralUnit), Arrays.asList(responses)));
+            thenRespond(Arrays.asList(responses));
+        }
+
+        public void thenRespond(List<TestServerResponse> responses) {
+            this.mocks.add(new TestServerExpectation(this.command.apply(this), responses));
         }
 
         public static TestServerResponse state(Function function, int number, String state) {

@@ -3,6 +3,9 @@ package io.github.ridiekel.jeletask.mqtt.container.ha;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.awaitility.Awaitility;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -25,15 +28,25 @@ import java.util.concurrent.TimeUnit;
 public class HomeAssistantContainer {
 
     private final GenericContainer container;
-    private final WebClient haWebClient;
+    private WebClient haWebClient;
+    private final MqttProcessor mqttProcessor;
 
     public HomeAssistantContainer(MqttProcessor mqttProcessor, MqttContainer mqttContainer) {
-        Path configDir = prepareTempHaConfigDir();
+        this.mqttProcessor = mqttProcessor;
 
         container = new GenericContainer(DockerImageName.parse("ghcr.io/home-assistant/home-assistant:stable"))
                 .withExposedPorts(8123)
-                .withFileSystemBind(configDir.toString(), "/config", BindMode.READ_WRITE)
                 .withNetwork(mqttContainer.getNetwork());
+
+    }
+
+    @EventListener(classes = {ContextRefreshedEvent.class})
+    @Order(300)
+    public void start() {
+        Path configDir = prepareTempHaConfigDir();
+
+        container.withFileSystemBind(configDir.toString(), "/config", BindMode.READ_WRITE);
+
         container.start();
 
         this.haWebClient = WebClient.builder()
@@ -86,5 +99,14 @@ public class HomeAssistantContainer {
 
     public String statesString() {
         return haWebClient.get().uri("/states").retrieve().bodyToMono(String.class).block();
+    }
+
+    public void openBrowser() {
+        try {
+            Runtime.getRuntime().exec("xdg-open http://localhost:" + this.getPort());
+            Thread.sleep(Long.MAX_VALUE);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
