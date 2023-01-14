@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static io.github.ridiekel.jeletask.server.ExpectationBuilder.ExpectationResponseBuilder.state;
+
 public class ExpectationBuilder {
     private final CentralUnit centralUnit;
     private final List<TestServerExpectation> mocks = new ArrayList<>();
@@ -27,20 +29,37 @@ public class ExpectationBuilder {
     public static java.util.function.Function<CentralUnit, TestServerCommand> set(Function function, int number, String state) {
         return set(function, number, new ComponentState(state));
     }
+
     public static java.util.function.Function<CentralUnit, TestServerCommand> set(Function function, int number, ComponentState state) {
-        return c-> new TestServerCommand(new SetMessage(c, function, number, state));
+        return c -> new TestServerCommand(new SetMessage(c, function, number, state));
     }
 
     public static java.util.function.Function<CentralUnit, TestServerCommand> get(Function function, int number) {
-        return c-> new TestServerCommand(new GetMessage(c, function, number));
+        return c -> new TestServerCommand(new GetMessage(c, function, number));
     }
 
     public static java.util.function.Function<CentralUnit, TestServerCommand> groupGet(Function function, int... numbers) {
-        return c-> new TestServerCommand(new GroupGetMessage(c, function, numbers));
+        return c -> new TestServerCommand(new GroupGetMessage(c, function, numbers));
     }
 
     public List<TestServerExpectation> getMocks() {
         return this.mocks;
+    }
+
+    public void expect(Function function, int number, String state) {
+        this.expect(function, number, state, state);
+    }
+
+    public void expect(Function function, int number, String state, String resultingState) {
+        when(set(function, number, state)).thenRespond(state(function, number, resultingState));
+    }
+
+    public void expect(Function function, int number, ComponentState state) {
+        this.expect(function, number, state, state);
+    }
+
+    public void expect(Function function, int number, ComponentState state, ComponentState resultingState) {
+        when(set(function, number, state)).thenRespond(state(function, number, resultingState));
     }
 
     public static class ExpectationResponseBuilder {
