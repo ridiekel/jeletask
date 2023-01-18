@@ -7,13 +7,9 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.container.ha.HomeAssistantContainer;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ansi.AnsiColor;
-import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -33,11 +29,11 @@ abstract class TeletaskTestSupport {
         this.mqtt().reset();
     }
 
-    protected void set(Function function, int number, String state) {
-        set(function, number, new ComponentState(state));
+    protected void setViaTeletask(Function function, int number, String state) {
+        setViaTeletask(function, number, new ComponentState(state));
     }
 
-    protected void set(Function function, int number, ComponentState state) {
+    protected void setViaTeletask(Function function, int number, ComponentState state) {
         this.client.set(function, number, state, onSuccess(), onFailSet());
     }
 

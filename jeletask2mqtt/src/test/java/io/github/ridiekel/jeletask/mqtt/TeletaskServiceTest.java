@@ -3,27 +3,23 @@ package io.github.ridiekel.jeletask.mqtt;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.container.ha.Entity;
-import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("resource")
 class TeletaskServiceTest extends TeletaskTestSupport {
     @Test
     void relayStateChange() {
-//        System.out.println(ha().state("light.teletask_man_test_localhost_1234_relay_1"));
+        setViaTeletask(Function.RELAY, 1, new ComponentState("OFF"));
 
+        this.mqtt().expectLastStateMessage(Function.RELAY, 1).toHaveState("OFF");
 
-        set(Function.RELAY, 1, new ComponentState("OFF"));
+        setViaTeletask(Function.RELAY, 1, new ComponentState("ON"));
 
+        this.mqtt().expectLastStateMessage(Function.RELAY, 1).toHaveState("ON");
 
         Awaitility.await().atMost(10, TimeUnit.SECONDS).pollDelay(1, TimeUnit.SECONDS).until(() -> {
             Entity entity = ha().state("light.teletask_man_test_localhost_1234_relay_1");

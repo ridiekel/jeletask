@@ -1,6 +1,9 @@
 package io.github.ridiekel.jeletask.mqtt.container.mqtt;
 
+import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.Teletask2MqttConfigurationProperties;
+import io.github.ridiekel.jeletask.mqtt.container.ha.HomeAssistantContainer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Awaitility;
@@ -9,7 +12,6 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.springframework.boot.ansi.AnsiColor;
-import org.springframework.boot.ansi.AnsiColors;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -19,13 +21,17 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @Service
 public class MqttContainer extends GenericContainer<MqttContainer> {
@@ -101,6 +107,40 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
         this.messages.clear();
     }
 
+    public TopicExpectationBuilder expectLastStateMessage(Function function, int number) {
+        String topic = "test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/" + function.toString().toLowerCase() + "/" + number + "/state";
+        return new TopicExpectationBuilder(() -> {
+            Optional<MqttCapture> capture = this.messages.stream()
+                    .sorted(Comparator.comparing(MqttCapture::getTimestamp).reversed())
+                    .filter(m -> Objects.equals(m.getTopic(), topic))
+                    .findFirst();
+            return capture;
+        }, topic);
+    }
+
+    public class TopicExpectationBuilder {
+        private final String topic;
+        private final Supplier<Optional<MqttCapture>> message;
+
+        public TopicExpectationBuilder(Supplier<Optional<MqttCapture>> message, String topic) {
+            this.topic = topic;
+            this.message = message;
+        }
+
+        public void toHaveState(String state) {
+            this.toMatch("state: '" + state + "'", m -> Objects.equals(m.asState().getState(), state));
+        }
+
+        public void toMatch(String describe, Predicate<MqttCapture> matcher) {
+            Awaitility.await(describe)
+                    .pollInterval(250, TimeUnit.MILLISECONDS)
+                    .atMost(10, TimeUnit.SECONDS)
+                    .until(() -> this.message.get().map(matcher::test).orElse(false));
+
+            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Expectation (" + describe + ") was met for topic '" + topic + "'", AnsiColor.DEFAULT));
+        }
+    }
+
     public static class MqttCapture {
         private final LocalDateTime timestamp;
         private final String topic;
@@ -123,5 +163,14 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
         public String getMessage() {
             return message;
         }
+
+        public ComponentState asState() {
+            try {
+                return HomeAssistantContainer.OBJECT_MAPPER.readValue(this.getMessage(), ComponentState.class);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 }
