@@ -21,7 +21,7 @@ if ! docker run -it --rm \
        -v "/tmp/.m2":/root/.m2 \
        -w /src \
        maven:latest \
-       mvn clean install spring-boot:build-image; then
+       mvn clean install verify spring-boot:build-image; then
     echo "Native build failed!"
     exit 255
 fi
@@ -32,7 +32,7 @@ if ! docker run -it --rm \
        -v "/tmp/.m2":/root/.m2 \
        -w /src \
        maven:latest \
-       mvn clean install; then
+       mvn clean install verify; then
     echo "Multi arch build failed!"
     exit 255
 fi

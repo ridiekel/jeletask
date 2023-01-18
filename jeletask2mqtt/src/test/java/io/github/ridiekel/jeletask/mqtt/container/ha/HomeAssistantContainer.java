@@ -153,7 +153,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         return new EntityExpectationBuilder(() -> this.state(function, number, type));
     }
 
-    public class EntityExpectationBuilder {
+    public static class EntityExpectationBuilder {
         private final Supplier<Entity> entity;
 
         public EntityExpectationBuilder(Supplier<Entity> entity) {
@@ -166,12 +166,15 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
         public void toMatch(String describe, Predicate<Entity> matcher) {
             Entity entity = this.entity.get();
-            Awaitility.await(describe)
+
+            String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Expectation for entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+
+            Awaitility.await(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED")))
                     .pollInterval(250, TimeUnit.MILLISECONDS)
                     .atMost(10, TimeUnit.SECONDS)
                     .until(() -> matcher.test(entity));
 
-            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[SUCCESS]", AnsiColor.DEFAULT," Expectation for entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT));
+            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS")));
         }
     }
 }

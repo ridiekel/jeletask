@@ -129,12 +129,14 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
         }
 
         public void toMatch(String describe, Predicate<MqttCapture> matcher) {
-            Awaitility.await(describe)
+            String msg = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Expectation for topic '", AnsiColor.BRIGHT_CYAN, topic, AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+
+            Awaitility.await(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(msg, "FAILED")))
                     .pollInterval(250, TimeUnit.MILLISECONDS)
                     .atMost(10, TimeUnit.SECONDS)
                     .until(() -> this.message.get().map(matcher::test).orElse(false));
 
-            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[SUCCESS]", AnsiColor.DEFAULT," Expectation for topic '", AnsiColor.BRIGHT_CYAN, topic, AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT));
+            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(msg, "SUCCESS")));
         }
     }
 
