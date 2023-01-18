@@ -103,22 +103,19 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
     }
 
     public void reset() {
-        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_CYAN, "Resetting captured messages", AnsiColor.DEFAULT));
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BLUE, "Resetting captured messages", AnsiColor.DEFAULT));
         this.messages.clear();
     }
 
     public TopicExpectationBuilder expectLastStateMessage(Function function, int number) {
         String topic = "test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/" + function.toString().toLowerCase() + "/" + number + "/state";
-        return new TopicExpectationBuilder(() -> {
-            Optional<MqttCapture> capture = this.messages.stream()
-                    .sorted(Comparator.comparing(MqttCapture::getTimestamp).reversed())
-                    .filter(m -> Objects.equals(m.getTopic(), topic))
-                    .findFirst();
-            return capture;
-        }, topic);
+        return new TopicExpectationBuilder(() -> this.messages.stream()
+                .sorted(Comparator.comparing(MqttCapture::getTimestamp).reversed())
+                .filter(m -> Objects.equals(m.getTopic(), topic))
+                .findFirst(), topic);
     }
 
-    public class TopicExpectationBuilder {
+    public static class TopicExpectationBuilder {
         private final String topic;
         private final Supplier<Optional<MqttCapture>> message;
 
@@ -137,7 +134,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
                     .atMost(10, TimeUnit.SECONDS)
                     .until(() -> this.message.get().map(matcher::test).orElse(false));
 
-            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Expectation (" + describe + ") was met for topic '" + topic + "'", AnsiColor.DEFAULT));
+            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[SUCCESS]", AnsiColor.DEFAULT," Expectation for topic '", AnsiColor.BRIGHT_CYAN, topic, AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT));
         }
     }
 

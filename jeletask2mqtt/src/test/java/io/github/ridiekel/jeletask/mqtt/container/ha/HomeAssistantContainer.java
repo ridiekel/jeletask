@@ -1,14 +1,11 @@
 package io.github.ridiekel.jeletask.mqtt.container.ha;
 
+import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Awaitility;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -23,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectWriter;
 import org.testcontainers.utility.DockerImageName;
@@ -34,9 +30,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @Service
 public class HomeAssistantContainer extends GenericContainer<HomeAssistantContainer> {
@@ -131,6 +128,10 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         return haWebClient.get().uri("/states/" + id).retrieve().toEntity(Entity.class).block().getBody();
     }
 
+    public Entity state(Function function, int number, String type) {
+        return state(type + ".teletask_man_test_localhost_1234_" + function.toString().toLowerCase() + "_" + number);
+    }
+
     public List<Entity> states() {
         return haWebClient.get().uri("/states").retrieve().toEntityList(Entity.class).block().getBody();
     }
@@ -145,6 +146,32 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
             Thread.sleep(Long.MAX_VALUE);
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public EntityExpectationBuilder expectEntity(Function function, int number, String type) {
+        return new EntityExpectationBuilder(() -> this.state(function, number, type));
+    }
+
+    public class EntityExpectationBuilder {
+        private final Supplier<Entity> entity;
+
+        public EntityExpectationBuilder(Supplier<Entity> entity) {
+            this.entity = entity;
+        }
+
+        public void toHaveState(String state) {
+            this.toMatch("state: '" + state + "'", e -> Objects.equals(e.getState(), state));
+        }
+
+        public void toMatch(String describe, Predicate<Entity> matcher) {
+            Entity entity = this.entity.get();
+            Awaitility.await(describe)
+                    .pollInterval(250, TimeUnit.MILLISECONDS)
+                    .atMost(10, TimeUnit.SECONDS)
+                    .until(() -> matcher.test(entity));
+
+            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[SUCCESS]", AnsiColor.DEFAULT," Expectation for entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT));
         }
     }
 }

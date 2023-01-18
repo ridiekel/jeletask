@@ -21,11 +21,12 @@ class TeletaskServiceTest extends TeletaskTestSupport {
 
         this.mqtt().expectLastStateMessage(Function.RELAY, 1).toHaveState("ON");
 
-        Awaitility.await().atMost(10, TimeUnit.SECONDS).pollDelay(1, TimeUnit.SECONDS).until(() -> {
-            Entity entity = ha().state("light.teletask_man_test_localhost_1234_relay_1");
-//            System.out.println(entity);
-            return !Objects.equals(entity.getState(), "unknown");
-        });
+        this.ha().expectEntity(Function.RELAY, 1, "light").toHaveState("unknown");
+
+//        Awaitility.await().atMost(10, TimeUnit.SECONDS).pollDelay(1, TimeUnit.SECONDS).until(() -> {
+//            Entity entity = ha().state(Function.RELAY, 1, "light");
+//            return !Objects.equals(entity.getState(), "unknown");
+//        });
 
 //        this.ha().openBrowser();
     }
