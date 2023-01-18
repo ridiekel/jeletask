@@ -21,17 +21,8 @@ class TeletaskServiceTest extends TeletaskTestSupport {
     void relayStateChange() {
 //        System.out.println(ha().state("light.teletask_man_test_localhost_1234_relay_1"));
 
+
         set(Function.RELAY, 1, new ComponentState("OFF"));
-
-        String broker = "tcp://localhost:" + mqtt().getPort();
-
-        try {
-            MqttClient mqttClient = new MqttClient(broker, UUID.randomUUID().toString(), new MemoryPersistence());
-            mqttClient.connect();
-            mqttClient.subscribe("+", (s, m) -> System.out.println(s + " - " + new String(m.getPayload())));
-        } catch (MqttException e) {
-            throw new RuntimeException(e);
-        }
 
 
         Awaitility.await().atMost(10, TimeUnit.SECONDS).pollDelay(1, TimeUnit.SECONDS).until(() -> {

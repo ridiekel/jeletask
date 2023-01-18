@@ -14,11 +14,19 @@ teletask:
     clientId: "test_client_id_teletask2mqtt"
     prefix: "test_prefix_teletask2mqtt"
 
+spring:
+  output:
+    ansi:
+      enabled: ALWAYS
+
 logging:
   level:
     root: ERROR
     org.springframework: ERROR
     io.github.ridiekel.jeletask: ERROR
-    org.testcontainers: INFO
-    com.github.dockerjava: INFO
-    io.github.ridiekel.jeletask.server.TeletaskTestServer: DEBUG
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    io.github.ridiekel.jeletask.server.TeletaskTestServer: WARN
+    io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor: WARN
+    io.github.ridiekel.jeletask.client.TeletaskClientImpl: WARN
+    io.github.ridiekel.jeletask.client.spec.CentralUnitFactory: WARN

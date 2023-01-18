@@ -2,7 +2,15 @@ package io.github.ridiekel.jeletask.mqtt.container.ha;
 
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.awaitility.Awaitility;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ansi.AnsiColor;
+import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
@@ -25,16 +33,23 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class HomeAssistantContainer extends GenericContainer<HomeAssistantContainer> {
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private WebClient haWebClient;
     private final MqttProcessor mqttProcessor;
+    private final MqttContainer mqttContainer;
 
     public HomeAssistantContainer(MqttProcessor mqttProcessor, MqttContainer mqttContainer) {
         super(DockerImageName.parse("ghcr.io/home-assistant/home-assistant:stable"));
         this.mqttProcessor = mqttProcessor;
+        this.mqttContainer = mqttContainer;
 
         this.withExposedPorts(8123)
                 .withNetwork(mqttContainer.getNetwork());
@@ -43,6 +58,8 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(300)
     public void start() {
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting Home Assistant", AnsiColor.DEFAULT));
+
         Path configDir = prepareTempHaConfigDir();
 
         this.withFileSystemBind(configDir.toString(), "/config", BindMode.READ_WRITE);
@@ -55,13 +72,27 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJiZmQ2ZTAzNjMyNDk0YWJmYmVlN2ViMDdmYTgyZDM3ZCIsImlhdCI6MTY3MzUzMjY5MSwiZXhwIjoxOTg4ODkyNjkxfQ.dVwwMYpmTiTHmN5LqS3apU2mbmwtml5gPzvgaDTWikQ")
                 .build();
 
-        Awaitility.await()
+        AtomicBoolean haOnline = new AtomicBoolean(false);
+        this.mqttContainer.subscribe("homeassistant/status", (t, m) -> {
+            if (Objects.equals(new String(m.getPayload()), "online")) {
+                haOnline.set(true);
+            }
+        });
+
+        Awaitility.await("Home Assistent Started").pollDelay(1, TimeUnit.SECONDS).atMost(1, TimeUnit.MINUTES).until(haOnline::get);
+
+
+        org.awaitility.Awaitility.await("Home Assistent Teletask Config Published")
                 .atMost(10, TimeUnit.SECONDS)
                 .pollDelay(1, TimeUnit.SECONDS)
                 .until(() -> {
                     mqttProcessor.publishConfig();
                     return this.states().size() > 10;
                 });
+
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant startup complete", AnsiColor.DEFAULT));
+
+        this.mqttContainer.startCapturing();
     }
 
     private Path prepareTempHaConfigDir() {
