@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectWriter;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
@@ -89,6 +92,9 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     public Integer getPort() {
         return this.getFirstMappedPort();
     }
+
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final ObjectWriter OBJECT_WRITER = OBJECT_MAPPER.writerWithDefaultPrettyPrinter();
 
     public Entity state(String id) {
         return haWebClient.get().uri("/states/" + id).retrieve().toEntity(Entity.class).block().getBody();

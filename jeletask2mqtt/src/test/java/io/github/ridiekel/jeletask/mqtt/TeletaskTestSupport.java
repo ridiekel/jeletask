@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.container.ha.HomeAssistantContainer;
+import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 abstract class TeletaskTestSupport {
     @Autowired
     private HomeAssistantContainer ha;
+    @Autowired
+    private MqttContainer mqtt;
     @Autowired
     private TeletaskClient client;
 
@@ -29,6 +32,9 @@ abstract class TeletaskTestSupport {
 
     protected HomeAssistantContainer ha() {
         return ha;
+    }
+    protected MqttContainer mqtt() {
+        return mqtt;
     }
 
     @NotNull
