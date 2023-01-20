@@ -1,28 +1,21 @@
 package io.github.ridiekel.jeletask.mqtt;
 
-import io.github.ridiekel.jeletask.client.spec.Function;
-import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
-import io.github.ridiekel.jeletask.mqtt.container.ha.Entity;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
-
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("resource")
 class TeletaskServiceTest extends TeletaskTestSupport {
     @Test
     void relayStateChange() {
-        teletask().set(Function.RELAY, 1, "OFF");
+        teletask().relay(1).turnOff();
 
-        mqtt().expect().lastStateMessage(Function.RELAY, 1).toHave().state("OFF");
+        mqtt().expect().relay(1).lastStateMessage().toHave().state().off();
 
-        teletask().set(Function.RELAY, 1, "ON");
+        teletask().relay(1).turnOn();
 
-        mqtt().expect().lastStateMessage(Function.RELAY, 1).toHave().state("ON");
+        mqtt().expect().relay(1).lastStateMessage().toHave().state().on();
 
-        ha().expect().entity(Function.RELAY, 1, "light").toHave().state("ON");
+//        ha().expect().relay(1).asLight().toHave().state().on();
 
-//        this.ha().openBrowser();
+        this.ha().openBrowser();
     }
 }

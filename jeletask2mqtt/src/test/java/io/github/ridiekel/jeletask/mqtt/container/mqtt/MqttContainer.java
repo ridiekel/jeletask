@@ -1,9 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.container.mqtt;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.Teletask2MqttConfigurationProperties;
@@ -25,7 +22,6 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static io.github.ridiekel.jeletask.mqtt.container.ha.HomeAssistantContainer.OBJECT_MAPPER;
 
@@ -79,7 +74,6 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             try {
                 mqttClient.connect();
                 connected = mqttClient.isConnected();
-                System.out.println();
             } catch (MqttException e) {
                 connected = false;
             }
@@ -90,6 +84,14 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
     }
 
     public void startCapturing() {
+        if (LOGGER.isDebugEnabled()) {
+            String topicFilter = "#";
+            LOGGER.debug(AnsiOutput.toString("Capturing MQTT messages with topic filter: ", AnsiColor.BRIGHT_CYAN, topicFilter, AnsiColor.DEFAULT));
+            this.subscribe(topicFilter, (t, m) -> {
+                String message = new String(m.getPayload());
+                LOGGER.debug(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT));
+            });
+        }
         this.subscribe("test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/#", (t, m) -> {
             String message = new String(m.getPayload());
             LOGGER.info(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT));
@@ -115,70 +117,113 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
     }
 
     public MqttExpectationBuilder expect() {
-        return new MqttExpectationBuilder(captures);
+        return new MqttExpectationBuilder(this);
     }
 
     public static class MqttExpectationBuilder {
-        private final List<MqttCapture> captures;
+        private final MqttContainer mqttContainer;
 
-        public MqttExpectationBuilder(List<MqttCapture> captures) {
-            this.captures = captures;
+        public MqttExpectationBuilder(MqttContainer mqttContainer) {
+            this.mqttContainer = mqttContainer;
         }
 
-        public TopicExpectationBuilder lastStateMessage(Function function, int number) {
-            String topic = "test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/" + function.toString().toLowerCase() + "/" + number + "/state";
-            return new TopicExpectationBuilder(() -> this.captures.stream()
-                    .sorted(Comparator.comparing(MqttCapture::getTimestamp).reversed())
-                    .filter(m -> Objects.equals(m.getTopic(), topic))
-                    .findFirst(), topic);
+        public MqttFunctionExpectationBuilder relay(int number) {
+            return function(Function.RELAY, number);
         }
 
-        public static class TopicExpectationBuilder {
-            private final String topic;
-            private final Supplier<Optional<MqttCapture>> message;
+        public MqttFunctionExpectationBuilder function(Function function, int number) {
+            return new MqttFunctionExpectationBuilder(this, function, number);
+        }
 
-            public TopicExpectationBuilder(Supplier<Optional<MqttCapture>> message, String topic) {
-                this.topic = topic;
-                this.message = message;
+        public static class MqttFunctionExpectationBuilder {
+            private final Function function;
+            private final int number;
+            private final MqttExpectationBuilder mqttBuilder;
+
+            public MqttFunctionExpectationBuilder(MqttExpectationBuilder mqttBuilder, Function function, int number) {
+                this.mqttBuilder = mqttBuilder;
+                this.function = function;
+                this.number = number;
             }
 
-            public MessageExpectationBuilder toHave() {
-                return new MessageExpectationBuilder(this);
+            public TopicExpectationBuilder lastStateMessage() {
+                return new TopicExpectationBuilder(this);
             }
 
-            public static class MessageExpectationBuilder {
-                private final TopicExpectationBuilder topicBuilder;
+            public static class TopicExpectationBuilder {
+                private final MqttFunctionExpectationBuilder mqttFunctionBuilder;
 
-                public MessageExpectationBuilder(TopicExpectationBuilder topicBuilder) {
-                    this.topicBuilder = topicBuilder;
+                public TopicExpectationBuilder(MqttFunctionExpectationBuilder mqttFunctionBuilder) {
+                    this.mqttFunctionBuilder = mqttFunctionBuilder;
                 }
 
-                public void state(String state) {
-                    this.match("state: '" + state + "'", m -> Objects.equals(m.getComponentState().getState(), state));
+                public MessageExpectationBuilder toHave() {
+                    return new MessageExpectationBuilder(this);
                 }
 
-                public void match(String describe, Predicate<MqttCapture> matcher) {
-                    String msg = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Expectation for topic '", AnsiColor.BRIGHT_CYAN, topicBuilder.topic, AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+                public static class MessageExpectationBuilder {
+                    private final TopicExpectationBuilder topicBuilder;
 
-                    AtomicReference<MqttCapture> capture = new AtomicReference<>();
-                    try {
-                        Awaitility.await(describe)
-                                .pollInterval(250, TimeUnit.MILLISECONDS)
-                                .atMost(10, TimeUnit.SECONDS)
-                                .until(() -> {
-                                    Optional<MqttCapture> mqttCapture = topicBuilder.message.get();
-                                    capture.set(mqttCapture.orElse(null));
-                                    return mqttCapture.map(matcher::test).orElse(false);
-                                });
-                    } catch (Exception e) {
-                        LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(msg, "FAILED"), " - was: ", AnsiColor.RED, capture.get(), AnsiColor.DEFAULT));
-                        throw e;
+                    public MessageExpectationBuilder(TopicExpectationBuilder topicBuilder) {
+                        this.topicBuilder = topicBuilder;
                     }
 
-                    LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(msg, "SUCCESS")));
+                    public StateExpectationBuilder state() {
+                        return new StateExpectationBuilder(this);
+                    }
+
+                    public static class StateExpectationBuilder {
+                        private final MessageExpectationBuilder messageBuilder;
+
+                        public StateExpectationBuilder(MessageExpectationBuilder messageBuilder) {
+                            this.messageBuilder = messageBuilder;
+                        }
+
+                        public void on() {
+                            value("ON");
+
+                        }
+
+                        public void off() {
+                            value("OFF");
+                        }
+
+                        private void value(String state) {
+                            this.match("state: '" + state + "'", m -> Objects.equals(m.getComponentState().getState(), state));
+                        }
+
+                        public void match(String describe, Predicate<MqttCapture> matcher) {
+                            String topic = "test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/" + messageBuilder.topicBuilder.mqttFunctionBuilder.function.toString().toLowerCase() + "/" + messageBuilder.topicBuilder.mqttFunctionBuilder.number + "/state";
+
+                            String msg = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Message in topic '", AnsiColor.BRIGHT_CYAN, topic, AnsiColor.DEFAULT, "' expected to have: ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+
+                            AtomicReference<MqttCapture> capture = new AtomicReference<>();
+                            try {
+                                Awaitility.await(describe)
+                                        .pollInterval(250, TimeUnit.MILLISECONDS)
+                                        .atMost(10, TimeUnit.SECONDS)
+                                        .until(() -> {
+                                            Optional<MqttCapture> mqttCapture = this.messageBuilder.topicBuilder.mqttFunctionBuilder.mqttBuilder.mqttContainer.captures.stream()
+                                                    .sorted(Comparator.comparing(MqttCapture::getTimestamp).reversed())
+                                                    .filter(m -> Objects.equals(m.getTopic(), topic))
+                                                    .findFirst();
+                                            capture.set(mqttCapture.orElse(null));
+                                            return mqttCapture.map(matcher::test).orElse(false);
+                                        });
+                            } catch (Exception e) {
+                                LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(msg, "FAILED"), " - but was: ", AnsiColor.RED, capture.get(), AnsiColor.DEFAULT));
+                                throw e;
+                            }
+
+                            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(msg, "SUCCESS")));
+                        }
+                    }
+
                 }
             }
         }
+
+
     }
 
     public static class MqttCapture {

@@ -17,6 +17,10 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 @SpringBootTest
 abstract class TeletaskTestSupport {
+    static {
+        System.setProperty("java.awt.headless", "false");
+    }
+
     @Autowired
     private HomeAssistantContainer ha;
     @Autowired
@@ -33,21 +37,57 @@ abstract class TeletaskTestSupport {
 
     @Service
     public static class TeletaskTestClient {
-        private final TeletaskClient client;
+        private final TeletaskClient teletaskClient;
         private final MqttContainer mqttContainer;
 
-        public TeletaskTestClient(TeletaskClient client, MqttContainer mqttContainer) {
-            this.client = client;
+        public TeletaskTestClient(TeletaskClient teletaskClient, MqttContainer mqttContainer) {
+            this.teletaskClient = teletaskClient;
             this.mqttContainer = mqttContainer;
         }
 
-        protected void set(Function function, int number, String state) {
-            set(function, number, new ComponentState(state));
+        public FunctionSetBuilder function(Function function, int number) {
+            return new FunctionSetBuilder(this, function, number);
         }
 
-        protected void set(Function function, int number, ComponentState state) {
-            mqttContainer.reset();
-            this.client.set(function, number, state, onSuccess(), onFailSet());
+        public OnOffSetBuilder relay(int number) {
+            return new OnOffSetBuilder(this, Function.RELAY, number);
+        }
+
+        public static class FunctionSetBuilder {
+
+            private final Function function;
+            private final int number;
+            private final TeletaskTestClient testClient;
+
+            public FunctionSetBuilder(TeletaskTestClient testClient, Function function, int number) {
+                this.function = function;
+                this.number = number;
+                this.testClient = testClient;
+            }
+
+            protected void set(String state) {
+                set(new ComponentState(state));
+            }
+
+            protected void set(ComponentState state) {
+                testClient.mqttContainer.reset();
+                testClient.teletaskClient.set(function, number, state, onSuccess(), onFailSet());
+            }
+        }
+
+        public static class OnOffSetBuilder extends FunctionSetBuilder {
+
+            public OnOffSetBuilder(TeletaskTestClient testClient, Function function, int number) {
+                super(testClient, function, number);
+            }
+
+            protected void turnOn() {
+                set("ON");
+            }
+
+            protected void turnOff() {
+                set("OFF");
+            }
         }
 
         @NotNull

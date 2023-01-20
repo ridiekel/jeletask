@@ -26,7 +26,10 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +38,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 @Service
 public class HomeAssistantContainer extends GenericContainer<HomeAssistantContainer> {
@@ -128,6 +130,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     static {
         OBJECT_MAPPER.registerModule(new JavaTimeModule());
     }
+
     public static final ObjectWriter OBJECT_WRITER = OBJECT_MAPPER.writerWithDefaultPrettyPrinter();
 
     public Entity state(String id) {
@@ -148,9 +151,11 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
     public void openBrowser() {
         try {
-            Runtime.getRuntime().exec("xdg-open http://localhost:" + this.getPort());
+            String url = "http://localhost:" + this.getPort();
+            Desktop.getDesktop().browse(new URI(url));
+            LOGGER.info(AnsiOutput.toString(AnsiColor.GREEN, "Started browser and pointed it to: ", AnsiColor.BLUE, url, AnsiColor.DEFAULT));
             Thread.sleep(Long.MAX_VALUE);
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -166,51 +171,93 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
             this.container = container;
         }
 
-        public EntityExpectationBuilder entity(Function function, int number, String type) {
-            return new EntityExpectationBuilder(() -> this.container.state(function, number, type));
-        }
-    }
-
-    public static class EntityExpectationBuilder {
-        private final Supplier<Entity> entity;
-
-        public EntityExpectationBuilder(Supplier<Entity> entity) {
-            this.entity = entity;
+        public EntityExpectationBuilder relay(int number) {
+            return this.function(Function.RELAY, number);
         }
 
-        public EntityObjectExpectationBuilder toHave() {
-            return new EntityObjectExpectationBuilder(this);
+        public EntityExpectationBuilder function(Function function, int number) {
+            return new EntityExpectationBuilder(this, function, number);
         }
 
-        public static class EntityObjectExpectationBuilder {
-            private final EntityExpectationBuilder entityBuilder;
+        public static class EntityExpectationBuilder {
+            private final HomeAssistantExpectationBuilder homeAssistantBuilder;
+            private final Function function;
+            private final int number;
 
-            public EntityObjectExpectationBuilder(EntityExpectationBuilder entityBuilder) {
-                this.entityBuilder = entityBuilder;
+            public EntityExpectationBuilder(HomeAssistantExpectationBuilder homeAssistantBuilder, Function function, int number) {
+                this.homeAssistantBuilder = homeAssistantBuilder;
+                this.function = function;
+                this.number = number;
             }
 
-            public void state(String state) {
-                this.match("state: '" + state + "'", e -> Objects.equals(e.getState(), state));
+            public EntityTypeExpectationBuilder asLight() {
+                return new EntityTypeExpectationBuilder(this, "light");
             }
 
-            public void match(String describe, Predicate<Entity> matcher) {
-                Entity entity = entityBuilder.entity.get();
+            public static class EntityTypeExpectationBuilder {
+                private final EntityExpectationBuilder entityBuilder;
+                private final String type;
 
-                String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Expectation for entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
-
-                try {
-                    Awaitility.await(describe)
-                            .pollInterval(250, TimeUnit.MILLISECONDS)
-                            .atMost(10, TimeUnit.SECONDS)
-                            .until(() -> matcher.test(entity));
-                } catch (Exception e) {
-                    LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED"), " - was: ", AnsiColor.RED, entity, AnsiColor.DEFAULT));
-                    throw e;
+                public EntityTypeExpectationBuilder(EntityExpectationBuilder entityBuilder, String type) {
+                    this.entityBuilder = entityBuilder;
+                    this.type = type;
                 }
 
-                LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS")));
+                public EntityObjectExpectationBuilder toHave() {
+                    return new EntityObjectExpectationBuilder(this);
+                }
+
+                public static class EntityObjectExpectationBuilder {
+                    private final EntityTypeExpectationBuilder entityTypeBuilder;
+
+                    public EntityObjectExpectationBuilder(EntityTypeExpectationBuilder entityTypeBuilder) {
+                        this.entityTypeBuilder = entityTypeBuilder;
+                    }
+
+                    public EntityObjectStateExpectationBuilder state() {
+                        return new EntityObjectStateExpectationBuilder(this);
+                    }
+
+
+                    public static class EntityObjectStateExpectationBuilder {
+                        private final EntityObjectExpectationBuilder entityObjectBuilder;
+
+                        public EntityObjectStateExpectationBuilder(EntityObjectExpectationBuilder entityObjectBuilder) {
+                            this.entityObjectBuilder = entityObjectBuilder;
+                        }
+
+                        public void on() {
+                            value("ON");
+                        }
+
+                        public void off() {
+                            value("OFF");
+                        }
+
+                        public void value(String state) {
+                            this.entityObjectBuilder.entityTypeBuilder.match("state: '" + state + "'", e -> Objects.equals(e.getState(), state));
+                        }
+                    }
+                }
+
+                public void match(String describe, Predicate<Entity> matcher) {
+                    Entity entity = entityBuilder.homeAssistantBuilder.container.state(entityBuilder.function, entityBuilder.number, type);
+
+                    String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "' expected to have: ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+
+                    try {
+                        Awaitility.await(describe)
+                                .pollInterval(250, TimeUnit.MILLISECONDS)
+                                .atMost(10, TimeUnit.SECONDS)
+                                .until(() -> matcher.test(entity));
+                    } catch (Exception e) {
+                        LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED"), " - but was: ", AnsiColor.RED, entity, AnsiColor.DEFAULT));
+                        throw e;
+                    }
+
+                    LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS")));
+                }
             }
         }
-
     }
 }

@@ -88,26 +88,24 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     @Override
     public void set(ComponentSpec component, ComponentState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
         withStarted(() -> {
-            if (this.started.get()) {
-                if (Objects.isNull(component.getState())) {
-                    this.get(component,
-                            (f, n, s) -> LOG.info("State for {} / {} was somehow null, we reset the state to: {}", component.getFunction(), component.getNumber(), component.getState()),
-                            (f, n, s, e) -> {
-                            });
-                    Awaitility.await("State update")
-                            .atMost(5, TimeUnit.SECONDS)
-                            .pollInSameThread()
-                            .pollInterval(10, TimeUnit.MILLISECONDS)
-                            .until(() -> !Objects.isNull(component.getState()));
-                }
+            if (Objects.isNull(component.getState())) {
+                this.get(component,
+                        (f, n, s) -> LOG.info("State for {} / {} was somehow null, we reset the state to: {}", component.getFunction(), component.getNumber(), component.getState()),
+                        (f, n, s, e) -> {
+                        });
+                Awaitility.await("State update")
+                        .atMost(5, TimeUnit.SECONDS)
+                        .pollInSameThread()
+                        .pollInterval(10, TimeUnit.MILLISECONDS)
+                        .until(() -> !Objects.isNull(component.getState()));
+            }
 
-                if (!Objects.equals(component.getState(), state)) {
-                    this.execute(
-                            new SetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
-                            m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
-                            (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-                    );
-                }
+            if (!Objects.equals(component.getState(), state)) {
+                this.execute(
+                        new SetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                        m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                        (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+                );
             }
         });
     }
