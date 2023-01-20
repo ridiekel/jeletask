@@ -152,8 +152,9 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     public void openBrowser() {
         try {
             String url = "http://localhost:" + this.getPort();
+            LOGGER.info(AnsiOutput.toString(AnsiColor.GREEN, "Starting browser and pointing it to: ", AnsiColor.BLUE, url, AnsiColor.DEFAULT));
+
             Desktop.getDesktop().browse(new URI(url));
-            LOGGER.info(AnsiOutput.toString(AnsiColor.GREEN, "Started browser and pointed it to: ", AnsiColor.BLUE, url, AnsiColor.DEFAULT));
             Thread.sleep(Long.MAX_VALUE);
         } catch (Exception e) {
             throw new RuntimeException(e);
