@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.stereotype.Service;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("test")
@@ -21,7 +22,7 @@ abstract class TeletaskTestSupport {
     @Autowired
     private MqttContainer mqtt;
     @Autowired
-    private TeletaskClient client;
+    private TeletaskTestClient teletask;
 
     @SuppressWarnings("resource")
     @BeforeEach
@@ -29,12 +30,42 @@ abstract class TeletaskTestSupport {
         this.mqtt().reset();
     }
 
-    protected void setViaTeletask(Function function, int number, String state) {
-        setViaTeletask(function, number, new ComponentState(state));
+
+    @Service
+    public static class TeletaskTestClient {
+        private final TeletaskClient client;
+        private final MqttContainer mqttContainer;
+
+        public TeletaskTestClient(TeletaskClient client, MqttContainer mqttContainer) {
+            this.client = client;
+            this.mqttContainer = mqttContainer;
+        }
+
+        protected void set(Function function, int number, String state) {
+            set(function, number, new ComponentState(state));
+        }
+
+        protected void set(Function function, int number, ComponentState state) {
+            mqttContainer.reset();
+            this.client.set(function, number, state, onSuccess(), onFailSet());
+        }
+
+        @NotNull
+        private static FailureConsumer onFailSet() {
+            return (function, number, state, e) -> {
+                throw new RuntimeException(String.format("Failure to set %s(%s) to: %s", function, number, state), e);
+            };
+        }
+
+        @NotNull
+        private static SuccessConsumer onSuccess() {
+            return (function, number, state) -> {
+            };
+        }
     }
 
-    protected void setViaTeletask(Function function, int number, ComponentState state) {
-        this.client.set(function, number, state, onSuccess(), onFailSet());
+    protected TeletaskTestClient teletask() {
+        return teletask;
     }
 
     protected HomeAssistantContainer ha() {
@@ -43,19 +74,6 @@ abstract class TeletaskTestSupport {
 
     protected MqttContainer mqtt() {
         return mqtt;
-    }
-
-    @NotNull
-    private static FailureConsumer onFailSet() {
-        return (function, number, state, e) -> {
-            throw new RuntimeException(String.format("Failure to set %s(%s) to: %s", function, number, state), e);
-        };
-    }
-
-    @NotNull
-    private static SuccessConsumer onSuccess() {
-        return (function, number, state) -> {
-        };
     }
 }
 

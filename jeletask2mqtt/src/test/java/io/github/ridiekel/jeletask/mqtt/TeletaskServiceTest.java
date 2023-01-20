@@ -13,22 +13,16 @@ import java.util.concurrent.TimeUnit;
 class TeletaskServiceTest extends TeletaskTestSupport {
     @Test
     void relayStateChange() {
-        setViaTeletask(Function.RELAY, 1, new ComponentState("OFF"));
+        teletask().set(Function.RELAY, 1, "OFF");
 
-        this.mqtt().expectLastStateMessage(Function.RELAY, 1).toHaveState("OFF");
+        mqtt().expect().lastStateMessage(Function.RELAY, 1).toHave().state("OFF");
 
-        setViaTeletask(Function.RELAY, 1, new ComponentState("ON"));
+        teletask().set(Function.RELAY, 1, "ON");
 
-        this.mqtt().expectLastStateMessage(Function.RELAY, 1).toHaveState("ON");
+        mqtt().expect().lastStateMessage(Function.RELAY, 1).toHave().state("ON");
 
-        this.ha().expectEntity(Function.RELAY, 1, "light").toHaveState("ON");
-
-//        Awaitility.await().atMost(10, TimeUnit.SECONDS).pollDelay(1, TimeUnit.SECONDS).until(() -> {
-//            Entity entity = ha().state(Function.RELAY, 1, "light");
-//            return !Objects.equals(entity.getState(), "unknown");
-//        });
+        ha().expect().entity(Function.RELAY, 1, "light").toHave().state("ON");
 
 //        this.ha().openBrowser();
     }
 }
-

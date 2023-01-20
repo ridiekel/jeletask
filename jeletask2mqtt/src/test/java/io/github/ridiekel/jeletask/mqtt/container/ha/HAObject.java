@@ -1,6 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.container.ha;
 
-import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 public abstract class HAObject {
     @Override

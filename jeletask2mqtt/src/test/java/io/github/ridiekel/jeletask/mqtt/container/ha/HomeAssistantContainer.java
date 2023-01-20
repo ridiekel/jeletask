@@ -1,5 +1,9 @@
 package io.github.ridiekel.jeletask.mqtt.container.ha;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
@@ -20,8 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectWriter;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
@@ -121,7 +123,11 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         return this.getFirstMappedPort();
     }
 
-    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+    static {
+        OBJECT_MAPPER.registerModule(new JavaTimeModule());
+    }
     public static final ObjectWriter OBJECT_WRITER = OBJECT_MAPPER.writerWithDefaultPrettyPrinter();
 
     public Entity state(String id) {
@@ -136,7 +142,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         return haWebClient.get().uri("/states").retrieve().toEntityList(Entity.class).block().getBody();
     }
 
-    public String statesString() {
+    public String statesAsString() {
         return haWebClient.get().uri("/states").retrieve().bodyToMono(String.class).block();
     }
 
@@ -149,8 +155,20 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         }
     }
 
-    public EntityExpectationBuilder expectEntity(Function function, int number, String type) {
-        return new EntityExpectationBuilder(() -> this.state(function, number, type));
+    public HomeAssistantExpectationBuilder expect() {
+        return new HomeAssistantExpectationBuilder(this);
+    }
+
+    public static class HomeAssistantExpectationBuilder {
+        private final HomeAssistantContainer container;
+
+        public HomeAssistantExpectationBuilder(HomeAssistantContainer container) {
+            this.container = container;
+        }
+
+        public EntityExpectationBuilder entity(Function function, int number, String type) {
+            return new EntityExpectationBuilder(() -> this.container.state(function, number, type));
+        }
     }
 
     public static class EntityExpectationBuilder {
@@ -160,21 +178,39 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
             this.entity = entity;
         }
 
-        public void toHaveState(String state) {
-            this.toMatch("state: '" + state + "'", e -> Objects.equals(e.getState(), state));
+        public EntityObjectExpectationBuilder toHave() {
+            return new EntityObjectExpectationBuilder(this);
         }
 
-        public void toMatch(String describe, Predicate<Entity> matcher) {
-            Entity entity = this.entity.get();
+        public static class EntityObjectExpectationBuilder {
+            private final EntityExpectationBuilder entityBuilder;
 
-            String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Expectation for entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+            public EntityObjectExpectationBuilder(EntityExpectationBuilder entityBuilder) {
+                this.entityBuilder = entityBuilder;
+            }
 
-            Awaitility.await(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED")))
-                    .pollInterval(250, TimeUnit.MILLISECONDS)
-                    .atMost(10, TimeUnit.SECONDS)
-                    .until(() -> matcher.test(entity));
+            public void state(String state) {
+                this.match("state: '" + state + "'", e -> Objects.equals(e.getState(), state));
+            }
 
-            LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS")));
+            public void match(String describe, Predicate<Entity> matcher) {
+                Entity entity = entityBuilder.entity.get();
+
+                String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Expectation for entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "': ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+
+                try {
+                    Awaitility.await(describe)
+                            .pollInterval(250, TimeUnit.MILLISECONDS)
+                            .atMost(10, TimeUnit.SECONDS)
+                            .until(() -> matcher.test(entity));
+                } catch (Exception e) {
+                    LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED"), " - was: ", AnsiColor.RED, entity, AnsiColor.DEFAULT));
+                    throw e;
+                }
+
+                LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS")));
+            }
         }
+
     }
 }
