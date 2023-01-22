@@ -34,7 +34,6 @@ abstract class TeletaskTestSupport {
         this.mqtt().reset();
     }
 
-
     @Service
     public static class TeletaskTestClient {
         private final TeletaskClient teletaskClient;

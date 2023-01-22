@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.ComponentState;
 import io.github.ridiekel.jeletask.mqtt.Teletask2MqttConfigurationProperties;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Awaitility;
@@ -42,13 +43,15 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Teletask2MqttConfigurationProperties properties;
+    private final MqttProcessor mqttProcessor;
     private MqttClient mqttClient;
 
     private final List<MqttCapture> captures = new ArrayList<>();
 
-    public MqttContainer(Teletask2MqttConfigurationProperties properties) {
+    public MqttContainer(Teletask2MqttConfigurationProperties properties, MqttProcessor mqttProcessor) {
         super(DockerImageName.parse("eclipse-mosquitto:latest"));
         this.properties = properties;
+        this.mqttProcessor = mqttProcessor;
         this.withExposedPorts(1883)
                 .withNetworkAliases("mqtt")
                 .withCommand("mosquitto -c /mosquitto-no-auth.conf")
@@ -87,16 +90,12 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
         LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "MQTT started and test client connected ", AnsiColor.BRIGHT_WHITE, "(port: ", this.getPort(), ")", AnsiColor.DEFAULT));
     }
 
+    public MqttProcessor processor() {
+        return mqttProcessor;
+    }
+
     public void startCapturing() {
-        if (LOGGER.isDebugEnabled()) {
-            String topicFilter = "#";
-            LOGGER.debug(AnsiOutput.toString("Capturing MQTT messages with topic filter: ", AnsiColor.BRIGHT_CYAN, topicFilter, AnsiColor.DEFAULT));
-            this.subscribe(topicFilter, (t, m) -> {
-                String message = new String(m.getPayload());
-                LOGGER.debug(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT, " - replay using:\n\t\t", AnsiColor.BRIGHT_WHITE, "mosquitto_pub -h localhost -p ", this.getPort(), " -t '", t, "' -m '", m, "'", AnsiColor.DEFAULT));
-            });
-        }
-        this.subscribe("test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/#", (t, m) -> {
+        this.subscribe("#", (t, m) -> {
             String message = new String(m.getPayload());
             LOGGER.info(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT, " - replay using:\n\t\t", AnsiColor.BRIGHT_WHITE, "mosquitto_pub -h localhost -p ", this.getPort(), " -t '", t, "' -m '", m, "'", AnsiColor.DEFAULT));
             this.captures.add(new MqttCapture(t, message));
