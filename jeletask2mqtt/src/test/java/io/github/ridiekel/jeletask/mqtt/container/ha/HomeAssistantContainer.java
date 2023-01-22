@@ -10,6 +10,7 @@ import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Awaitility;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.awt.*;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 @Service
@@ -81,6 +84,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
         Awaitility.await("Home Assistent Started").pollDelay(1, TimeUnit.SECONDS).atMost(1, TimeUnit.MINUTES).until(haOnline::get);
 
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant online according to MQTT", AnsiColor.DEFAULT));
 
         org.awaitility.Awaitility.await("Home Assistent Teletask Config Published")
                 .atMost(10, TimeUnit.SECONDS)
@@ -90,7 +94,17 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                     return this.states().size() > 10;
                 });
 
-        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant startup complete", AnsiColor.DEFAULT));
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant online according to published entities", AnsiColor.DEFAULT));
+
+//        try {
+//            Thread.sleep(60000);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant startup complete ", AnsiColor.BRIGHT_WHITE, "(url: http://localhost:", this.getPort(), ")", AnsiColor.DEFAULT));
+
+        this.followOutput(new Slf4jLogConsumer(LoggerFactory.getLogger(this.getClass())).withPrefix(AnsiOutput.toString(AnsiColor.MAGENTA, "ha-container-log", AnsiColor.DEFAULT)));
 
         this.mqttContainer.startCapturing();
     }
@@ -136,6 +150,10 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         return haWebClient.get().uri("/states/" + id).retrieve().toEntity(Entity.class).block().getBody();
     }
 
+    public String set(Entity entity) {
+        return haWebClient.post().uri("/states/" + entity.getEntity_id()).bodyValue(entity).retrieve().toEntity(String.class).block().getBody();
+    }
+
     public Entity state(Function function, int number, String type) {
         return state(type + ".teletask_man_test_localhost_1234_" + function.toString().toLowerCase() + "_" + number);
     }
@@ -160,7 +178,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         }
     }
 
-    public HomeAssistantExpectationBuilder expect() {
+    public HomeAssistantExpectationBuilder with() {
         return new HomeAssistantExpectationBuilder(this);
     }
 
@@ -207,6 +225,30 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                     return new EntityObjectExpectationBuilder(this);
                 }
 
+                public EntityObjectSetBuilder set() {
+                    return new EntityObjectSetBuilder(this);
+                }
+
+                public static class EntityObjectSetBuilder {
+                    private final EntityTypeExpectationBuilder entityTypeBuilder;
+
+                    public EntityObjectSetBuilder(EntityTypeExpectationBuilder entityTypeBuilder) {
+                        this.entityTypeBuilder = entityTypeBuilder;
+                    }
+
+                    public void on() {
+                        this.state("ON");
+                    }
+
+                    public void off() {
+                        this.state("OFF");
+                    }
+
+                    public void state(String state) {
+                        this.entityTypeBuilder.set("State to '" + state + "'", e -> e.setState(state));
+                    }
+                }
+
                 public static class EntityObjectExpectationBuilder {
                     private final EntityTypeExpectationBuilder entityTypeBuilder;
 
@@ -250,12 +292,28 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                                 .pollInterval(250, TimeUnit.MILLISECONDS)
                                 .atMost(10, TimeUnit.SECONDS)
                                 .until(() -> matcher.test(entity));
+                        LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS"), AnsiColor.DEFAULT));
                     } catch (Exception e) {
                         LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED"), " - but was: ", AnsiColor.RED, entity, AnsiColor.DEFAULT));
                         throw e;
                     }
+                }
 
-                    LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS")));
+                public void set(String describe, Consumer<Entity> consumer) {
+                    Entity entity = entityBuilder.homeAssistantBuilder.container.state(entityBuilder.function, entityBuilder.number, type);
+
+                    consumer.accept(entity);
+
+                    String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Setting entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "' to: ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+
+                    try {
+                        String result = entityBuilder.homeAssistantBuilder.container.set(entity);
+
+                        LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "SUCCESS"), " - response body: ", AnsiColor.GREEN, result, AnsiColor.DEFAULT));
+                    } catch (Exception e) {
+                        LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED"), " - entity data: ", AnsiColor.RED, entity, AnsiColor.DEFAULT));
+                        throw e;
+                    }
                 }
             }
         }

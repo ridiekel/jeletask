@@ -1,11 +1,9 @@
 package io.github.ridiekel.jeletask.mqtt.container.ha;
 
-import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-
 public class Entity extends HAObject {
     private String entity_id;
     private String state;
-    private Attributes attribute;
+    private Attributes attributes;
 
     public String getEntity_id() {
         return entity_id;
@@ -15,8 +13,20 @@ public class Entity extends HAObject {
         return state;
     }
 
-    public Attributes getAttribute() {
-        return attribute;
+    public Attributes getAttributes() {
+        return attributes;
+    }
+
+    public void setEntity_id(String entity_id) {
+        this.entity_id = entity_id;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public void setAttributes(Attributes attributes) {
+        this.attributes = attributes;
     }
 
     public static class Attributes extends HAObject {
@@ -24,6 +34,10 @@ public class Entity extends HAObject {
 
         public String getFriendly_name() {
             return friendly_name;
+        }
+
+        public void setFriendly_name(String friendly_name) {
+            this.friendly_name = friendly_name;
         }
     }
 }

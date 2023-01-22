@@ -80,7 +80,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             return connected;
         });
 
-        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "MQTT started and test client connected", AnsiColor.DEFAULT));
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "MQTT started and test client connected ", AnsiColor.BRIGHT_WHITE, "(port: ", this.getPort(), ")", AnsiColor.DEFAULT));
     }
 
     public void startCapturing() {
@@ -89,12 +89,12 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             LOGGER.debug(AnsiOutput.toString("Capturing MQTT messages with topic filter: ", AnsiColor.BRIGHT_CYAN, topicFilter, AnsiColor.DEFAULT));
             this.subscribe(topicFilter, (t, m) -> {
                 String message = new String(m.getPayload());
-                LOGGER.debug(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT));
+                LOGGER.debug(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT, " - replay using:\n\t\t", AnsiColor.BRIGHT_WHITE, "mosquitto_pub -h localhost -p ", this.getPort(), " -t '", t, "' -m '", m, "'", AnsiColor.DEFAULT));
             });
         }
         this.subscribe("test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/#", (t, m) -> {
             String message = new String(m.getPayload());
-            LOGGER.info(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT));
+            LOGGER.info(AnsiOutput.toString("Captured '", AnsiColor.BRIGHT_CYAN, t, AnsiColor.DEFAULT, "' - ", AnsiColor.BRIGHT_YELLOW, message, AnsiColor.DEFAULT, " - replay using:\n\t\t", AnsiColor.BRIGHT_WHITE, "mosquitto_pub -h localhost -p ", this.getPort(), " -t '", t, "' -m '", m, "'", AnsiColor.DEFAULT));
             this.captures.add(new MqttCapture(t, message));
         });
     }
@@ -147,14 +147,21 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             }
 
             public TopicExpectationBuilder lastStateMessage() {
-                return new TopicExpectationBuilder(this);
+                return new TopicExpectationBuilder(this, "state");
+            }
+
+            public TopicExpectationBuilder lastSetMessage() {
+                return new TopicExpectationBuilder(this, "set");
             }
 
             public static class TopicExpectationBuilder {
                 private final MqttFunctionExpectationBuilder mqttFunctionBuilder;
+                private final String messageType;
 
-                public TopicExpectationBuilder(MqttFunctionExpectationBuilder mqttFunctionBuilder) {
+
+                public TopicExpectationBuilder(MqttFunctionExpectationBuilder mqttFunctionBuilder, String messageType) {
                     this.mqttFunctionBuilder = mqttFunctionBuilder;
+                    this.messageType = messageType;
                 }
 
                 public MessageExpectationBuilder toHave() {
@@ -193,7 +200,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
                         }
 
                         public void match(String describe, Predicate<MqttCapture> matcher) {
-                            String topic = "test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/" + messageBuilder.topicBuilder.mqttFunctionBuilder.function.toString().toLowerCase() + "/" + messageBuilder.topicBuilder.mqttFunctionBuilder.number + "/state";
+                            String topic = "test_prefix_teletask2mqtt/MAN_TEST_localhost_1234/" + messageBuilder.topicBuilder.mqttFunctionBuilder.function.toString().toLowerCase() + "/" + messageBuilder.topicBuilder.mqttFunctionBuilder.number + "/" + messageBuilder.topicBuilder.messageType;
 
                             String msg = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Message in topic '", AnsiColor.BRIGHT_CYAN, topic, AnsiColor.DEFAULT, "' expected to have: ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
 
