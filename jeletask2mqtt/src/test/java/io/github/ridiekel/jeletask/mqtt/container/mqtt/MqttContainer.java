@@ -11,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -19,6 +20,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
@@ -64,7 +66,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
         String broker = "tcp://localhost:" + this.getPort();
 
         try {
-            mqttClient = new MqttClient(broker, UUID.randomUUID().toString(), new MemoryPersistence());
+            mqttClient = new MqttClient(broker, this.getClass().getSimpleName() + "-" + UUID.randomUUID().toString(), new MemoryPersistence());
         } catch (MqttException e) {
             throw new RuntimeException(e);
         }
@@ -79,6 +81,8 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             }
             return connected;
         });
+
+        this.followOutput(new Slf4jLogConsumer(LoggerFactory.getLogger(this.getClass())).withPrefix(AnsiOutput.toString(AnsiColor.BLUE, "mqtt-container-log", AnsiColor.DEFAULT)));
 
         LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "MQTT started and test client connected ", AnsiColor.BRIGHT_WHITE, "(port: ", this.getPort(), ")", AnsiColor.DEFAULT));
     }

@@ -1,5 +1,7 @@
 package io.github.ridiekel.jeletask.mqtt.container.ha;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -10,6 +12,7 @@ import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Awaitility;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
@@ -45,6 +48,10 @@ import java.util.function.Predicate;
 public class HomeAssistantContainer extends GenericContainer<HomeAssistantContainer> {
     private static final Logger LOGGER = LogManager.getLogger();
 
+    private static final String BEARER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJiZmQ2ZTAzNjMyNDk0YWJmYmVlN2ViMDdmYTgyZDM3ZCIsImlhdCI6MTY3MzUzMjY5MSwiZXhwIjoxOTg4ODkyNjkxfQ.dVwwMYpmTiTHmN5LqS3apU2mbmwtml5gPzvgaDTWikQ";
+
+    private String baseUrl;
+
     private WebClient haWebClient;
     private final MqttProcessor mqttProcessor;
     private final MqttContainer mqttContainer;
@@ -69,10 +76,11 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
         super.start();
 
+        baseUrl = "http://localhost:" + this.getFirstMappedPort() + "/api";
         this.haWebClient = WebClient.builder()
-                .baseUrl("http://localhost:" + this.getFirstMappedPort() + "/api")
+                .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJiZmQ2ZTAzNjMyNDk0YWJmYmVlN2ViMDdmYTgyZDM3ZCIsImlhdCI6MTY3MzUzMjY5MSwiZXhwIjoxOTg4ODkyNjkxfQ.dVwwMYpmTiTHmN5LqS3apU2mbmwtml5gPzvgaDTWikQ")
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER)
                 .build();
 
         AtomicBoolean haOnline = new AtomicBoolean(false);
@@ -147,15 +155,37 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     public static final ObjectWriter OBJECT_WRITER = OBJECT_MAPPER.writerWithDefaultPrettyPrinter();
 
     public Entity state(String id) {
-        return haWebClient.get().uri("/states/" + id).retrieve().toEntity(Entity.class).block().getBody();
+        String uri = "/states/" + id;
+
+        LOGGER.info(AnsiOutput.toString("[", AnsiColor.YELLOW, "GET", AnsiColor.DEFAULT, "] " + baseUrl + uri, " - simulate with:\n\t\t", AnsiColor.BRIGHT_WHITE, "curl -X GET -H 'Authorization: Bearer " + BEARER + "' -H 'Content-Type: application/json' " + baseUrl + uri + " | jq .", AnsiColor.DEFAULT));
+
+        return haWebClient.get().uri(uri).retrieve().toEntity(Entity.class).block().getBody();
     }
 
-    public String set(Entity entity) {
-        return haWebClient.post().uri("/states/" + entity.getEntity_id()).bodyValue(entity).retrieve().toEntity(String.class).block().getBody();
+    public String setState(Function function, int number, String type, Entity entity) {
+        String id = getId(function, number, type);
+
+        String uri = "/states/" + id;
+
+        String body;
+        try {
+            body = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValueAsString(entity);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        LOGGER.info(AnsiOutput.toString("[", AnsiColor.YELLOW, "POST", AnsiColor.DEFAULT, "] " + baseUrl + uri, " - simulate with:\n\t\t", AnsiColor.BRIGHT_WHITE, "curl -X POST -H 'Authorization: Bearer " + BEARER + "' -H 'Content-Type: application/json' -d '" + body + "' " + baseUrl + uri + " | jq .", AnsiColor.DEFAULT));
+
+        return haWebClient.post().uri("/states/" + id).bodyValue(body).retrieve().toEntity(String.class).block().getBody();
     }
 
     public Entity state(Function function, int number, String type) {
-        return state(type + ".teletask_man_test_localhost_1234_" + function.toString().toLowerCase() + "_" + number);
+        return state(getId(function, number, type));
+    }
+
+    @NotNull
+    public static String getId(Function function, int number, String type) {
+        return type + ".teletask_man_test_localhost_1234_" + function.toString().toLowerCase() + "_" + number;
     }
 
     public List<Entity> states() {
@@ -245,7 +275,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                     }
 
                     public void state(String state) {
-                        this.entityTypeBuilder.set("State to '" + state + "'", e -> e.setState(state));
+                        this.entityTypeBuilder.setState("State to '" + state + "'", e -> e.setState(state));
                     }
                 }
 
@@ -299,17 +329,17 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                     }
                 }
 
-                public void set(String describe, Consumer<Entity> consumer) {
-                    Entity entity = entityBuilder.homeAssistantBuilder.container.state(entityBuilder.function, entityBuilder.number, type);
+                public void setState(String describe, Consumer<Entity> consumer) {
+                    Entity entity = new Entity();
 
                     consumer.accept(entity);
 
-                    String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Setting entity '", AnsiColor.BRIGHT_CYAN, entity.getEntity_id(), AnsiColor.DEFAULT, "' to: ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
+                    String message = AnsiOutput.toString("[%s]", AnsiColor.DEFAULT, " Setting entity '", AnsiColor.BRIGHT_CYAN, getId(entityBuilder.function, entityBuilder.number, type), AnsiColor.DEFAULT, "' to: ", AnsiColor.BRIGHT_YELLOW, describe, AnsiColor.DEFAULT);
 
                     try {
-                        String result = entityBuilder.homeAssistantBuilder.container.set(entity);
+                        String result = entityBuilder.homeAssistantBuilder.container.setState(entityBuilder.function, entityBuilder.number, type, entity);
 
-                        LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "SUCCESS"), " - response body: ", AnsiColor.GREEN, result, AnsiColor.DEFAULT));
+                        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, String.format(message, "SUCCESS"), " - response body: ", AnsiColor.GREEN, result, AnsiColor.DEFAULT));
                     } catch (Exception e) {
                         LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(message, "FAILED"), " - entity data: ", AnsiColor.RED, entity, AnsiColor.DEFAULT));
                         throw e;

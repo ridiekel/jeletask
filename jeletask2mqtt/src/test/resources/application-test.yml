@@ -23,11 +23,11 @@ logging:
   level:
     root: ERROR
     org.springframework: ERROR
-    io.github.ridiekel.jeletask: ERROR
+    io.github.ridiekel.jeletask: INFO
     org.testcontainers: WARN
     com.github.dockerjava: WARN
-    io.github.ridiekel.jeletask.server.TeletaskTestServer: WARN
-    io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor: WARN
-    io.github.ridiekel.jeletask.client.TeletaskClientImpl: WARN
-    io.github.ridiekel.jeletask.client.spec.CentralUnitFactory: WARN
-    io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer: INFO
+#    io.github.ridiekel.jeletask.server.TeletaskTestServer: WARN
+#    io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor: INFO
+#    io.github.ridiekel.jeletask.client.TeletaskClientImpl: INFO
+#    io.github.ridiekel.jeletask.client.spec.CentralUnitFactory: WARN
+#    io.github.ridiekel.jeletask.mqtt.container.ha.HomeAssistantContainer: INFO
