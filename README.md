@@ -33,11 +33,13 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       },
       {
         "number": 23,
-        "description": "Living Room - Closet lights"
+        "description": "Living Room - Closet lights",
+        "type": "light"
       },
       {
         "number": 36,
-        "description": "Living room - ceiling lights"
+        "description": "Living room - ceiling lights",
+        "type": "light"
       }
     ],
     "SENSOR": [
@@ -700,12 +702,14 @@ Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
   },
   {
     "number": 23,
-    "description": "Living Room - Closet lights"
-  },
+"description": "Living Room - Closet lights",
+"type": "light"
+},
   {
     "number": 36,
-    "description": "Living room - ceiling lights"
-  }
+"description": "Living room - ceiling lights",
+"type": "light"
+}
 ]
 ```
 
