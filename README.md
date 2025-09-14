@@ -694,23 +694,25 @@ The default type of relay is ```light```, but can be overridden.
 Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 
 ```json
-"RELAY": [
-  {
-    "number": 1,
-    "description": "Power outlet",
-    "type": "switch" 
-  },
-  {
-    "number": 23,
-"description": "Living Room - Closet lights",
-"type": "light"
-},
-  {
-    "number": 36,
-"description": "Living room - ceiling lights",
-"type": "light"
+{
+  "RELAY": [
+    {
+      "number": 1,
+      "description": "Power outlet",
+      "type": "switch"
+    },
+    {
+      "number": 23,
+      "description": "Living Room - Closet lights",
+      "type": "light"
+    },
+    {
+      "number": 36,
+      "description": "Living room - ceiling lights",
+      "type": "light"
+    }
+  ]
 }
-]
 ```
 
 ## Config message
