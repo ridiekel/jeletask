@@ -197,7 +197,7 @@ docker-build-and-push:
       echo "TAG=$TAG VERSION=$VERSION"
       IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
       echo "IMAGE=$IMAGE"
-      docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:$VERSION-alpha" --push .
+      docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:alpha"  -t "$IMAGE:$VERSION-alpha" --push .
 
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
