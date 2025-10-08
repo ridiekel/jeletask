@@ -1,0 +1,123 @@
+variables:
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=/cache/.m2/repository -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Dstyle.color=always"
+  TELETASK_TEST_TEMPDIR: "/cache/jeletask"
+  TERM: xterm-256color
+
+stages:
+  - test
+  - visualize
+  - release
+
+cache:
+  paths:
+    - ./.m2/repository
+
+test-job:
+  stage: test 
+  image: ridiekel/base-test:latest
+  script:
+    - echo "Running unit tests..."
+    - ./mvnw $MAVEN_CLI_OPTS org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
+    - cat target/site/jacoco/index.html | grep -o 'Total[^%]*%' | sed 's/<.*>/ /; s/Total/Jacoco Coverage Total:/'
+  coverage: '/Total.*?([0-9]{1,3})%/'
+  artifacts:
+    reports:
+      junit: 
+        - target/surefire-reports/TEST-*.xml
+        - target/failsafe-reports/TEST-*.xml
+    paths:
+      - ./target/classes/*
+      - ./target/site/jacoco/*
+  rules:
+    - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: always
+
+sonarqube-analysis:
+  image: ridiekel/base-test:latest
+  stage: visualize
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  needs: ["test-job"]
+  script: 
+    - mvn $MAVEN_CLI_OPTS sonar:sonar -Dmaven.test.failure.ignore=true
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: always
+
+code-coverage-report-conversion:
+  stage: visualize
+  image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
+  script:    
+    - python /opt/cover2cover.py target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/src/main/java/ > target/site/cobertura.xml
+  needs: ["test-job"]
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: target/site/cobertura.xml
+  rules:
+    - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: always
+
+create-release:
+  stage: release
+  image: ridiekel/base-test:latest
+  before_script:
+    - echo "Configuring..."
+    - git config --global user.email "geroen.dierckx+gitlab-ci@gmail.com"
+    - git config --global user.name "GitLab CI"
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$GITLAB_CI_SSH_PRIVATE_KEY")
+    - mkdir -p ~/.ssh
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - git checkout -B "$CI_COMMIT_REF_NAME"
+    - cp .ci/config ~/.ssh/config
+    - echo $CI_JOB_ID
+    - echo GE_JOB_ID=$CI_JOB_ID >> variables.env
+  script:
+    - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" --settings .ci/settings.xml release:clean release:prepare -B
+    - cat release.properties | sed 's/^scm\./scm_/g' | grep scm_ >> variables.env
+    - cat variables.env
+    - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" --settings .ci/settings.xml release:perform -B
+  artifacts:
+    paths:
+      - target/jeletask*.jar
+      - variables.env
+    reports:
+      dotenv: variables.env
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\]prepare release.*/
+      when: manual
+      allow_failure: true
+
+upload-to-gitlab:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo 'running release_job'
+    - echo 'Previous Job ID is printed below'
+    - echo ${GE_JOB_ID}
+    - echo ${scm_tag}
+  needs:
+    - job: create-release
+      artifacts: true
+  release:
+    name: 'Release ${scm_tag}'
+    description: 'Created using the release-cli'
+    tag_name: '${scm_tag}'
+    assets:
+      links:
+        - name: '${scm_tag}.jar'
+          url: 'https://gitlab.b-lauw.be/domotica/jeletask/-/jobs/${GE_JOB_ID}/artifacts/file/target/${scm_tag}.jar'
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: on_success
+      allow_failure: false

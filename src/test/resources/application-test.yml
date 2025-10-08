@@ -1,0 +1,36 @@
+teletask:
+  configFile: "classpath:/test-config.json"
+  central:
+    host: "localhost"
+    port: 0
+    id: "MAN_TEST_${teletask.central.host}"
+    version: "@gateway.version@"
+  mqtt:
+#    host: "localhost"
+#    port: 1883
+#    username: ""
+#    password: ""
+    retained: "true"
+    clientId: "test_client_id_teletask2mqtt"
+    prefix: "test_prefix_teletask2mqtt"
+  test:
+    headless: true
+    timeout: 5000
+    gitlabci: false
+    keeprunning: false
+  log:
+    topic-enabled: true
+    haconfig-enabled: true
+
+spring:
+  output:
+    ansi:
+      enabled: ALWAYS
+
+logging:
+  level:
+    root: ERROR
+    org.springframework: ERROR
+    io.github.ridiekel.jeletask: DEBUG
+#    io.github.ridiekel.jeletask.mqtt.listener.MotorProgressor: TRACE
+#    io.github.ridiekel.jeletask: TRACE

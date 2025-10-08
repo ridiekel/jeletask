@@ -6,3 +6,6 @@ logs/
 *.log
 run
 *versionsBackup
+/src/test/resources/application-integrated.yml
+/src/test/resources/application-local.yml
+/src/test/resources/local-config.json
