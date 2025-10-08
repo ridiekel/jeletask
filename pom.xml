@@ -12,7 +12,7 @@
     <groupId>io.github.ridiekel</groupId>
     <artifactId>jeletask</artifactId>
     <packaging>jar</packaging>
-    <version>5.0.6</version>
+    <version>5.0.7-SNAPSHOT</version>
 
     <name>Teletask to MQTT Bridge</name>
     <description>A bridge for converting teletask binary protocol messages to MQTT</description>
@@ -195,7 +195,7 @@
         <connection>scm:git:git@github.com:ridiekel/jeletask.git</connection>
         <developerConnection>scm:git:git@github.com:ridiekel/jeletask.git</developerConnection>
         <url>https://github.com/ridiekel/jeletask/tree/master</url>
-      <tag>jeletask-5.0.6</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <developers>
