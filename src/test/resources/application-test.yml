@@ -4,7 +4,7 @@ teletask:
     host: "localhost"
     port: 0
     id: "MAN_TEST_${teletask.central.host}"
-    version: "@gateway.version@"
+    version: "@project.version@"
   mqtt:
 #    host: "localhost"
 #    port: 1883
