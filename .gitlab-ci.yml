@@ -156,7 +156,7 @@ release-upload:
     - | 
       UPLOAD_JSON="$(curl -sS -f -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" -F "file=@${JAR}" "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/uploads")"
     - echo $UPLOAD_JSON
-    - FILE_URL="${CI_PROJECT_URL}$(echo "$UPLOAD_JSON" | jq -r .url)"
+    - FILE_URL="${CI_SERVER_URL}$(echo "$UPLOAD_JSON" | jq -r .full_path)"
     - echo $FILE_URL
     - ENC_TAG="$(printf %s "$TAG" | jq -sRr @uri)"
     - echo $ENC_TAG
