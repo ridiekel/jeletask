@@ -174,7 +174,7 @@ docker-build-and-push:
   stage: release
   image: docker:latest
   services:
-    - name: docker:latest-dind
+    - name: docker:dind
       command: ["--experimental"]
   variables:
     DOCKER_TLS_CERTDIR: ""     # eenvoudiger met DinD
