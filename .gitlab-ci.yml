@@ -116,10 +116,10 @@ create-gitlab-release:
     name: 'Release ${scm_tag}'
     description: 'Created using the release-cli'
     tag_name: '${scm_tag}'
-    assets:
-      links:
-        - name: '${scm_tag}.jar'
-          url: 'https://$GITLAB_DNS/domotica/jeletask/-/jobs/${GE_JOB_ID}/artifacts/file/target/${scm_tag}.jar'
+#    assets:
+#      links:
+#        - name: '${scm_tag}.jar'
+#          url: 'https://$GITLAB_DNS/domotica/jeletask/-/jobs/${GE_JOB_ID}/artifacts/file/target/${scm_tag}.jar'
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
