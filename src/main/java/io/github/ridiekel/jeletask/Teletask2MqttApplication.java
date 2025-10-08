@@ -32,12 +32,27 @@ public class Teletask2MqttApplication {
     }
 
     public static void main(String[] args) {
-        LOG.info("Starting in normal mode");
+        handleDeprecations();
 
         ApplicationContext context = SpringApplication.run(Teletask2MqttApplication.class, args);
 
         Teletask2MqttConfigurationProperties configuration = context.getBean(Teletask2MqttConfigurationProperties.class);
 
         LOG.info(() -> String.format("Teletask2Mqtt %s started!", configuration.getCentral().getVersion()));
+    }
+
+    public static void handleDeprecations() {
+        copyDeprecatedVariable("TELETASK_HOST");
+        copyDeprecatedVariable("TELETASK_PORT");
+        copyDeprecatedVariable("TELETASK_ID");
+    }
+
+    private static void copyDeprecatedVariable(String variable) {
+        String value = System.getenv(variable);
+        if (value != null) {
+            String newVariable = variable.replaceAll("TELETASK", "TELETASK_CENTRAL");
+            LOG.warn(() -> String.format("Environment variable '%s' is being used, please update your config to use '%s'. Support for '%s' will be removed in a later release.", variable, newVariable, variable));
+            System.setProperty(newVariable.toLowerCase().replaceAll("_", "."), value);
+        }
     }
 }

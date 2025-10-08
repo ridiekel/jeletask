@@ -20,6 +20,7 @@ public class Teletask2MqttTestApplication {
 
     public static void main(String[] args) {
         System.setProperty("spring.profiles.active", "test");
+        Teletask2MqttApplication.handleDeprecations();
         SpringApplication.run(Teletask2MqttTestApplication.class, args);
     }
 }
