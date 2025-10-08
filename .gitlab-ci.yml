@@ -73,6 +73,7 @@ create-release:
     - echo "Configuring..."
     - git config --global user.email "geroen@eduif.be"
     - git config --global user.name "GitLab CI"
+    - git config --global url."ssh://git@gitlab.b-lauw.be:3022/domotica/".insteadOf "git@github.com:ridiekel/"
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
     - ssh-add <(echo "$GITLAB_CI_SSH_PRIVATE_KEY")
