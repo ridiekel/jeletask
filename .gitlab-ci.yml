@@ -71,6 +71,8 @@ create-release:
   image: ridiekel/base-test:latest
   before_script:
     - echo "Configuring..."
+    - echo "Email: $GITLAB_CI_EMAIL"
+    - echo "URL: $GITLAB_CI_URL"
     - git config --global user.email "$GITLAB_CI_EMAIL"
     - git config --global user.name "GitLab CI"
     - git config --global url."$GITLAB_CI_URL".insteadOf "git@github.com:ridiekel/"
