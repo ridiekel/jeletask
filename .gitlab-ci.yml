@@ -86,12 +86,13 @@ create-release:
     - echo GE_JOB_ID=$CI_JOB_ID >> variables.env
   script:
     - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" release:clean release:prepare -B
-    - cat release.properties | sed 's/^scm\./scm_/g' | grep scm_ >> variables.env
+    - cat release.properties | sed 's/^scm\./scm_/g' | grep '^scm_' >> variables.env
     - cat variables.env
     - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" release:perform -B
   artifacts:
     paths:
       - target/jeletask*.jar
+      - release.properties       # optioneel, handig voor debug
       - variables.env
     reports:
       dotenv: variables.env
@@ -126,9 +127,9 @@ create-gitlab-release:
 
 release-upload:
   stage: release
-  image: alpine:3.20
+  image: alpine:latest
   needs:
-    - job: create-gitlab-release
+    - job: create-release
       artifacts: true
   before_script:
     - apk add --no-cache curl jq
