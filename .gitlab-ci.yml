@@ -79,14 +79,13 @@ create-release:
     - mkdir -p ~/.ssh
     - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
     - git checkout -B "$CI_COMMIT_REF_NAME"
-    - cp .ci/config ~/.ssh/config
     - echo $CI_JOB_ID
     - echo GE_JOB_ID=$CI_JOB_ID >> variables.env
   script:
-    - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" --settings .ci/settings.xml release:clean release:prepare -B
+    - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" release:clean release:prepare -B
     - cat release.properties | sed 's/^scm\./scm_/g' | grep scm_ >> variables.env
     - cat variables.env
-    - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" --settings .ci/settings.xml release:perform -B
+    - ./mvnw -Darguments="-Dmaven.javadoc.skip=true -DskipTests=true" release:perform -B
   artifacts:
     paths:
       - target/jeletask*.jar
