@@ -119,7 +119,7 @@ create-gitlab-release:
     assets:
       links:
         - name: '${scm_tag}.jar'
-          url: 'https://gitlab.b-lauw.be/domotica/jeletask/-/jobs/${GE_JOB_ID}/artifacts/file/target/${scm_tag}.jar'
+          url: 'https://$GITLAB_DNS/domotica/jeletask/-/jobs/${GE_JOB_ID}/artifacts/file/target/${scm_tag}.jar'
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
@@ -151,19 +151,19 @@ release-upload:
     - test -f "$JAR" || { echo "Geen JAR gevonden in target/"; exit 1; }
     # 3) Upload en koppel als Release-asset
     - | 
-      UPLOAD_JSON="$(curl -sS -f -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" -F "file=@${JAR}" "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/uploads")"
+      UPLOAD_JSON="$(curl -sS -f -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" -F "file=@${JAR}" "https://$GITLAB_DNS/api/v4/projects/${CI_PROJECT_ID}/uploads")"
     - FILE_URL="${CI_PROJECT_URL}$(echo "$UPLOAD_JSON" | jq -r .url)"
     - |
       curl -sS -f -X POST -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
               --data-urlencode "name=$(basename "$JAR")" \
               --data-urlencode "url=${FILE_URL}" \
-              "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/releases/${TAG}/assets/links"
+              "https://$GITLAB_DNS/api/v4/projects/${CI_PROJECT_ID}/releases/${TAG}/assets/links"
     # 3) Voeg de asset-link toe aan de Release
     - |
       curl -sS -f -X POST -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
         --data-urlencode "name=$(basename "$JAR")" \
         --data-urlencode "url=${FILE_URL}" \
-        "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/releases/${TAG}/assets/links"
+        "https://$GITLAB_DNS/api/v4/projects/${CI_PROJECT_ID}/releases/${TAG}/assets/links"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
