@@ -166,6 +166,7 @@ release-upload:
         --data-urlencode "name=$(basename "$JAR")" \
         --data-urlencode "url=${FILE_URL}" \
         --data-urlencode "link_type=package" \
+        --data-urlencode "filepath=/$(basename "$JAR")" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${ENC_TAG}/assets/links"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
