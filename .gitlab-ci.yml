@@ -71,7 +71,7 @@ create-release:
   image: ridiekel/base-test:latest
   before_script:
     - echo "Configuring..."
-    - git config --global user.email "geroen.dierckx+gitlab-ci@gmail.com"
+    - git config --global user.email "geroen@eduif.be"
     - git config --global user.name "GitLab CI"
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
