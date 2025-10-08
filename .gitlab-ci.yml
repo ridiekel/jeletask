@@ -135,41 +135,36 @@ release-upload:
     - apk add --no-cache curl jq
   script:
     - set -euo pipefail
-
-    # 1) Bepaal de tag
-    # - Als je pipeline op een tag draait: CI_COMMIT_TAG is gevuld.
-    # - Als je in dezelfde job `mvn release:prepare` draaide: lees release.properties.
-    - cat release.properties
-    - TAG="${CI_COMMIT_TAG:-}"
-    - if [ -z "$TAG" ] && [ -f release.properties ]; then TAG="$(grep -E '^scm.tag=' release.properties | cut -d= -f2)"; fi
-    - test -n "$TAG" || { echo "Tag niet gevonden (CI_COMMIT_TAG of release.properties)"; exit 1; }
-
-    # 2) Vind de JAR die je wilt uploaden
-    #   Pas dit aan als je meerdere modules/JARs hebt.
-    - JAR="$(ls -1 target/*.jar | head -n1)"
-    - test -f "$JAR" || { echo "Geen JAR gevonden in target/"; exit 1; }
-
-    # 3) Upload het bestand naar het project (blijvend)
+    # 1) Tag uit dotenv of CI_COMMIT_TAG
+    - echo "scm_tag=${scm_tag:-}"
+    - TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
+    - if [ -z "$TAG" ]; then
+      echo "Tag niet gevonden (scm_tag of CI_COMMIT_TAG)";
+      echo "Beschikbare bestanden:"; ls -la;
+      exit 1;
+      fi
+    # 2) Vind de JAR
+    - VERSION="${TAG#${CI_PROJECT_NAME}-}"
+    - JAR="target/${CI_PROJECT_NAME}-${VERSION}.jar"
     - |
-      UPLOAD_JSON="$(curl -sS -f
-      -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}"
-      -F "file=@${JAR}"
-      "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/uploads")"
-    - UPLOAD_PATH="$(echo "$UPLOAD_JSON" | jq -r .url)"          # bv. /uploads/abc123/jeletask-1.2.0.jar
-    - FILE_URL="${CI_PROJECT_URL}${UPLOAD_PATH}"                 # volledige, blijvende URL
-
-#    # 4) Maak de Release als die nog niet bestaat (negeer 409-conflict)
-#    - |
-#      curl -sS -X POST -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
-#        --data-urlencode "tag_name=${TAG}" \
-#        --data-urlencode "name=${TAG}" \
-#        --data-urlencode "description=Release ${TAG}" \
-#        "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/releases" \
-#        || echo "Release bestaat al, ga door"
-
-    # 5) Voeg de asset-link toe aan de Release
+      [ -f "$JAR" ] || JAR="$(ls -1 target/*.jar | head -n1)"
+    - test -f "$JAR" || { echo "Geen JAR gevonden in target/"; exit 1; }
+    # 3) Upload en koppel als Release-asset
+    - | 
+      UPLOAD_JSON="$(curl -sS -f -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" -F "file=@${JAR}" "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/uploads")"
+    - FILE_URL="${CI_PROJECT_URL}$(echo "$UPLOAD_JSON" | jq -r .url)"
+    - |
+      curl -sS -f -X POST -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+              --data-urlencode "name=$(basename "$JAR")" \
+              --data-urlencode "url=${FILE_URL}" \
+              "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/releases/${TAG}/assets/links"
+    # 3) Voeg de asset-link toe aan de Release
     - |
       curl -sS -f -X POST -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
         --data-urlencode "name=$(basename "$JAR")" \
         --data-urlencode "url=${FILE_URL}" \
         "https://gitlab.b-lauw.be/api/v4/projects/${CI_PROJECT_ID}/releases/${TAG}/assets/links"
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+    when: on_success
+    allow_failure: false
