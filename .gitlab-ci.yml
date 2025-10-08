@@ -95,6 +95,7 @@ create-release:
       - target/jeletask*.jar
       - release.properties       # optioneel, handig voor debug
       - variables.env
+      - Dockerfile
     reports:
       dotenv: variables.env
   rules:
@@ -201,11 +202,7 @@ docker-build-and-push:
     - echo "IMAGE=$IMAGE"
 
     # 3) Multi-arch build & push (neemt de lokaal gebouwde JAR uit target/)
-    - docker buildx build \
-      --platform linux/amd64,linux/arm64 \
-      -t "$IMAGE:$VERSION-alpha" \
-      --push \
-      .
+    - docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:$VERSION-alpha" --push .
 
   rules:
     # Laat deze job lopen na je release (zelfde gating als je release jobs)
