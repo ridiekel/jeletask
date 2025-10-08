@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "auth",
+  "data": {
+    "users": [
+      {
+        "id": "d07434edf07644f19b169df5b7af6cf1",
+        "group_ids": [
+          "system-read-only"
+        ],
+        "is_owner": false,
+        "is_active": true,
+        "name": "Home Assistant Content",
+        "system_generated": true,
+        "local_only": false
+      },
+      {
+        "id": "506e6406586c4a4f9da93bafa8ef2ca0",
+        "group_ids": [
+          "system-admin"
+        ],
+        "is_owner": true,
+        "is_active": true,
+        "name": "admin",
+        "system_generated": false,
+        "local_only": false
+      }
+    ],
+    "groups": [
+      {
+        "id": "system-admin",
+        "name": "Administrators"
+      },
+      {
+        "id": "system-users",
+        "name": "Users"
+      },
+      {
+        "id": "system-read-only",
+        "name": "Read Only"
+      }
+    ],
+    "credentials": [
+      {
+        "id": "e688bb2af26b4509ad0811eaaa6cbe63",
+        "user_id": "506e6406586c4a4f9da93bafa8ef2ca0",
+        "auth_provider_type": "homeassistant",
+        "auth_provider_id": null,
+        "data": {
+          "username": "admin"
+        }
+      }
+    ],
+    "refresh_tokens": [{
+        "id": "bfd6e03632494abfbee7eb07fa82d37d",
+        "user_id": "506e6406586c4a4f9da93bafa8ef2ca0",
+        "client_id": null,
+        "client_name": "java-tests",
+        "client_icon": null,
+        "token_type": "long_lived_access_token",
+        "created_at": "2023-01-12T14:11:31.509463+00:00",
+        "access_token_expiration": 315360000.0,
+        "token": "14511e3bed063e1fbbf36ed622e19dd1df31d82d47935c4e76e8f6313b45bbabcc02a4faf052e7c59012a42a6f4d39f680f52f1364cd9eeee1c0316cede58e5a",
+        "jwt_key": "5b2eee26762d5bd1c09bafe6b6777c8458ddfd5acca05418aab09e3de625ddedfa58c7aecd3de30d96d63af34a0f9196856a76425c14e3e41f0ac42ebe6f4865",
+        "last_used_at": "2023-01-12T14:11:31.509630+00:00",
+        "last_used_ip": null,
+        "credential_id": null,
+        "version": "2022.11.2"
+      }
+    ]
+  }
+}

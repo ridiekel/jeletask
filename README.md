@@ -2,10 +2,12 @@
 
 An open source java API for Teletask domotics.
 
-It is the purpose to create an API for software developers or domotics enthusiasts, who are interested in generating their own control environment for the TELETASK domotics systems, so you can create your own user interface and connected solutions and services.
+It is the purpose to create an API for software developers or domotics enthusiasts,
+who are interested in generating their own control environment for the TELETASK domotics systems,
+so you can create your own user interface and connected solutions and services.
 
 If you own a Teletask MICROS+, you need the (paid) DLL32 LIBRARY (TDS15132).  
-However, if you're a java programmer like myself, you don't want to use a windows dll :-).
+However, if you're a java programmer like myself, you don't want to use windows dlls :-).
 
 Teletask documentation on how their API works can be found here: https://teletask.be/media/3109/tds15132-library.pdf
 
@@ -150,28 +152,37 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
 
 ## Environment variables
 
-| Variable                                         | Type     | Default value | Description                                                                                                                                                       |
-|--------------------------------------------------|----------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| TELETASK_HOST                                    | Required |               | The ip address or hostname of your central unit                                                                                                                   |
-| TELETASK_PORT                                    | Required |               | The port of your central unit, probably 55957                                                                                                                     |
-| TELETASK_ID                                      | Required |               | The id used in mqtt messages of the central unit                                                                                                                  |     
-| TELETASK_MQTT_HOST                               | Required |               | The host of your MQTT broker                                                                                                                                      |     
-| TELETASK_MQTT_PORT                               | Optional | 1883          | The port of your MQTT broker                                                                                                                                      |     
-| TELETASK_MQTT_USERNAME                           | Optional | <empty>       | The MQTT broker username                                                                                                                                          |
-| TELETASK_MQTT_PASSWORD                           | Optional | <empty>       | The MQTT broker password                                                                                                                                          |
-| TELETASK_MQTT_CLIENTID                           | Optional | teletask2mqtt | The client id used for connecting to MQTT                                                                                                                         |
-| TELETASK_MQTT_PREFIX                             | Optional | teletask2mqtt | The MQTT message topic prefix                                                                                                                                     |
-| TELETASK_MQTT_RETAINED                           | Optional | false         | Indicates whether or not the messages should be retained by the broker                                                                                            |
-| TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                          |
-| TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                 |
-| TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL         | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds).                                                                             |
-| TELETASK_PUBLISH_STATES_INTERVAL                 | Optional | 300           | How frequently the states are force refreshed (in seconds). A negative value disables the force refresh of states.                                                |
-| TELETASK_LOG_HACONFIG_ENABLED                    | Optional | false         | (Advanced) Log the homeassistant config messages                                                                                                                  |
-| TELETASK_LOG_TOPIC_ENABLED                       | Optional | false         | (Advanced) Add the topic name to the log message                                                                                                                  |
-| LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_MQTT   | Optional | INFO          | (Advanced) log level of messages going from/to teletask central unit. <br/>Can be ERROR (least log messages), WARN, INFO, DEBUG or TRACE (extensive log messages) |
-| LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_CLIENT | Optional | INFO          | (Advanced) log level of messages going from/to mqtt. <br/>Can be ERROR (least log messages), WARN, INFO, DEBUG or TRACE (extensive log messages)                  |
+| Variable                                         | Type     | Default value | Description                                                                                                                                                                 |
+|--------------------------------------------------|----------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| TELETASK_CENTRAL_HOST                            | Required |               | The ip address or hostname of your central unit                                                                                                                             |
+| TELETASK_CENTRAL_PORT                            | Required |               | The port of your central unit, probably `55957`                                                                                                                             |
+| TELETASK_CENTRAL_ID                              | Required |               | The id used in mqtt messages of the central unit                                                                                                                            |     
+| TELETASK_MQTT_HOST                               | Required |               | The host of your MQTT broker                                                                                                                                                |     
+| TELETASK_MQTT_PORT                               | Optional | 1883          | The port of your MQTT broker                                                                                                                                                |     
+| TELETASK_MQTT_USERNAME                           | Optional | <empty>       | The MQTT broker username                                                                                                                                                    |
+| TELETASK_MQTT_PASSWORD                           | Optional | <empty>       | The MQTT broker password                                                                                                                                                    |
+| TELETASK_MQTT_CLIENTID                           | Optional | teletask2mqtt | The client id used for connecting to MQTT                                                                                                                                   |
+| TELETASK_MQTT_PREFIX                             | Optional | teletask2mqtt | The MQTT message topic prefix                                                                                                                                               |
+| TELETASK_MQTT_RETAINED                           | Optional | false         | Indicates whether or not the messages should be retained by the broker                                                                                                      |
+| TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                                    |
+| TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                           |
+| TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL         | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds).                                                                                       |
+| TELETASK_PUBLISH_STATES_INTERVAL                 | Optional | 300           | How frequently the states are force refreshed (in seconds). A negative value disables the force refresh of states.                                                          |
+| TELETASK_LOG_HACONFIG_ENABLED                    | Optional | false         | (Advanced) Log the homeassistant config messages                                                                                                                            |
+| TELETASK_LOG_TOPIC_ENABLED                       | Optional | false         | (Advanced) Add the topic name to the log message                                                                                                                            |
+| LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_MQTT   | Optional | INFO          | (Advanced) log level of messages going from/to teletask central unit. <br/>Can be `ERROR` (least log messages), `WARN`, `INFO`, `DEBUG` or `TRACE` (extensive log messages) |
+| LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_CLIENT | Optional | INFO          | (Advanced) log level of messages going from/to mqtt. <br/>Can be `ERROR` (least log messages), `WARN`, `INFO`, `DEBUG` or `TRACE` (extensive log messages)                  |
+| SPRING_SECURITY_USER_NAME                        | Optional | Random UUID   | The username with which you can login to the admin console.                                                                                                                 |
+| SPRING_SECURITY_USER_PASSWORD                    | Optional | Random UUID   | The password with which you can login to the admin console.                                                                                                                 |
+| SPRING_OUTPUT_ANSI_ENABLED                       | Optional | Always        | To disable log coloring, set this value to `Detect` or `Never`                                                                                                              |
 
 ## Docker run
+
+After starting the container, you should be able to login to the web admin console via:
+
+http://localhost:8080/sba
+
+We do advise adding a reverse proxy that provides https capabilities to expose the admin interface securely.
 
 ### Versions
 
@@ -191,14 +202,19 @@ You should be able to run using following minimal command:
 ```shell
 docker run --name jeletask2mqtt \
   -v "<path_to_your_confg_json>:/teletask2mqtt/config.json" \
-  -e TELETASK_HOST="<teletask_ip_address>" \
-  -e TELETASK_PORT="<teletask_port>" \
-  -e TELETASK_ID="<teletask_id>" \
+  -e TELETASK_CENTRAL_HOST="<teletask_central_ip_address>" \
+  -e TELETASK_CENTRAL_PORT="<teletask_central_port>" \
+  -e TELETASK_CENTRAL_ID="<teletask_central_id>" \
   -e TELETASK_MQTT_HOST="<mqtt_host>" \
+  -p "8080:8080" \
   ridiekel/jeletask2mqtt:latest
 ```
 
 ### Docker compose
+
+In this example you can see we added and MQTT server.
+Usually you would already have that in your network.
+In that case you can remove the mqtt service from the docker-compose file and point the `TELETASK_MQTT_HOST` variable to the correct host.
 
 ```yaml
 version: '3.8'
@@ -221,10 +237,12 @@ services:
     volumes:
       - $HOME/.jeletask/teletask2mqtt/config.json:/teletask2mqtt/config.json
     environment:
-      TELETASK_HOST: 192.168.0.123
-      TELETASK_PORT: 55957
-      TELETASK_ID: my_teletask
+      TELETASK_CENTRAL_HOST: 192.168.0.123
+      TELETASK_CENTRAL_PORT: 55957
+      TELETASK_CENTRAL_ID: my_teletask
       TELETASK_MQTT_HOST: mqtt
+    ports:
+      - "8080:8080"
     depends_on:
       - mqtt
     networks:
@@ -250,7 +268,7 @@ sudo apt install -y mosquitto-clients
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/relay/1/state
 ```
 
 ### Change the state
@@ -259,7 +277,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/relay/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -267,7 +285,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/relay/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -277,7 +295,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/locmood/1/state
 ```
 
 ### Change the state
@@ -286,7 +304,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/locmood/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -294,7 +312,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/locmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/locmood/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -304,7 +322,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/genmood/1/state
 ```
 
 ### Change the state
@@ -313,7 +331,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/genmood/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -321,7 +339,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/genmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/genmood/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -331,7 +349,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedmood/1/state
 ```
 
 ### Change the state
@@ -340,7 +358,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedmood/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -348,7 +366,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedmood/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedmood/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -358,7 +376,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/state
 ```
 
 ### Change the state
@@ -369,7 +387,7 @@ For turning on you can use `ON` (goes to 100%), `OFF` (goes to 0%), `PREVIOUS_ST
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -377,7 +395,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"75"}'
 ```
 
@@ -385,7 +403,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"ON", "brightness": "60"}'
 ```
 
@@ -395,7 +413,7 @@ For turning off, you can use either `OFF` or `0`
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -403,7 +421,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"state":"0"}'
 ```
 
@@ -411,7 +429,7 @@ or
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/dimmer/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/dimmer/1/set \
     -m '{"brightness":"0"}'
 ```
 
@@ -421,7 +439,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/state
 ```
 
 The following json attributes are provided on the /state MQTT topic:
@@ -443,19 +461,19 @@ You can send either `UP`, `DOWN` or `STOP` to the motor function.
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"state":"UP"}'
 ```
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"state":"STOP"}'
 ```
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"state":"DOWN"}'
 ```
 
@@ -466,7 +484,7 @@ Position can be anything between `0` and `100`.
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/motor/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/motor/1/set \
     -m '{"position": 25}'
 ```
 
@@ -476,7 +494,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/flag/1/state
 ```
 
 ### Change the state
@@ -485,7 +503,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/flag/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -493,7 +511,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/flag/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/flag/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -503,7 +521,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/sensor/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/sensor/1/state
 ```
 
 The following sensor types are currently supported:
@@ -602,18 +620,21 @@ You can also set the target temperature by sending the desired temperature to th
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/input/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/input/1/state
 ```
 
 The following json attributes are provided on the /state MQTT topic:
 
-| Attribute                    | Possible Values                                                | Description                                                                                                                                                                                    |
-|------------------------------|----------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| state                        | OPEN<br/>CLOSED<br/>NOT_PRESSED<br/>LONG_PRESS<br/>SHORT_PRESS | Button is being pressed<br/>Button press finished<br/>Button is not being pressed<br/>Button was pressed for a long time (configurable)<br/>Button was pressed for a short time (configurable) |
-| open_time                    | long                                                           | The time the pressing started (when state is LONG_PRESS or SHORT_PRESS)                                                                                                                        |
-| close_time                   | long                                                           | The time the pressing ended (when state is LONG_PRESS or SHORT_PRESS)                                                                                                                          |
-| long_press_config_in_millis  | integer                                                        | The configured amount of time for long press to occur                                                                                                                                          |
-| press_duration_millis        | integer                                                        | The actual amount of time the button was pressed (when state is LONG_PRESS or SHORT_PRESS)                                                                                                     |
+| Attribute                   | Possible Values                                | Description                                                                                                                                                      |
+|-----------------------------|------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| state                       | CLOSED<br/>OPEN<br/>LONG_PRESS<br/>SHORT_PRESS | Button is being pressed<br/>Button press finished<br/>Button was pressed for a long time (configurable*)<br/>Button was pressed for a short time (configurable*) |
+| open_time                   | long                                           | The time the pressing started (when state is LONG_PRESS or SHORT_PRESS)                                                                                          |
+| close_time                  | long                                           | The time the pressing ended (when state is LONG_PRESS or SHORT_PRESS)                                                                                            |
+| long_press_config_in_millis | integer                                        | The configured amount of time for long press to occur                                                                                                            |
+| press_duration_millis       | integer                                        | The actual amount of time the button was pressed (when state is LONG_PRESS or SHORT_PRESS)                                                                       |
+
+&ast; Check your teletask config.
+It should be configured with the same value, since teletask sends the OPEN state even if you are pressing longer on the button.
 
 ## Timed function
 
@@ -621,7 +642,7 @@ The following json attributes are provided on the /state MQTT topic:
 
 ```
 mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/state
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedfnc/1/state
 ```
 
 ### Starting / stopping a timed function
@@ -630,7 +651,7 @@ mosquitto_sub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedfnc/1/set \
     -m '{"state":"ON"}'
 ```
 
@@ -638,7 +659,7 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/timedfnc/1/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/timedfnc/1/set \
     -m '{"state":"OFF"}'
 ```
 
@@ -662,7 +683,7 @@ They contain the Teletask bus number(s) and Teletask interface address(es) of th
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
-    -t <TELETASK_MQTT_PREFIX>/<TELETASK_ID>/displaymessage/1000/set \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
     -m '{"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!", "message_beeps":"10","message_type="message"}'
 ```
 
@@ -675,9 +696,9 @@ Notes:
 
 Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions and digital inputs.
 Other types are not yet supported, work in progress.
-Pleas log an issue when having trouble with auto configuration in HA.
+Please log an issue when having trouble with auto configuration in HA.
 
-The bridge creates 1 device with id ```teletask-<TELETASK_ID>```, and adds entities with the following entity id pattern: ```light.teletask_<TELETASK_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
+The bridge creates 1 device with id ```teletask-<TELETASK_CENTRAL_ID>```, and adds entities with the following entity id pattern: ```light.teletask_<TELETASK_CENTRAL_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
 
 Examples:
 
@@ -715,46 +736,28 @@ Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 }
 ```
 
-## Config message
+# Developing
 
-The config message is published to topic: ```<TELETASK_MQTT_DISCOVERY_PREFIX>/<HA_COMPONENT_TYPE>/<TELETASK_ID>/<FUNCTION_TYPE>_<COMPONENT_NUMBER>/config```
+## Running
 
-```json
-{
-  "device": {
-    "identifiers": [
-      "<TELETASK_ID>"
-    ],
-    "manufacturer": "teletask",
-    "name": "teletask-<TELETASK_ID>",
-    "model": "<Your model type>"
-  },
-  "~": "<TELETASK_MQTT_PREFIX>/<TELETASK_ID>/relay/1",
-  "state_topic": "~/state",
-  "unique_id": "<TELETASK_ID>-<FUNCTION_TYPE>-<COMPONENT_NUMBER>",
-  "name": "<COMPONENT_DESCRIPTION>",
-  "command_topic": "~/set"
-}
-```
+You can test the code against an in memory central unit test server (digital twin).
+This test server mocks commands and events sent to and received from the teletask central.
 
-## Example
+In the test source tree, there is a `io.github.ridiekel.jeletask.Teletask2MqttTestApplication` class. 
+When you start that class, you should have a fully working application with 2 docker containers started in the background:
+* Home assistant
+* MQTT
+Also, the test server `io.github.ridiekel.jeletask.server.TeletaskTestServer` is started in the background.
 
-Topic: ```homeassistant/light/my_teletask/relay_36/config```
+All three services start on a random available port that is logged in the console.
 
-```json
-{
-  "device": {
-    "identifiers": [
-      "my_teletask"
-    ],
-    "manufacturer": "teletask",
-    "name": "teletask-my_teletask",
-    "model": "Micros Plus"
-  },
-  "~": "teletask2mqtt/my_teletask/relay/1",
-  "state_topic": "~/state",
-  "unique_id": "my_teletask-relay-36",
-  "name": "Living room - ceiling lights",
-  "command_topic": "~/set"
-}
+Mocks can be defined in `io.github.ridiekel.jeletask.server.TeletaskTestServer`.
+Mocks should already be present for the test devices that can be found in `src/test/resources/test-config.json`
+
+## Testing
+
+Running tests is done using:
+
+```shell
+./mvnw clean verify
 ```

@@ -1,0 +1,63 @@
+teletask:
+  configFile: "file:/teletask2mqtt/config.json"
+  central:
+    host: "localhost"
+    port: 1234
+    id: "MAN_${teletask.central.host}_${teletask.central.port}"
+    version: "@gateway.version@"
+  mqtt:
+    host: "localhost"
+    port: 1883
+    username: ""
+    password: ""
+    retained: "true"
+    clientId: "teletask2mqtt"
+    prefix: "teletask2mqtt"
+    discovery_prefix: "homeassistant"
+
+spring:
+  main:
+    banner-mode: off
+  application:
+    name: teletask2mqtt
+  boot:
+    admin:
+      client:
+        url: http://localhost:8080/sba
+        username: ${spring.security.user.name}
+        password: ${spring.security.user.password}
+        instance:
+          metadata:
+            user:
+              name: ${spring.security.user.name}
+              password: ${spring.security.user.password}
+      context-path: "/sba"
+  security:
+    user:
+      name: client
+      password: client
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+        exclude: 'caches'
+  endpoint:
+    health:
+      show-details: when_authorized
+      show-components: when_authorized
+    env:
+      show-values: when_authorized
+    configprops:
+      show-values: when_authorized
+    quartz:
+      show-values: when_authorized
+
+logging:
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSS}){faint} %clr(%5p) %clr(---){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
+  level:
+    io.github.ridiekel.jeletask: INFO
+#    io.github.ridiekel.jeletask: DEBUG
+#    io.github.ridiekel.jeletask: TRACE

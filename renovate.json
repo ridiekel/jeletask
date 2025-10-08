@@ -1,0 +1,23 @@
+{
+  "extends": [
+    "config:recommended",
+    "group:springBoot",
+    "group:springCore"
+  ],
+  "enabledManagers": [
+    "maven",
+    "github-actions"
+  ],
+  "commitBody": "Renovate Bot <bot@renovateapp.com>",
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true,
+      "rebaseWhen": "auto"
+    }
+  ]
+}

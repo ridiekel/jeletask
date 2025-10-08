@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  mqtt:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+#    ports:
+#      - "1883:1883"
+    networks:
+      - jeletask
+#    command: "mosquitto -c /mosquitto-no-auth.conf" #Needed for unauthenticated mqtt broker with listen address 0.0.0.0
+
+
+networks:
+  jeletask:
