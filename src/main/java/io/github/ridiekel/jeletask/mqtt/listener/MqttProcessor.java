@@ -11,6 +11,7 @@ import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttTraceService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,6 +26,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -55,6 +57,7 @@ public class MqttProcessor implements StateChangeListener {
 
     private final CentralUnit centralUnit;
     private final TeletaskClient teletaskClient;
+    private final MqttTraceService traceService;
     private final Teletask2MqttConfigurationProperties configuration;
 
     private MqttClient mqttClient;
@@ -65,9 +68,14 @@ public class MqttProcessor implements StateChangeListener {
     private final MotorProgressor motorProgressor;
     private final LongPressInputCaptor longPressInputCaptor;
 
-    public MqttProcessor(CentralUnit centralUnit, TeletaskClient teletaskClient, Teletask2MqttConfigurationProperties configuration) {
+    public MqttProcessor(CentralUnit centralUnit,
+                         TeletaskClient teletaskClient,
+                         Teletask2MqttConfigurationProperties configuration,
+                         MqttTraceService traceService
+    ) {
         this.centralUnit = centralUnit;
         this.teletaskClient = teletaskClient;
+        this.traceService = traceService;
         this.teletaskClient.registerStateChangeListener(this);
         this.configuration = configuration;
         this.motorProgressor = new MotorProgressor(configuration.getPublish().getMotorPositionInterval(), this::publishState);
@@ -157,15 +165,24 @@ public class MqttProcessor implements StateChangeListener {
 
     private void subscribe() throws MqttException {
         LOG.info(() -> "Subscribing to topics...");
-        this.mqttClient.subscribe(this.prefix + "/" + this.teletaskIdentifier + "/+/+/set", 0, new ChangeStateMqttCallback());
-        this.mqttClient.subscribe(remoteStopTopic(), 0, (topic, message) -> {
+        this.mqttClient.subscribe(this.prefix + "/" + this.teletaskIdentifier + "/+/+/set", 0,
+                tracingListener(new ChangeStateMqttCallback())
+        );
+        this.mqttClient.subscribe(remoteStopTopic(), 0, tracingListener((topic, message) -> {
             LOG.debug(() -> String.format("Stopping the service: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
             System.exit(0);
-        });
-        this.mqttClient.subscribe(remoteRefreshTopic(), 0, (topic, message) -> {
+        }));
+        this.mqttClient.subscribe(remoteRefreshTopic(), 0, tracingListener((topic, message) -> {
             LOG.debug(() -> String.format("Refreshing states: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
             this.teletaskClient.groupGet();
-        });
+        }));
+    }
+
+    private IMqttMessageListener tracingListener(IMqttMessageListener target) {
+        return (topic, message) -> {
+            this.traceService.receive(topic, new String(message.getPayload(), StandardCharsets.UTF_8), message.getQos(), message.isRetained());
+            target.messageArrived(topic, message);
+        };
     }
 
     public void refresh() {
@@ -355,6 +372,7 @@ public class MqttProcessor implements StateChangeListener {
 
             level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message)));
             this.mqttClient.publish(topic, mqttMessage);
+            this.traceService.publish(topic, message, mqttMessage.getQos(), mqttMessage.isRetained());
         } catch (Exception e) {
             LOG.warn(e.getMessage());
         }

@@ -1,6 +1,7 @@
 package io.github.ridiekel.jeletask;
 
 import de.codecentric.boot.admin.server.config.EnableAdminServer;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttTraceProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.SpringApplication;

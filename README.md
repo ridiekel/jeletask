@@ -165,6 +165,10 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
 | TELETASK_MQTT_PREFIX                             | Optional | teletask2mqtt | The MQTT message topic prefix                                                                                                                                               |
 | TELETASK_MQTT_RETAINED                           | Optional | false         | Indicates whether or not the messages should be retained by the broker                                                                                                      |
 | TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                                    |
+| TELETASK_DB_DIR                                  | Optional | /data         | The location for the database where all mqtt traffic is logged                                                                                                              |
+| TELETASK_TRACE_RETENTION                         | Optional | P30D          | The MQTT home assistant discovery prefix                                                                                                                                    |
+| TELETASK_TRACE_CLEANUP_ENABLED                   | Optional | true          | The MQTT home assistant discovery prefix                                                                                                                                    |
+| TELETASK_TRACE_CLEANUP_INTERVAL                  | Optional | PT1H          | The MQTT home assistant discovery prefix                                                                                                                                    |
 | TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                           |
 | TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL         | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds).                                                                                       |
 | TELETASK_PUBLISH_STATES_INTERVAL                 | Optional | 300           | How frequently the states are force refreshed (in seconds). A negative value disables the force refresh of states.                                                          |
@@ -236,6 +240,7 @@ services:
     restart: unless-stopped
     volumes:
       - $HOME/.jeletask/teletask2mqtt/config.json:/teletask2mqtt/config.json
+      - db_data:/data
     environment:
       TELETASK_CENTRAL_HOST: 192.168.0.123
       TELETASK_CENTRAL_PORT: 55957
@@ -247,6 +252,9 @@ services:
       - mqtt
     networks:
       - jeletask
+
+volumes:
+  db_data:
 
 networks:
   jeletask:
