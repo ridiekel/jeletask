@@ -30,7 +30,7 @@ spring:
   boot:
     admin:
       client:
-        url: http://localhost:8080/sba
+        url: http://localhost:8080/
         username: ${spring.security.user.name}
         password: ${spring.security.user.password}
         instance:
@@ -38,11 +38,29 @@ spring:
             user:
               name: ${spring.security.user.name}
               password: ${spring.security.user.password}
-      context-path: "/sba"
+      context-path: "/"
   security:
     user:
       name: client
       password: client
+  datasource:
+    url: jdbc:h2:file:${teletask.db.dir}/store;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    hikari:
+      minimum-idle: 1
+      idle-timeout: 0
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
 
 management:
   endpoints:
@@ -60,24 +78,10 @@ management:
       show-values: when_authorized
     quartz:
       show-values: when_authorized
-  datasource:
-    url: jdbc:h2:file:${teletask.db.dir}/mqtt-trace;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  jpa:
-    hibernate:
-      ddl-auto: update   # voor dev: update; voor prod: liever validate + migrations (Flyway/Liquibase)
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
-        jdbc:
-          time_zone: UTC
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+
+
+server:
+  forward-headers-strategy: framework
 
 logging:
   pattern:

@@ -29,12 +29,10 @@ public class WebSecurityConfig {
         successHandler.setTargetUrlParameter("redirectTo");
         successHandler.setDefaultTargetUrl(this.adminServer.getContextPath() + "/");
 
-        http.authorizeHttpRequests(req -> req.requestMatchers(this.adminServer.getContextPath() + "/assets/**", "/actuator/**")
-                        .permitAll()
-                        .requestMatchers(this.adminServer.getContextPath() + "/login")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated())
+        http.authorizeHttpRequests(req -> req
+                        .requestMatchers(this.adminServer.getContextPath() + "/assets/**", "/actuator/**").permitAll()
+                        .requestMatchers(this.adminServer.getContextPath() + "/login").permitAll()
+                        .anyRequest().authenticated())
                 .formLogin(formLogin -> formLogin.loginPage(this.adminServer.getContextPath() + "/login")
                         .successHandler(successHandler))
                 .logout((logout) -> logout.logoutUrl(this.adminServer.getContextPath() + "/logout"))

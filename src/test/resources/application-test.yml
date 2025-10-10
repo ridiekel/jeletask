@@ -21,6 +21,8 @@ teletask:
   log:
     topic-enabled: true
     haconfig-enabled: true
+  db:
+    dir: ./.data
 
 spring:
   output:
