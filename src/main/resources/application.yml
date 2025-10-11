@@ -26,7 +26,7 @@ spring:
   main:
     banner-mode: off
   application:
-    name: teletask2mqtt
+    name: Teletask2MQTT
   boot:
     admin:
       client:
@@ -34,7 +34,9 @@ spring:
         username: ${spring.security.user.name}
         password: ${spring.security.user.password}
         instance:
+          name: ${spring.application.name}
           metadata:
+            instanceId: ${spring.application.name}
             user:
               name: ${spring.security.user.name}
               password: ${spring.security.user.password}
