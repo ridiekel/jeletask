@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.Getter;
 
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -11,6 +12,7 @@ import java.util.stream.Stream;
 public class HAConfig<T extends HAConfig<T>> {
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9_-]");
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    @Getter
     private final ObjectNode config;
     private final ObjectNode device;
     private final ArrayNode deviceIdentifiers;

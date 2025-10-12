@@ -1,5 +1,7 @@
-package io.github.ridiekel.jeletask.mqtt.listener.tracing;
+package io.github.ridiekel.jeletask.mqtt.listener.tracing.job;
 
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.config.MqttMessageTraceProperties;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.repository.MqttMessageTraceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,14 +13,14 @@ import java.time.Instant;
 
 @Component
 @ConditionalOnProperty(prefix = "mqtt.trace.cleanup", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class MqttTraceCleanupJob {
+public class MqttMessageTraceCleanupJob {
 
-    private static final Logger log = LoggerFactory.getLogger(MqttTraceCleanupJob.class);
+    private static final Logger log = LoggerFactory.getLogger(MqttMessageTraceCleanupJob.class);
 
     private final MqttMessageTraceRepository repository;
-    private final MqttTraceProperties properties;
+    private final MqttMessageTraceProperties properties;
 
-    public MqttTraceCleanupJob(MqttMessageTraceRepository repository, MqttTraceProperties properties) {
+    public MqttMessageTraceCleanupJob(MqttMessageTraceRepository repository, MqttMessageTraceProperties properties) {
         this.repository = repository;
         this.properties = properties;
     }

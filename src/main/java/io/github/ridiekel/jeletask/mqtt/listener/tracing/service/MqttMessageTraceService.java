@@ -1,14 +1,23 @@
-package io.github.ridiekel.jeletask.mqtt.listener.tracing;
+package io.github.ridiekel.jeletask.mqtt.listener.tracing.service;
 
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MessageDirection;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttMessageTrace;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.repository.MqttMessageTraceRepository;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.MqttMessageTraceSseController;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class MqttTraceService {
+public class MqttMessageTraceService {
     private final MqttMessageTraceRepository repository;
+    private final MqttMessageTraceSseController mqttMessageTraceSseController;
 
-    public MqttTraceService(MqttMessageTraceRepository repository) {
+    public MqttMessageTraceService(
+            MqttMessageTraceRepository repository,
+            MqttMessageTraceSseController mqttMessageTraceSseController
+    ) {
         this.repository = repository;
+        this.mqttMessageTraceSseController = mqttMessageTraceSseController;
     }
 
     @Transactional
@@ -29,5 +38,6 @@ public class MqttTraceService {
         t.setQos(qos);
         t.setRetained(retained);
         repository.save(t);
+        mqttMessageTraceSseController.publish(t);
     }
 }

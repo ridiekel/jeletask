@@ -1,5 +1,7 @@
-package io.github.ridiekel.jeletask.mqtt.listener.tracing;
+package io.github.ridiekel.jeletask.mqtt.listener.tracing.repository;
 
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MessageDirection;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttMessageTrace;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;

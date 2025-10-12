@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.mqtt.listener;
+package io.github.ridiekel.jeletask.mqtt.listener.logic.motor;
 
 import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
 import org.junit.jupiter.api.Test;

@@ -1,3 +1,5 @@
+.node/
+.data/
 .idea/
 target/
 *.iml

@@ -15,10 +15,10 @@ teletask:
     prefix: "teletask2mqtt"
     discovery_prefix: "homeassistant"
   trace:
-    retention: P30D      # hoe lang bewaren (bv. 7 dagen)
+    retention: P30D
     cleanup:
-      enabled: true     # cleanup aan/uit
-      interval: PT1M   # hoe vaak opruimen (bv. elke 15 min)
+      enabled: true
+      interval: P1D
   db:
     dir: /data
 
