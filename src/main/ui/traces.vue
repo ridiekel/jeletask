@@ -68,7 +68,19 @@ export default {
     instance: {type: Object, required: true},
     endpoint: {type: String, default: 'actuator/traces'},
     centralunitEndpoint: {type: String, default: 'actuator/centralunit'},
-    maxRows: {type: Number, default: 1000}
+    maxRows: {type: Number, default: 1000},
+    dateTimeFormatOptions: {
+      type: Object,
+      default: () => ({
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+    }
   },
   data() {
     return {
@@ -80,16 +92,23 @@ export default {
       es: null,
       sseRetryDelay: 1000,
       sseMaxRetryDelay: 10000,
-      sseRetryTimer: null
+      sseRetryTimer: null,
+      baseTopicValue: null,
     };
   },
   computed: {
+    fmt() {
+      return new Intl.DateTimeFormat(undefined, this.dateTimeFormatOptions);
+    },
     rows() {
       return this.raw;
     },
     baseTopic() {
-      if (!this.raw.length) return null;
-      return (this.raw[0].topic || '').split('/').slice(0, 2).join('/');
+      if (this.baseTopicValue == null) {
+        if (!this.raw.length) return null;
+        this.baseTopicValue = (this.raw[0].topic || '').split('/').slice(0, 2).join('/');
+      }
+      return this.baseTopicValue;
     },
     filteredRows() {
       const q = (this.searchQuery || '').trim().toLowerCase();
@@ -132,27 +151,49 @@ export default {
     isIntString(s) {
       return /^[+-]?\d+$/.test(String(s).trim())
     },
+    // Trim microseconden naar milliseconden en parse naar Date
+    parseIsoUtc(iso) {
+      if (!iso) return null;
+      const s = String(iso).trim();
+      // ...123456Z -> ...123Z  (werkt ook met offsets zoals +02:00)
+      const normalized = s.replace(/\.(\d{3})\d+(Z|[+-]\d{2}:\d{2})$/, '.$1$2');
+      const d = new Date(normalized);
+      return Number.isNaN(d.getTime()) ? null : d;
+    },
+    formatLocal(iso) {
+      const d = this.parseIsoUtc(iso);
+      if (!d) return iso;
+      const ms = String(d.getMilliseconds()).padStart(3, '0');
+      let base = this.fmt.format(d);
+      return `${base}.${ms}`;
+    },
     normalizeRow(tr) {
       const createdAt = tr.createdAt || new Date().toISOString();
       const topic = tr.topic || '';
 
-      let splitted = topic.split('/');
       let description = ''
+      let splitted = topic.split('/');
       if (splitted.length > 4) {
-        if (splitted[4] === "state" || splitted[4] === "set") {
+        if (topic.endsWith('/config')) {
+          let input = splitted[3].split('_');
+          description = this.getDescription(input[0], input[1]);
+        } else if (splitted[4] === "state" || splitted[4] === "set") {
           if (this.isIntString(splitted[3])) {
             description = this.getDescription(splitted[2], splitted[3]);
           }
         }
       }
+      if (description === '') {
+        description = 'Bridge'
+      }
 
       return {
         ...tr,
-        createdAt,
+        createdAt: this.formatLocal(createdAt),
         topic,
         description: description,
         direction: tr.direction || 'IN',
-        simpleTopic: topic.startsWith("homeassistant") ? topic : "<basetopic>/" + topic.replace(/^(?:[^/]*\/){2}/, ''),
+        simpleTopic: topic.endsWith("/config") ? topic : "<basetopic>/" + topic.replace(/^(?:[^/]*\/){2}/, ''),
         prettyPayload: this.pretty(tr.payload),
         _key: tr.id || `${+new Date(createdAt)}-${Math.random().toString(36).slice(2, 8)}`
       };
