@@ -34,6 +34,7 @@
                 <th class="px-3 py-2 border">Timestamp</th>
                 <th class="px-3 py-2 border">Direction</th>
                 <th class="px-3 py-2 border">Topic</th>
+                <th class="px-3 py-2 border">Description</th>
                 <th class="px-3 py-2 border">Payload</th>
               </tr>
               </thead>
@@ -42,6 +43,7 @@
                 <td class="px-3 py-2 border whitespace-nowrap">{{ row.createdAt }}</td>
                 <td class="px-3 py-2 border whitespace-nowrap">{{ row.direction }}</td>
                 <td class="px-3 py-2 border whitespace-nowrap">{{ row.simpleTopic }}</td>
+                <td class="px-3 py-2 border whitespace-nowrap">{{ row.description }}</td>
                 <td class="px-3 py-2 border">
                   <pre class="bg-gray-50 p-2 rounded overflow-auto max-h-40">{{ row.prettyPayload }}</pre>
                 </td>
@@ -65,11 +67,13 @@ export default {
   props: {
     instance: {type: Object, required: true},
     endpoint: {type: String, default: 'actuator/traces'},
+    centralunitEndpoint: {type: String, default: 'actuator/centralunit'},
     maxRows: {type: Number, default: 1000}
   },
   data() {
     return {
       raw: [],
+      centralUnit: null,
       loading: true,
       error: null,
       searchQuery: '',
@@ -95,6 +99,7 @@ export default {
         const haystack = [
           r.simpleTopic,
           r.description,
+          r.direction,
           this.safeJson(r.payload)
         ].map(v => (v == null ? '' : String(v))).join(' ').toLowerCase();
         return tokens.every(t => haystack.includes(t));
@@ -124,15 +129,30 @@ export default {
         return typeof payload === 'string' ? payload : this.stringify(payload);
       }
     },
+    isIntString(s) {
+      return /^[+-]?\d+$/.test(String(s).trim())
+    },
     normalizeRow(tr) {
       const createdAt = tr.createdAt || new Date().toISOString();
       const topic = tr.topic || '';
+
+      let splitted = topic.split('/');
+      let description = ''
+      if (splitted.length > 4) {
+        if (splitted[4] === "state" || splitted[4] === "set") {
+          if (this.isIntString(splitted[3])) {
+            description = this.getDescription(splitted[2], splitted[3]);
+          }
+        }
+      }
+
       return {
         ...tr,
         createdAt,
         topic,
+        description: description,
         direction: tr.direction || 'IN',
-        simpleTopic: topic.replace(/^(?:[^/]*\/){2}/, ''),
+        simpleTopic: topic.startsWith("homeassistant") ? topic : "<basetopic>/" + topic.replace(/^(?:[^/]*\/){2}/, ''),
         prettyPayload: this.pretty(tr.payload),
         _key: tr.id || `${+new Date(createdAt)}-${Math.random().toString(36).slice(2, 8)}`
       };
@@ -152,7 +172,34 @@ export default {
         this.loading = false;
       }
     },
+    getDescription(type, num) {
+      const key = `${String(type)}:${Number(num)}`;
+      return this.centralUnit.get(key) ?? null;
+    },
+    async fetchCentralUnitData() {
+      try {
+        const {data} = await this.instance.axios.get(this.centralunitEndpoint);
+
+        const idx = new Map();
+
+        const ct = data?.componentsTypes || {};
+        for (const [componentType, items] of Object.entries(ct)) {
+          (items || []).forEach((item) => {
+            const {number, description} = item || {};
+
+            const key = `${String(componentType.toLocaleLowerCase())}:${Number(number)}`;
+            idx.set(key, description);
+          });
+        }
+
+        this.centralUnit = idx;
+        console.log(this.centralUnit);
+      } catch (e) {
+        this.centralUnit = [];
+      }
+    },
     async mountedOpenSseAfterFetch() {
+      await this.fetchCentralUnitData();
       const ok = await this.fetchData().then(() => true).catch(() => false);
       if (ok) {
         this.openSse();

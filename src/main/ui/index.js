@@ -11,7 +11,7 @@ import TracesEndpoint from "./traces.vue";
                 component: CentralunitEndpoint,
                 label: "Central unit",
                 group: "centralunit",
-                order: -2,
+                order: -1,
                 isEnabled: ({instance}) => {
                     return instance.hasEndpoint("centralunit");
                 },
@@ -64,7 +64,7 @@ import TracesEndpoint from "./traces.vue";
                 component: TracesEndpoint,
                 label: "MQTT Messages",
                 group: "traces",
-                order: -1,
+                order: -2,
                 isEnabled: ({instance}) => {
                     return instance.hasEndpoint("traces");
                 },
