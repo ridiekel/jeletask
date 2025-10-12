@@ -189,6 +189,8 @@
                             <goal>makeAggregateBom</goal>
                         </goals>
                         <configuration>
+                            <skip>false</skip>
+                            <skipNotDeployed>false</skipNotDeployed>
                             <outputFormat>json</outputFormat>
                             <schemaVersion>1.5</schemaVersion>
                         </configuration>

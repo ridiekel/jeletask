@@ -234,7 +234,6 @@ export default {
         }
 
         this.centralUnit = idx;
-        console.log(this.centralUnit);
       } catch (e) {
         this.centralUnit = [];
       }
