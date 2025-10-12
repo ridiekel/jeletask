@@ -3,7 +3,12 @@ package io.github.ridiekel.jeletask.client.spec;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.Sensor;
 import io.github.ridiekel.jeletask.client.spec.state.State;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,6 +42,9 @@ public class ComponentSpec  {
     // For INPUT
     private int long_press_duration_millis = 1500;
     private String HA_subtype = "button_1";
+
+    @Getter
+    private List<HAConfig<?>> haPublishedConfig = new ArrayList<>();
 
     public final Map<String, String> SensorTypesToHATypes = Map.of(
             "TEMPERATURE", "sensor",
@@ -102,7 +110,10 @@ public class ComponentSpec  {
     public String getType() { return this.type; }
 
     public Sensor getTypeEnum() {
-        return Sensor.valueOf(this.type);
+        if(type != null && !type.equals("switch")) {
+            return Sensor.valueOf(type);
+        }
+        return null;
     }
 
     public void setType(String type) {

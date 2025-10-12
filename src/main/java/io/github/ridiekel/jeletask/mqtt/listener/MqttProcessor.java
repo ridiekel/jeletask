@@ -11,7 +11,9 @@ import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
-import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttTraceService;
+import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
+import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.service.MqttMessageTraceService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,7 +59,7 @@ public class MqttProcessor implements StateChangeListener {
 
     private final CentralUnit centralUnit;
     private final TeletaskClient teletaskClient;
-    private final MqttTraceService traceService;
+    private final MqttMessageTraceService traceService;
     private final Teletask2MqttConfigurationProperties configuration;
 
     private MqttClient mqttClient;
@@ -71,7 +73,7 @@ public class MqttProcessor implements StateChangeListener {
     public MqttProcessor(CentralUnit centralUnit,
                          TeletaskClient teletaskClient,
                          Teletask2MqttConfigurationProperties configuration,
-                         MqttTraceService traceService
+                         MqttMessageTraceService traceService
     ) {
         this.centralUnit = centralUnit;
         this.teletaskClient = teletaskClient;
@@ -315,6 +317,7 @@ public class MqttProcessor implements StateChangeListener {
             Map<String, String> topics = new HashMap<>();
             for (java.util.function.Function<HAConfigParameters, HAConfig<?>> c : this.config) {
                 HAConfig<?> haConfig = c.apply(params);
+                componentSpec.getHaPublishedConfig().add(haConfig);
                 String topic = createConfigTopic(componentSpec, haNodeId, haDiscoveryPrefix);
                 String message = Optional.ofNullable(haConfig).map(HAConfig::toString).orElse(null);
                 topics.put(topic, message);

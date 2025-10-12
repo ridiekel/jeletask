@@ -1,11 +1,11 @@
-package io.github.ridiekel.jeletask.mqtt.listener;
+package io.github.ridiekel.jeletask.mqtt.listener.logic.input;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
-import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class LongPressInputCaptor {

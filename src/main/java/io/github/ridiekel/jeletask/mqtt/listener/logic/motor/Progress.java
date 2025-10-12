@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.mqtt.listener;
+package io.github.ridiekel.jeletask.mqtt.listener.logic.motor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.MotorStateCalculator;

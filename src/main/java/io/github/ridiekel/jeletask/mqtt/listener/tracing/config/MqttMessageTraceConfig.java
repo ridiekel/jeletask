@@ -1,14 +1,14 @@
-package io.github.ridiekel.jeletask.mqtt.listener.tracing;
+package io.github.ridiekel.jeletask.mqtt.listener.tracing.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class PropsConfig {
+public class MqttMessageTraceConfig {
     @Bean("mqttTraceProperties")
     @ConfigurationProperties(prefix = "teletask.trace")
-    public MqttTraceProperties mqttTraceProperties() {
-        return new MqttTraceProperties();
+    public MqttMessageTraceProperties mqttTraceProperties() {
+        return new MqttMessageTraceProperties();
     }
 }

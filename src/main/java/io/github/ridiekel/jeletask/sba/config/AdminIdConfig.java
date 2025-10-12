@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask;
+package io.github.ridiekel.jeletask.sba.config;
 
 import de.codecentric.boot.admin.server.domain.values.InstanceId;
 import de.codecentric.boot.admin.server.domain.values.Registration;

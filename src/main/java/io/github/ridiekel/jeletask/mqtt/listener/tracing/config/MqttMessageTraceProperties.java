@@ -1,8 +1,8 @@
-package io.github.ridiekel.jeletask.mqtt.listener.tracing;
+package io.github.ridiekel.jeletask.mqtt.listener.tracing.config;
 
 import java.time.Duration;
 
-public class MqttTraceProperties {
+public class MqttMessageTraceProperties {
 
     private Duration retention = Duration.ofDays(7);
     private Cleanup cleanup = new Cleanup();

@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask;
+package io.github.ridiekel.jeletask.sba.config;
 
 import de.codecentric.boot.admin.server.config.AdminServerProperties;
 import de.codecentric.boot.admin.server.domain.entities.Instance;
@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
@@ -48,18 +47,14 @@ public class WebSecurityConfig {
                         return id != null;
                     }).orElse(false);
                 });
-                target = "/instances/" + instanceId.get().getValue();
+                target = "/instances/" + instanceId.get().getValue() + "/traces";
             } catch (Exception ignored) {
             }
             response.sendRedirect(request.getContextPath() + target);
         };
 
-//        SavedRequestAwareAuthenticationSuccessHandler successHandler = new SavedRequestAwareAuthenticationSuccessHandler();
-//        successHandler.setTargetUrlParameter("redirectTo");
-//        successHandler.setDefaultTargetUrl(this.adminServer.getContextPath() + "/");
-
         http.authorizeHttpRequests(req -> req
-                        .requestMatchers(this.adminServer.getContextPath() + "/assets/**", "/actuator/**").permitAll()
+                        .requestMatchers(this.adminServer.getContextPath() + "/assets/**", "/actuator/health").permitAll()
                         .requestMatchers(this.adminServer.getContextPath() + "/login").permitAll()
                         .anyRequest().authenticated())
                 .formLogin(formLogin -> formLogin.loginPage(this.adminServer.getContextPath() + "/login")
@@ -68,6 +63,7 @@ public class WebSecurityConfig {
                 .httpBasic(Customizer.withDefaults())
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers(
+                                PathPatternRequestMatcher.withDefaults().matcher(this.adminServer.getContextPath() + "/ws/*"),
                                 PathPatternRequestMatcher.withDefaults().matcher(this.adminServer.getContextPath() + "/instances"),
                                 PathPatternRequestMatcher.withDefaults().matcher(this.adminServer.getContextPath() + "/instances/*"),
                                 PathPatternRequestMatcher.withDefaults().matcher(this.adminServer.getContextPath() + "/actuator/**")))

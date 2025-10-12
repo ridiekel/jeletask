@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.6</version>
-        <relativePath /> <!-- lookup parent from repository -->
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <groupId>io.github.ridiekel</groupId>
@@ -58,6 +59,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -211,6 +216,85 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
+            <!-- Bouw de Vue extensie -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.13.4</version>
+                <configuration>
+                    <installDirectory>${project.build.directory}/.node</installDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>v22.20.0</nodeVersion>
+                            <npmVersion>10.9.3</npmVersion>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>npm-ci</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <workingDirectory>src/main/ui</workingDirectory>
+                            <arguments>install --no-audit --no-fund</arguments>
+<!--                             Optional: inherit proxy -->
+<!--                             <npmInheritsProxyConfigFromMaven>true</npmInheritsProxyConfigFromMaven> -->
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>npm-build</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <workingDirectory>src/main/ui</workingDirectory>
+                            <environmentVariables>
+                                <CI>true</CI>
+                            </environmentVariables>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Kopieer de build-output naar de classpath van de Admin-UI extensies -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-sba-extension</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>
+                                ${project.build.outputDirectory}/META-INF/spring-boot-admin-server-ui/extensions/custom
+                            </outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/ui/dist</directory>
+                                    <includes>
+                                        <include>**/*.js</include>
+                                        <include>**/*.css</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -218,8 +302,8 @@
         <connection>scm:git:git@github.com:ridiekel/jeletask.git</connection>
         <developerConnection>scm:git:git@github.com:ridiekel/jeletask.git</developerConnection>
         <url>https://github.com/ridiekel/jeletask/tree/master</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <developers>
         <developer>
