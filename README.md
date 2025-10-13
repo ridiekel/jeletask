@@ -304,6 +304,12 @@ Messages should appear in the interface as they are sent and received.
 
 The state of components should be updated as it changes.
 
+## Health check
+
+You can do a health check at `http://<server>:<exposed_port>/actuator/health`.
+
+The service now also sends an `online` message every minute.
+
 # HomeAssistant
 
 Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions and digital inputs.
