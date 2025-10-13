@@ -5,16 +5,13 @@ import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public final class Mapper<V extends Enum<V>> {
     private static final Logger LOG = LogManager.getLogger();
 
-    private final Map<V, Number> byName = new HashMap<>();
-    private final Map<Integer, V> byNumber = new HashMap<>();
+    private final Map<V, Number> byName = new LinkedHashMap<>();
+    private final Map<Integer, V> byNumber = new LinkedHashMap<>();
     private final Class<V> enumClass;
     private final NumberConverter numberConverter;
 
@@ -31,10 +28,6 @@ public final class Mapper<V extends Enum<V>> {
         return this;
     }
 
-    public boolean contains(V key) {
-        return this.byName.containsKey(key);
-    }
-
     public V toEnum(byte[] dataBytes) {
         return Enum.valueOf(enumClass, toString(dataBytes));
     }
@@ -42,11 +35,10 @@ public final class Mapper<V extends Enum<V>> {
     public String toString(byte[] dataBytes) {
         int key = this.numberConverter.convert(dataBytes).intValue();
         LOG.trace(() -> "Converted '" + Bytes.bytesToHex(dataBytes) + "' to number '" + key + "'. Looking up the key in " + this.byNumber);
-        return Optional.ofNullable(this.byNumber.get(key)).map(Objects::toString).orElseThrow(() -> new IllegalStateException(String.format("No value for key '%s' that was extracted from following bytes: '%s' using '%s'. The mapper has following keys: %s", key, Bytes.bytesToHex(dataBytes), this.numberConverter.getClass().getName(), this.byNumber)));
+        return Optional.ofNullable(this.byNumber.get(key)).map(Objects::toString).orElseThrow(() -> new IllegalStateException(String.format("No value for key '%s' that was extracted from following bytes: '%s' using '%s'. The mapper has following keys: %s", key, Bytes.bytesToHex(dataBytes), this.numberConverter, this.byNumber)));
     }
 
     public byte[] toBytes(V value) {
-        Number number = this.byName.get(value);
-        return this.numberConverter.convert(number);
+        return Optional.ofNullable(this.byName.get(value)).map(this.numberConverter::convert).orElseThrow(() -> new IllegalStateException(String.format("No value for key '%s'. The mapper has following keys: %s", value, this.byName)));
     }
 }
