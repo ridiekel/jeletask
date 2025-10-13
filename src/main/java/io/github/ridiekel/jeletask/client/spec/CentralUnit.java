@@ -23,7 +23,6 @@ import java.util.Map;
 /**
  * POJO representation of the TDS config JSON file.
  */
-//@JsonIgnoreProperties(ignoreUnknown = true)
 public class CentralUnit {
     /**
      * Logger responsible for logging and debugging statements.

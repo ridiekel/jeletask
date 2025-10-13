@@ -168,29 +168,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         LOG.info("Starting event listener...");
         this.startEventListener();
 
-//        try {
-//            Awaitility.await("Startup").atMost(2, TimeUnit.MINUTES).pollInSameThread().pollInterval(1, TimeUnit.SECONDS).until(() -> {
-//                boolean success = false;
-//                try {
-//                    this.getMessageHandler().getKeepAliveStrategy().execute(this);
-//                    success = true;
-//                } catch (CommunicationException | AcknowledgeException e) {
-//                    LOG.debug(()->String.format("Could not connect (%s): %s", e.getClass().getSimpleName(), e.getMessage()));
-//                }
-//                return success;
-//            });
-//        } catch (Exception e) {
-//            this.stopKeepAliveService();
-//            this.stopEventListener();
-//            this.stopIoService();
-//            this.stopStateChangeListeners();
-//            throw new CommunicationException("Failed to start within time", e);
-//        }
-
         LOG.info("Performing group get...");
         this.getIoService().execute(() -> {
-//            this.groupGet();
-
             this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
         });
 
@@ -232,7 +211,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     public void stop() {
         this.started.set(false);
-        // close all log events to stop reporting
 
         Collection<Runnable> runnables = new ArrayList<>();
 

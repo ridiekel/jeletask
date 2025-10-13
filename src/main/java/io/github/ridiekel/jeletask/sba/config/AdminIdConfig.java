@@ -11,10 +11,9 @@ public class AdminIdConfig {
   @Bean
   public InstanceIdGenerator instanceIdGenerator() {
     return (Registration registration) -> {
-      // Kies je beleid: uit metadata, anders uit name/host
       String id = registration.getMetadata().getOrDefault(
           "instanceId",
-          registration.getName()  // of combineer met host/port voor uniciteit
+              registration.getName()
       );
       return InstanceId.of(id);
     };

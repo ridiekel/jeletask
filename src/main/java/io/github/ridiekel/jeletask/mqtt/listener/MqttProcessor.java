@@ -14,6 +14,8 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor;
 import io.github.ridiekel.jeletask.mqtt.listener.tracing.service.MqttMessageTraceService;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.centralunit.CentralUnitSsePublisher;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.centralunit.CentralUnitUpdate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,6 +63,8 @@ public class MqttProcessor implements StateChangeListener {
     private final TeletaskClient teletaskClient;
     private final MqttMessageTraceService traceService;
     private final Teletask2MqttConfigurationProperties configuration;
+    private final CentralUnitSsePublisher centralUnitSsePublisher;
+
 
     private MqttClient mqttClient;
     private final String prefix;
@@ -73,11 +77,12 @@ public class MqttProcessor implements StateChangeListener {
     public MqttProcessor(CentralUnit centralUnit,
                          TeletaskClient teletaskClient,
                          Teletask2MqttConfigurationProperties configuration,
-                         MqttMessageTraceService traceService
+                         MqttMessageTraceService traceService, CentralUnitSsePublisher centralUnitSsePublisher
     ) {
         this.centralUnit = centralUnit;
         this.teletaskClient = teletaskClient;
         this.traceService = traceService;
+        this.centralUnitSsePublisher = centralUnitSsePublisher;
         this.teletaskClient.registerStateChangeListener(this);
         this.configuration = configuration;
         this.motorProgressor = new MotorProgressor(configuration.getPublish().getMotorPositionInterval(), this::publishState);
@@ -355,6 +360,8 @@ public class MqttProcessor implements StateChangeListener {
             } else {
                 publishState(c, c.getState());
             }
+
+            this.centralUnitSsePublisher.publish(new CentralUnitUpdate(c.getFunction(), c.getNumber(), c.getState()));
         });
     }
 

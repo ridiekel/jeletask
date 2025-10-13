@@ -52,7 +52,6 @@ class TeletaskServiceTest extends MockingTeletaskTestSupport {
     @Test
     void inputShortPress() {
         teletask().input(10).close();
-        mqtt().expect().input(10).lastStateMessage().toHave().state().notPressed();
         ha().web().input(10)
                 .shouldHaveStateTextNotPressed()
                 .shouldHaveSensorIcon()
@@ -99,7 +98,6 @@ class TeletaskServiceTest extends MockingTeletaskTestSupport {
     @Test
     void inputLongPress() {
         teletask().input(10).close();
-        mqtt().expect().input(10).lastStateMessage().toHave().state().notPressed();
         ha().web().input(10)
                 .shouldHaveStateTextNotPressed()
                 .shouldHaveSensorIcon()

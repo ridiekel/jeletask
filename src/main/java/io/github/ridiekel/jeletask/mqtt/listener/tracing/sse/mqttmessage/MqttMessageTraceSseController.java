@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.mqtt.listener.tracing.sse;
+package io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.mqttmessage;
 
 import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttMessageTrace;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +24,8 @@ public class MqttMessageTraceSseController {
         emitter.onCompletion(() -> emitters.remove(emitter));
         emitter.onTimeout(() -> emitters.remove(emitter));
 
-        // Stuur direct iets zodat de client/proxy de stream “opent”
         try {
             emitter.send(SseEmitter.event().name("hello").data(java.time.Instant.now().toString()));
-            // Korte backlog om UI meteen te vullen / connectie te bevestigen
             var backlog = repo.findAllNewestFirst().stream().limit(10).toList();
             for (var ev : backlog) {
                 emitter.send(SseEmitter.event().name("mqtt").data(ev));
@@ -37,10 +35,9 @@ public class MqttMessageTraceSseController {
             emitters.remove(emitter);
         }
 
-        // Headers om buffering te voorkomen
         return ResponseEntity.ok()
                 .header("Cache-Control", "no-cache")
-                .header("X-Accel-Buffering", "no") // voor Nginx
+                .header("X-Accel-Buffering", "no")
                 .body(emitter);
     }
 

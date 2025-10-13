@@ -264,22 +264,19 @@ export default {
       }
 
       this.es.onopen = () => {
-        // reset backoff
         this.clearSseRetry();
         this.sseRetryDelay = 1000;
       };
       this.es.onmessage = (evt) => {
-        // server kan "hello"/"keepalive" of backlog sturen; filter op event.type indien gewenst
         if (!evt.data) return;
         try {
           const item = JSON.parse(evt.data);
           const row = this.normalizeRow(item);
           this.raw.unshift(row);
           if (this.maxRows && this.raw.length > this.maxRows) this.raw.length = this.maxRows;
-        } catch { /* kan een keepalive of niet-JSON zijn */
+        } catch {
         }
       };
-      // Specifieke events (zoals "mqtt") blijven ook werken:
       this.es.addEventListener('mqtt', (evt) => {
         try {
           const item = JSON.parse(evt.data);
@@ -290,7 +287,6 @@ export default {
         }
       });
       this.es.onerror = () => {
-        // EventSource probeert zelf te reconnecten; sommige proxies/browsers doen dat niet goed → zelf backoff
         this.closeSse();
         this.scheduleSseRetry();
       };

@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.mqtt.listener.tracing.sse;
+package io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.mqttmessage;
 
 import org.springframework.stereotype.Component;
 

@@ -1,10 +1,8 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
-import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
-import io.github.ridiekel.jeletask.client.builder.message.messages.AcknowledgeException;
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionStateBasedMessageSupport;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
@@ -76,31 +74,6 @@ public class SetMessage extends FunctionStateBasedMessageSupport<State<?>> {
     @Override
     protected byte[] getPayload() {
         return Bytes.concat(getFunctionBytes(), getOutputBytes(), getStateBytes());
-    }
-
-    @Override
-    public void execute(TeletaskClientImpl client) throws AcknowledgeException {
-        super.execute(client);
-
-//        ComponentSpec component = this.getClientConfig().getComponent(this.getFunction(), this.getNumber());
-//        ComponentState initialState = component.getState();
-//        long start = System.currentTimeMillis();
-//        while (!this.getState().equals(component.getState()) && (System.currentTimeMillis() - start) < 2000) {
-//            try {
-//                Thread.sleep(10);
-//            } catch (InterruptedException e) {
-//                LOG.trace("Exception ({}) caught in set: {}", e.getClass().getName(), e.getMessage(), e);
-//            }
-//            try {
-//                client.handleReceiveEvents(MessageUtilities.receive(LOG, client));
-//            } catch (Exception e) {
-//                LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
-//            }
-//        }
-//        if (this.getFunction().shouldReceiveAcknowledge(this.getState()) && !this.getState().equals(component.getState())) {
-//            String message = "Did not receive a state change for " + component.getFunction() + ":" + component.getNumber() + " (" + component.getDescription() + ") within 2 seconds. Assuming failed to set state from '" + initialState + "' to '" + this.getState() + "'";
-//            LOG.warn(message);
-//        }
     }
 
     @Override

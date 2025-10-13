@@ -3,7 +3,7 @@ package io.github.ridiekel.jeletask.mqtt.listener.tracing.service;
 import io.github.ridiekel.jeletask.mqtt.listener.tracing.MessageDirection;
 import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttMessageTrace;
 import io.github.ridiekel.jeletask.mqtt.listener.tracing.repository.MqttMessageTraceRepository;
-import io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.MqttMessageTraceSseController;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.mqttmessage.MqttMessageTraceSseController;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

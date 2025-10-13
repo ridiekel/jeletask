@@ -32,8 +32,7 @@ public class WebSecurityConfig {
     @Bean
     SecurityFilterChain security(HttpSecurity http, de.codecentric.boot.admin.server.services.InstanceRegistry registry) throws Exception {
         var successHandler = (AuthenticationSuccessHandler) (request, response, authentication) -> {
-            // Vind de (enige) 'UP' instance en redirect erheen; anders fallback naar de dashboard.
-            String target = "/"; // of bijv. "/applications"
+            String target = "/";
             try {
                 AtomicReference<InstanceId> instanceId = new AtomicReference<>();
                 Awaitility.await("teletask2mqtt is up").atMost(1, TimeUnit.MINUTES).until(() -> {
