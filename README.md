@@ -15,6 +15,8 @@ The program supports the MICROS+ (maybe also NANOS/PICOS, but untested), but you
 
 You can find the latest docker images at: https://hub.docker.com/r/ridiekel/jeletask2mqtt
 
+[[_TOC_]]
+
 # Configuring
 
 Create a configuration json file following this example.
