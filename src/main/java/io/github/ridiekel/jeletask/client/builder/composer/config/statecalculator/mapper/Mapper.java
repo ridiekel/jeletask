@@ -7,6 +7,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 public final class Mapper<V extends Enum<V>> {
     private static final Logger LOG = LogManager.getLogger();
@@ -40,7 +42,7 @@ public final class Mapper<V extends Enum<V>> {
     public String toString(byte[] dataBytes) {
         int key = this.numberConverter.convert(dataBytes).intValue();
         LOG.trace(() -> "Converted '" + Bytes.bytesToHex(dataBytes) + "' to number '" + key + "'. Looking up the key in " + this.byNumber);
-        return this.byNumber.get(key).toString();
+        return Optional.ofNullable(this.byNumber.get(key)).map(Objects::toString).orElseThrow(() -> new IllegalStateException(String.format("No value for key '%s' that was extracted from following bytes: '%s' using '%s'. The mapper has following keys: %s", key, Bytes.bytesToHex(dataBytes), this.numberConverter.getClass().getName(), this.byNumber)));
     }
 
     public byte[] toBytes(V value) {
