@@ -14,6 +14,7 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.LogState;
+import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -400,11 +401,12 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         ComponentSpec component = centralUnit.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
         if (component != null) {
             LOG.debug(() ->
-                    String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
+                    String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_CYAN, "%s", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
                             StringUtils.rightPad("EVENT", 10),
                             StringUtils.rightPad(component.getFunction().toString(), 10),
                             StringUtils.leftPad(String.valueOf(component.getNumber()), 3),
                             StringUtils.leftPad(component.getDescription(), 40),
+                            Bytes.bytesToHex(eventMessage.getRawBytes()),
                             component.getState(),
                             eventMessage.getState()
                     )
