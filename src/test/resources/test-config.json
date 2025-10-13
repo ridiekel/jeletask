@@ -27,7 +27,15 @@
       { "number": 9, "description": "Dimmer 1" }
     ],
     "INPUT": [
-      { "number": 10, "description": "Input 1" }
+      {
+        "number": 10,
+        "description": "Input 1",
+        "long_press_duration_millis": 1500
+      },
+      {
+        "number": 11,
+        "description": "Input 2"
+      }
     ]
   }
 }

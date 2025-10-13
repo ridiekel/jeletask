@@ -17,7 +17,7 @@ public class InputStateCalculator extends StateCalculatorSupport<InputState> {
     }
 
     public enum ValidInputState {
-        OPEN, CLOSED, LONG_PRESS, SHORT_PRESS
+        OPEN, CLOSED, LONG_PRESS, SHORT_PRESS, NOT_PRESSED
     }
 
     @Override

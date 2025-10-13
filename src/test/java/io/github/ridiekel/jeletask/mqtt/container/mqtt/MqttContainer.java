@@ -291,6 +291,10 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
                             state(InputStateCalculator.ValidInputState.CLOSED);
                         }
 
+                        public void notPressed() {
+                            state(InputStateCalculator.ValidInputState.NOT_PRESSED);
+                        }
+
                         public void inputOpen() {
                             state(InputStateCalculator.ValidInputState.OPEN);
                         }

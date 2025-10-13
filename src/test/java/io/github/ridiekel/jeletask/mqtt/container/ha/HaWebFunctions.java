@@ -293,6 +293,11 @@ public class HaWebFunctions {
             return this.self();
         }
 
+        public HaInputWebElementFunctions shouldHaveStateTextNotPressed() {
+            this.textElement().shouldHave(Condition.text(InputStateCalculator.ValidInputState.NOT_PRESSED.toString()));
+            return this.self();
+        }
+
         public HaInputWebElementFunctions shouldHaveIconStateOpen() {
             this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.OPEN.toString()));
             return this.self();
@@ -300,6 +305,11 @@ public class HaWebFunctions {
 
         public HaInputWebElementFunctions shouldHaveIconStateClosed() {
             this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.CLOSED.toString()));
+            return this.self();
+        }
+
+        public HaInputWebElementFunctions shouldHaveIconStateNotPressed() {
+            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.NOT_PRESSED.toString()));
             return this.self();
         }
 

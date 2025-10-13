@@ -348,12 +348,12 @@ public class MqttProcessor implements StateChangeListener {
     @Override
     public void receive(List<ComponentSpec> components) {
         components.forEach(c -> {
-            publishState(c, c.getState());
-
             if (c.getFunction() == Function.MOTOR) {
                 this.motorProgressor.update(c);
-            } else if (c.getFunction() == Function.INPUT) {
+            } else if (c.getFunction() == Function.INPUT && c.getLong_press_duration_millis() != null) {
                 this.longPressInputCaptor.update(c);
+            } else {
+                publishState(c, c.getState());
             }
         });
     }

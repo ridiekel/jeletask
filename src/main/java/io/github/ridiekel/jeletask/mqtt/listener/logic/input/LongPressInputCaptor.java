@@ -128,7 +128,7 @@ public class LongPressInputCaptor {
 
         @Override
         public InputStateCalculator.ValidInputState getState() {
-            return this.getStopPressTime() == null ? InputStateCalculator.ValidInputState.OPEN : getActualPressDuration();
+            return this.getStopPressTime() == null ? InputStateCalculator.ValidInputState.NOT_PRESSED : getActualPressDuration();
         }
 
         private InputStateCalculator.ValidInputState getActualPressDuration() {

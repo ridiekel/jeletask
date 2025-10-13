@@ -16,31 +16,59 @@ import java.util.Optional;
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
  */
 public class ComponentSpec  {
+    @Setter
+    @Getter
     private String description;
+    @Setter
+    @Getter
     private Function function;
+    @Setter
+    @Getter
     private int number;
+    @Setter
+    @Getter
     private State<?> state;
+    @Setter
+    @Getter
     private String type;
+    @Setter
+    @Getter
     private int decimals = 0;
 
     private String HAtype;
+    @Setter
+    @Getter
     private String HA_unit_of_measurement;
+    @Setter
+    @Getter
     private String HA_modes = "auto,off,cool,heat,dry,fan_only";
     
     // For GAS (General Analog Sensor)
+    @Setter
+    @Getter
     private String gas_type = "";
+    @Setter
+    @Getter
     private float gas_min = 0;
+    @Setter
+    @Getter
     private float gas_max = 0;
 
     // For DISPLAYMESSAGE
+    @Setter
     private String address_numbers;
+    @Setter
     private String bus_numbers;
 
     // For PULSECOUNTER
+    @Setter
+    @Getter
     private int pulses_per_unit = 1000;
 
     // For INPUT
-    private int long_press_duration_millis = 1500;
+    @Getter
+    private Integer long_press_duration_millis;
+    @Getter
     private String HA_subtype = "button_1";
 
     @Getter
@@ -75,40 +103,6 @@ public class ComponentSpec  {
         this.number = number;
     }
 
-    public int getNumber() {
-        return this.number;
-    }
-
-    public void setNumber(int number) {
-        this.number = number;
-    }
-
-    public State<?> getState() {
-        return this.state;
-    }
-
-    public void setState(State<?> state) {
-        this.state = state;
-    }
-
-    public Function getFunction() {
-        return this.function;
-    }
-
-    public void setFunction(Function function) {
-        this.function = function;
-    }
-
-    public String getDescription() {
-        return this.description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getType() { return this.type; }
-
     public Sensor getTypeEnum() {
         if(type != null && !type.equals("switch")) {
             return Sensor.valueOf(type);
@@ -116,12 +110,7 @@ public class ComponentSpec  {
         return null;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
     public String getHAType() {
-
         if (this.HAtype == null) {
 
             if (this.type != null)
@@ -138,48 +127,9 @@ public class ComponentSpec  {
         this.HAtype = HAtype;
     }
 
-    public String getGas_type() { return this.gas_type; }
-
-    public void setGas_type(String gas_type) { this.gas_type = gas_type; }
-
-    public float getGas_min() { return this.gas_min; }
-
-    public void setGas_min(float gas_min) { this.gas_min = gas_min; }
-
-    public float getGas_max() { return this.gas_max; }
-
-    public void setGas_max(float gas_max) { this.gas_max = gas_max; }
-    
-    public int getDecimals() { return this.decimals; }
-
-    public void setDecimals(int decimals) { this.decimals = decimals; }
-    
     public String getAddressNumbers() { return this.address_numbers; }
 
-    public void setAddress_numbers(String numbers) { this.address_numbers = numbers; }
-
     public String getBusNumbers() { return this.bus_numbers; }
-
-    public void setBus_numbers(String numbers) { this.bus_numbers = numbers; }
-
-    public String getHA_unit_of_measurement() { return this.HA_unit_of_measurement; }
-
-    public void setHA_unit_of_measurement(String HA_unit_of_measurement) { this.HA_unit_of_measurement = HA_unit_of_measurement; }
-
-    public String getHA_modes() { return this.HA_modes; }
-
-    public void setHA_modes(String HA_modes) { this.HA_modes = HA_modes; }
-
-    public int getPulses_per_unit() { return this.pulses_per_unit; }
-    public void setPulses_per_unit(int pulses_per_unit) { this.pulses_per_unit = pulses_per_unit; }
-
-    public int getLong_press_duration_millis() {
-        return long_press_duration_millis;
-    }
-
-    public String getHA_subtype() {
-        return HA_subtype;
-    }
 
     @Override
     public boolean equals(Object o) {
