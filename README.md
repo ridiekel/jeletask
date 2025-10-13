@@ -206,9 +206,11 @@ See also: https://medium.com/@tbwin/mastering-iso-8601-durations-a-handy-cheat-s
 
 After starting the container, you should be able to login to the web admin console via:
 
-http://localhost:8080/sba
+http://localhost:8080/
 
-We do advise adding a reverse proxy that provides https capabilities to expose the admin interface securely.
+I do advise adding a reverse proxy that provides https capabilities to expose the admin interface securely.
+
+More info about the admin interface can be found [here](#admin-interface)
 
 ### Versions
 
@@ -281,6 +283,25 @@ volumes:
 networks:
   jeletask:
 ```
+# Admin interface
+
+You can login to the admin interface using the credentials provided in the environment variables.
+If you did not provide credential information, credentials are randomly generated on every boot.
+
+Both views support searching for strings in the records.
+
+## MQTT Messages
+
+![View of MQTT messages](src/main/resources/mqtt-messages.png "MQTT Messages")
+
+Messages should appear in the interface as they are sent and received.
+
+## Central Unit
+
+![View of Central Unit config](src/main/resources/centralunit.png "Central Unit Config")
+
+The state of components should be updated as it changes.
+
 
 # Messages
 
