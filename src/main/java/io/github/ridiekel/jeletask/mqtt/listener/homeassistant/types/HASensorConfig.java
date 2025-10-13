@@ -59,6 +59,14 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
                 this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
 
             this.put("value_template", "{{ value_json.state }}");
+
+            if ("TEMPERATURE".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
+                this.deviceClass("temperature");
+                this.stateClass("measurement");
+            } else if ("LIGHT".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
+                this.deviceClass("illuminance");
+                this.stateClass("measurement");
+            }
         }
 
     }

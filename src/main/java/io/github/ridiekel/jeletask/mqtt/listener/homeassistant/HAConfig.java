@@ -79,6 +79,10 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.put("device_class", value);
     }
 
+    public T stateClass(String value) {
+        return this.put("state_class", value);
+    }
+
     private T putDeviceProperty(String key, String value) {
         return this.put(this.device, key, value);
     }
