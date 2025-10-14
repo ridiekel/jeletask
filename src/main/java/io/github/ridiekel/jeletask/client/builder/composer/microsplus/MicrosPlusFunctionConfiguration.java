@@ -2,7 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.microsplus;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.ConfigurationSupport;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.FunctionConfigurable;
-import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.Sensor;
+import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.TeletaskSensorType;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.*;
 import io.github.ridiekel.jeletask.client.spec.Function;
 
@@ -12,13 +12,13 @@ import java.util.Optional;
 
 public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Function, FunctionConfigurable, Integer> {
     private static final OnOffToggleStateCalculator ON_OFF_TOGGLE = new OnOffToggleStateCalculator();
-    private static final Map<Sensor, StateCalculator<?>> SENSOR_CALCULATORS = Map.of(
-            Sensor.TEMPERATURE, new TemperatureStateCalculator(),
-            Sensor.LIGHT, new LuxStateCalculator(),
-            Sensor.HUMIDITY, new HumidityStateCalculator(),
-            Sensor.GAS, new GasStateCalculator(),
-            Sensor.TEMPERATURECONTROL, new TemperatureControlStateCalculator(),
-            Sensor.PULSECOUNTER, new PulseCounterStateCalculator()
+    private static final Map<TeletaskSensorType, StateCalculator<?>> SENSOR_CALCULATORS = Map.of(
+            TeletaskSensorType.TEMPERATURE, new TemperatureStateCalculator(),
+            TeletaskSensorType.LIGHT, new LuxStateCalculator(),
+            TeletaskSensorType.HUMIDITY, new HumidityStateCalculator(),
+            TeletaskSensorType.GAS, new GasStateCalculator(),
+            TeletaskSensorType.TEMPERATURECONTROL, new TemperatureControlStateCalculator(),
+            TeletaskSensorType.PULSECOUNTER, new PulseCounterStateCalculator()
     );
 
     public MicrosPlusFunctionConfiguration() {
@@ -30,7 +30,7 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                 new FunctionConfigurable(Function.TIMEDMOOD, 9, ON_OFF_TOGGLE),
                 new FunctionConfigurable(Function.GENMOOD, 10, ON_OFF_TOGGLE),
                 new FunctionConfigurable(Function.FLAG, 15, ON_OFF_TOGGLE),
-                new FunctionConfigurable(Function.SENSOR, 20, c -> Optional.ofNullable(SENSOR_CALCULATORS.get(c.getTypeEnum())).orElseThrow(() -> new IllegalArgumentException("Cannot find sensor state calculator for component " + c))),
+                new FunctionConfigurable(Function.SENSOR, 20, c -> Optional.ofNullable(SENSOR_CALCULATORS.get(TeletaskSensorType.from(c))).orElseThrow(() -> new IllegalArgumentException("Cannot find sensor state calculator for component " + c))),
                 new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE),
                 new FunctionConfigurable(Function.INPUT, 52, new InputStateCalculator()),
                 new FunctionConfigurable(Function.TIMEDFNC, 5, ON_OFF_TOGGLE),

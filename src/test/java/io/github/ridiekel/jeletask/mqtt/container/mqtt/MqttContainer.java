@@ -164,48 +164,52 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             this.mqttContainer = mqttContainer;
         }
 
-        public MqttOnOffExpectationBuilder relay(int number) {
+        public MqttFunctionExpectationBuilder relay(int number) {
             return function(Function.RELAY, number);
         }
 
-        public MqttOnOffExpectationBuilder localmood(int number) {
+        public MqttFunctionExpectationBuilder localmood(int number) {
             return function(Function.LOCMOOD, number);
         }
 
-        public MqttOnOffExpectationBuilder generalmood(int number) {
+        public MqttFunctionExpectationBuilder generalmood(int number) {
             return function(Function.GENMOOD, number);
         }
 
-        public MqttOnOffExpectationBuilder condition(int number) {
+        public MqttFunctionExpectationBuilder condition(int number) {
             return function(Function.COND, number);
         }
 
-        public MqttOnOffExpectationBuilder flag(int number) {
+        public MqttFunctionExpectationBuilder flag(int number) {
             return function(Function.FLAG, number);
         }
 
-        public MqttOnOffExpectationBuilder input(int number) {
+        public MqttFunctionExpectationBuilder input(int number) {
             return function(Function.INPUT, number);
         }
 
-        public MqttOnOffExpectationBuilder motor(int number) {
+        public MqttFunctionExpectationBuilder sensor(int number) {
+            return function(Function.SENSOR, number);
+        }
+
+        public MqttFunctionExpectationBuilder motor(int number) {
             return function(Function.MOTOR, number);
         }
 
-        public MqttOnOffExpectationBuilder dimmer(int number) {
+        public MqttFunctionExpectationBuilder dimmer(int number) {
             return function(Function.DIMMER, number);
         }
 
-        public MqttOnOffExpectationBuilder function(Function function, int number) {
-            return new MqttOnOffExpectationBuilder(this, function, number);
+        public MqttFunctionExpectationBuilder function(Function function, int number) {
+            return new MqttFunctionExpectationBuilder(this, function, number);
         }
 
-        public static class MqttOnOffExpectationBuilder {
+        public static class MqttFunctionExpectationBuilder {
             private final Function function;
             private final int number;
             private final MqttExpectationBuilder mqttBuilder;
 
-            public MqttOnOffExpectationBuilder(MqttExpectationBuilder mqttBuilder, Function function, int number) {
+            public MqttFunctionExpectationBuilder(MqttExpectationBuilder mqttBuilder, Function function, int number) {
                 this.mqttBuilder = mqttBuilder;
                 this.function = function;
                 this.number = number;
@@ -228,11 +232,11 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             }
 
             public static class TopicExpectationBuilder {
-                private final MqttOnOffExpectationBuilder mqttFunctionBuilder;
+                private final MqttFunctionExpectationBuilder mqttFunctionBuilder;
                 private final int index;
                 private final String messageType;
 
-                public TopicExpectationBuilder(MqttOnOffExpectationBuilder mqttFunctionBuilder, int index, String messageType) {
+                public TopicExpectationBuilder(MqttFunctionExpectationBuilder mqttFunctionBuilder, int index, String messageType) {
                     this.mqttFunctionBuilder = mqttFunctionBuilder;
                     this.index = index;
                     this.messageType = messageType;
@@ -285,6 +289,18 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
 
                         public void off() {
                             state(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
+                        }
+
+                        public void value(String expected) {
+                            this.match("expected (string): " + expected, m -> {
+                                State<?> componentState = m.getComponentState(
+                                        this.messageBuilder.topicBuilder.mqttFunctionBuilder.mqttBuilder.mqttContainer.centralUnit,
+                                        this.messageBuilder.topicBuilder.mqttFunctionBuilder.function,
+                                        this.messageBuilder.topicBuilder.mqttFunctionBuilder.number
+                                );
+                                String state = componentState.getState().toString();
+                                return new MatchTest.MatchTestResult(Objects.equals(state, expected), state);
+                            });
                         }
 
                         public void inputClosed() {

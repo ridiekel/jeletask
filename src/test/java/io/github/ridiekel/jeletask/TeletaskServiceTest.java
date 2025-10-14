@@ -3,6 +3,8 @@ package io.github.ridiekel.jeletask;
 import com.codeborne.selenide.Selenide;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 @SuppressWarnings("resource")
 class TeletaskServiceTest extends MockingTeletaskTestSupport {
 
@@ -93,6 +95,28 @@ class TeletaskServiceTest extends MockingTeletaskTestSupport {
                 .shouldHaveStateTextOpen()
                 .shouldHaveSensorIcon()
                 .shouldHaveIconStateOpen();
+    }
+
+    @Test
+    void lightSensor() {
+//        teletask().lightSensor(30).update(new BigDecimal("3465"));
+//        mqtt().expect().sensor(30).lastStateMessage().toHave().state().value("3465");
+//        ha().web().input(11)
+//                .shouldHaveStateTextClosed()
+//                .shouldHaveSensorIcon()
+//                .shouldHaveIconStateClosed();
+//        Selenide.sleep(2000);
+//
+//        teletask().input(11).open();
+//
+//        Selenide.sleep(500);
+//
+//        mqtt().expect().input(11).lastStateMessage(0).toHave().state().inputOpen();
+//
+//        ha().web().input(11)
+//                .shouldHaveStateTextOpen()
+//                .shouldHaveSensorIcon()
+//                .shouldHaveIconStateOpen();
     }
 
     @Test

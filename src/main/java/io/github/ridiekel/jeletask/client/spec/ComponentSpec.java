@@ -1,7 +1,6 @@
 package io.github.ridiekel.jeletask.client.spec;
 
 
-import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.Sensor;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import lombok.Getter;
@@ -15,7 +14,7 @@ import java.util.Optional;
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
  */
-public class ComponentSpec  {
+public class ComponentSpec {
     @Setter
     @Getter
     private String description;
@@ -30,19 +29,26 @@ public class ComponentSpec  {
     private State<?> state;
     @Setter
     @Getter
+
+    /*
+      type is the type as it is known to teletask
+     */
     private String type;
     @Setter
     @Getter
     private int decimals = 0;
 
-    private String HAtype;
+    /*
+      haType is the type as it is known to Home Assistant and
+     */
+    private String haType;
     @Setter
     @Getter
     private String HA_unit_of_measurement;
     @Setter
     @Getter
     private String HA_modes = "auto,off,cool,heat,dry,fan_only";
-    
+
     // For GAS (General Analog Sensor)
     @Setter
     @Getter
@@ -68,20 +74,9 @@ public class ComponentSpec  {
     // For INPUT
     @Getter
     private Integer long_press_duration_millis;
-    @Getter
-    private String HA_subtype = "button_1";
 
     @Getter
     private List<HAConfig<?>> haPublishedConfig = new ArrayList<>();
-
-    public final Map<String, String> SensorTypesToHATypes = Map.of(
-            "TEMPERATURE", "sensor",
-            "LIGHT", "sensor",
-            "HUMIDITY", "sensor",
-            "GAS", "sensor",
-            "TEMPERATURECONTROL", "climate",
-            "PULSECOUNTER", "sensor"
-    );
 
     /**
      * Default constructor.
@@ -93,9 +88,10 @@ public class ComponentSpec  {
 
     /**
      * Constructor taking arguments status, state and number.
+     *
      * @param function The function for which the call was requested.
-     * @param state The current status of the component, for example 0 indicating off for a "relay".
-     * @param number The component number you wish to manipulate.
+     * @param state    The current status of the component, for example 0 indicating off for a "relay".
+     * @param number   The component number you wish to manipulate.
      */
     public ComponentSpec(Function function, State<?> state, int number) {
         this.function = function;
@@ -103,33 +99,21 @@ public class ComponentSpec  {
         this.number = number;
     }
 
-    public Sensor getTypeEnum() {
-        if(type != null && !type.equals("switch")) {
-            return Sensor.valueOf(type);
-        }
-        return null;
-    }
-
     public String getHAType() {
-        if (this.HAtype == null) {
-
-            if (this.type != null)
-                return Optional.ofNullable(this.SensorTypesToHATypes.get(this.type)).orElse(this.type);
-
-            return this.type;
-
-        } else
-            return this.HAtype;
-
+        return this.haType;
     }
 
     public void setHAType(String HAtype) {
-        this.HAtype = HAtype;
+        this.haType = HAtype;
     }
 
-    public String getAddressNumbers() { return this.address_numbers; }
+    public String getAddressNumbers() {
+        return this.address_numbers;
+    }
 
-    public String getBusNumbers() { return this.bus_numbers; }
+    public String getBusNumbers() {
+        return this.bus_numbers;
+    }
 
     @Override
     public boolean equals(Object o) {

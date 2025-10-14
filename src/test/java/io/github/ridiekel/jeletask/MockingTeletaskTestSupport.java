@@ -9,6 +9,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DimmerState;
+import io.github.ridiekel.jeletask.client.spec.state.impl.LuxState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import io.github.ridiekel.jeletask.server.TeletaskTestServer;
@@ -18,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.stereotype.Service;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.math.BigDecimal;
 
 @SpringBootTest(classes = {Teletask2MqttTestApplication.class})
 @ActiveProfiles("test")
@@ -61,6 +64,10 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
         public InputSetBuilder input(int number) {
             return new InputSetBuilder(this, Function.INPUT, number);
+        }
+
+        public LightSensorSetBuilder lightSensor(int number) {
+            return new LightSensorSetBuilder(this, Function.SENSOR, number);
         }
 
         public OnOffSetBuilder flag(int number) {
@@ -160,6 +167,17 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
             public void close() {
                 set(InputStateCalculator.ValidInputState.CLOSED);
+            }
+        }
+
+        public static class LightSensorSetBuilder extends FunctionSetBuilder {
+
+            public LightSensorSetBuilder(TeletaskTestClient testClient, Function function, int number) {
+                super(testClient, function, number);
+            }
+
+            public void update(BigDecimal value) {
+                set(new LuxState(value));
             }
         }
 

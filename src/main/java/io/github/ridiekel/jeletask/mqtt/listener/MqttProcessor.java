@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.mqtt.listener;
 
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
+import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.TeletaskSensorType;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
@@ -10,6 +11,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HARelayType;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor;
@@ -262,20 +264,45 @@ public class MqttProcessor implements StateChangeListener {
             Map.entry(Function.TIMEDMOOD, f(HADeviceType.SWITCH, HASwitchConfig::new)),
             // Motors -> HA auto discovery: cover. Sufficient?
             Map.entry(Function.MOTOR, f(HADeviceType.COVER, HAMotorConfig::new)),
-            Map.entry(Function.SENSOR, f(HADeviceType.SENSOR, HASensorConfig::new)),
-            Map.entry(Function.RELAY, f(HADeviceType.LIGHT, c -> {
-                String type = Optional.ofNullable(c.getComponentSpec().getType()).orElse("light");
-                if (Objects.equals(type, "light")) {
-                    return new HALightConfig(c);
-                } else {
-                    return new HASwitchConfig(c);
-                }
-            })),
+            Map.entry(Function.SENSOR, f(haDeviceTypeFromTypeToHaTypeMap(Map.of(
+                    TeletaskSensorType.TEMPERATURE, HADeviceType.SENSOR,
+                    TeletaskSensorType.LIGHT, HADeviceType.SENSOR,
+                    TeletaskSensorType.HUMIDITY, HADeviceType.SENSOR,
+                    TeletaskSensorType.GAS, HADeviceType.SENSOR,
+                    TeletaskSensorType.TEMPERATURECONTROL, HADeviceType.CLIMATE,
+                    TeletaskSensorType.PULSECOUNTER, HADeviceType.SENSOR
+            )), HASensorConfig::new)),
+            Map.entry(Function.RELAY,
+                    f(c -> Optional.ofNullable(c.getType())
+                                    .map(t -> HARelayType.valueOf(t.toUpperCase()))
+                                    .filter(t -> Objects.equals(t, HARelayType.SWITCH))
+                                    .map(t -> HADeviceType.SWITCH)
+                                    .orElse(HADeviceType.LIGHT),
+                            c -> {
+                                String type = Optional.ofNullable(c.getComponentSpec().getType()).orElse("light").toLowerCase();
+                                if (Objects.equals(type, "light")) {
+                                    return new HALightConfig(c);
+                                } else {
+                                    return new HASwitchConfig(c);
+                                }
+                            })),
             // Timed functions actually act like a switch. They can only be ON or OFF -> HA auto discovery: switch
             Map.entry(Function.TIMEDFNC, f(HADeviceType.SWITCH, HASwitchConfig::new))
     );
 
+    private static <T extends Enum<T>> java.util.function.Function<ComponentSpec, HADeviceType> haDeviceTypeFromTypeToHaTypeMap(Map<T, HADeviceType> map) {
+        Map<String, HADeviceType> result = new HashMap<>();
+        for (Map.Entry<T, HADeviceType> e : map.entrySet()) {
+            result.put(String.valueOf(e.getKey()).toUpperCase(), e.getValue()); // null-veilig
+        }
+        return c -> result.get(c.getType().toUpperCase());
+    }
+
     static FunctionConfig f(HADeviceType type, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
+        return f(c -> type, config);
+    }
+
+    static FunctionConfig f(java.util.function.Function<ComponentSpec, HADeviceType> type, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
         return new FunctionConfig(type, config);
     }
 
@@ -283,6 +310,7 @@ public class MqttProcessor implements StateChangeListener {
         BINARY_SENSOR,
         SENSOR,
         LIGHT,
+        CLIMATE,
         SWITCH,
         COVER;
 
@@ -297,13 +325,8 @@ public class MqttProcessor implements StateChangeListener {
         private final java.util.function.Function<ComponentSpec, String> type;
         private List<java.util.function.Function<HAConfigParameters, HAConfig<?>>> config;
 
-        private FunctionConfig(HADeviceType typeIfAbsent) {
-            this.type = c -> Optional.ofNullable(c.getHAType()).orElse(typeIfAbsent.toString());
-            this.config = new ArrayList<>();
-        }
-
-        private FunctionConfig(HADeviceType typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
-            this(typeIfAbsent);
+        private FunctionConfig(java.util.function.Function<ComponentSpec, HADeviceType> typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
+            this.type = c -> Optional.ofNullable(c.getHAType()).orElseGet(() -> typeIfAbsent.apply(c).toString());
             this.config = List.of(config);
         }
 
@@ -346,7 +369,7 @@ public class MqttProcessor implements StateChangeListener {
         }
 
         protected String haComponent(ComponentSpec c) {
-            return Optional.ofNullable(c.getType()).orElse(FUNCTION_TO_TYPE.get(c.getFunction()).getHAType(c));
+            return Optional.ofNullable(c.getHAType()).orElse(FUNCTION_TO_TYPE.get(c.getFunction()).getHAType(c));
         }
     }
 
