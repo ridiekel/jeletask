@@ -91,5 +91,6 @@ logging:
   level:
     org.hibernate.SQL: WARN
     io.github.ridiekel.jeletask: INFO
+    de.codecentric.boot.admin: WARN
 #    io.github.ridiekel.jeletask: DEBUG
 #    io.github.ridiekel.jeletask: TRACE

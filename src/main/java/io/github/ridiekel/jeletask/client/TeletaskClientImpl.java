@@ -15,6 +15,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.LogState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,10 +42,11 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private static final Logger LOG = LogManager.getLogger();
 
     private Socket socket;
-    private OutputStream outputStream;
-    private InputStream inputStream;
-
+    @Getter
     private final CentralUnit centralUnit;
+    private InputStream inputStream;
+    @Getter
+    private OutputStream outputStream;
 
     private ExecutorService ioService;
 
@@ -187,8 +189,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         Awaitility.await("Connect")
                 .pollInSameThread()
-                .pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(2, TimeUnit.MINUTES)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .atMost(10, TimeUnit.MINUTES)
                 .until(() -> this.connect(host, port));
     }
 
@@ -210,6 +212,22 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.started.set(true);
     }
 
+    @Override
+    public boolean isConnected() {
+        return this.started.get();
+    }
+
+    @Override
+    public void disconnect() {
+        this.started.set(false);
+        this.keepAliveTimer.cancel();
+        this.eventListenerTimer.cancel();
+        this.getIoService().shutdown();
+        this.closeInputStream();
+        this.closeOutputStream();
+        this.closeSocket();
+    }
+
     public void stop() {
         this.started.set(false);
 
@@ -224,10 +242,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         runnables.add(this::closeSocket);
 
         this.runRunnables(runnables);
-    }
-
-    public CentralUnit getCentralUnit() {
-        return this.centralUnit;
     }
 
     public void send(byte[] message, java.util.function.Function<byte[], String> logMessage) {
@@ -300,7 +314,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private boolean connect(String host, int port) {
         boolean connected = false;
 
-        LOG.debug(() -> String.format("Connecting to %s:%s", host, port));
+        LOG.info(() -> String.format("(Re)connecting to %s:%s", host, port));
 
         try {
             this.socket = createSocket(host, port);
@@ -308,18 +322,31 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             this.socket.setSoTimeout(2000);
             connected = true;
         } catch (IOException e) {
-            LOG.error("Problem connecting to host: {}:{}", host, port);
+            LOG.trace("Problem connecting to host: {}:{}", host, port);
         }
 
         if (connected) {
-            LOG.debug(() -> "Successfully Connected");
 
             try {
                 this.outputStream = this.socket.getOutputStream();
                 this.inputStream = this.socket.getInputStream();
             } catch (IOException e) {
-                LOG.error("Couldn't get I/O for the connection to: {}:{}", host, port);
+                connected = false;
+                LOG.trace("Couldn't get I/O for the connection to: {}:{}", host, port);
             }
+        }
+
+        if (connected) {
+            try {
+                this.getCentralUnit().getMessageHandler().getKeepAliveStrategy().execute(this);
+            } catch (Exception e) {
+                connected = false;
+                LOG.trace("Could not send keepalive, assuming not yet connected: {}:{}", host, port);
+            }
+        }
+
+        if (connected) {
+            LOG.info(() -> "Successfully (Re)connected");
         }
 
         return connected;
@@ -353,10 +380,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     private ExecutorService getIoService() {
         return this.ioService;
-    }
-
-    public OutputStream getOutputStream() {
-        return this.outputStream;
     }
 
     @Override

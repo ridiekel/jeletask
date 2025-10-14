@@ -170,7 +170,7 @@ More detailed info can also be found in:
 For input to work correctly, you have to enable `Edge triggered`.
 
 I also had to create dummy flags for my inputs, otherwise the central would silently uncheck the `Edge triggered` checkbox.
-Maybe this was a bug in one of their version.
+Maybe this was a bug in one of their versions.
 
 <img src="src/main/resources/prosoft_input_edge_triggered.png" alt="drawing" width="600px"/>
 

@@ -21,7 +21,7 @@ public class MessageExecutor implements Runnable {
         try {
             this.message.execute(this.client);
         } catch (Exception e) {
-            LOG.error(String.format("Problem running message: %s", this.message), e);
+            LOG.trace(String.format("Problem running message: %s", this.message), e);
             throw new TeletaskClientImpl.CommunicationException("Problem running message", e);
         }
     }

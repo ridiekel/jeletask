@@ -25,4 +25,8 @@ public interface TeletaskClient {
     void groupGet();
 
     CentralUnit getCentralUnit();
+
+    boolean isConnected();
+
+    void disconnect();
 }

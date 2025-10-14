@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -97,9 +98,11 @@ public class LongPressInputCaptor {
     }
 
     private static class Captor extends InputState {
-
+        @Getter
         private Long stopPressTime;
+        @Getter
         private Long startPressTime;
+
         private final long longPressConfigInMillis;
 
         public Captor(long longPressConfigInMillis) {
@@ -112,14 +115,6 @@ public class LongPressInputCaptor {
 
         public void startPress() {
             this.startPressTime = System.currentTimeMillis();
-        }
-
-        public Long getStartPressTime() {
-            return startPressTime;
-        }
-
-        public Long getStopPressTime() {
-            return stopPressTime;
         }
 
         public Long getLongPressConfigInMillis() {
