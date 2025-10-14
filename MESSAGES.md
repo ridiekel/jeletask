@@ -380,7 +380,7 @@ The following json attributes are provided on the /state MQTT topic:
 | press_duration_millis       | integer                                                        | The actual amount of time the button was pressed (when state is LONG_PRESS or SHORT_PRESS)                                                                                                       |
 
 &ast; Check your teletask config.
-You should enable "Edge controlled" for this to work.
+You should enable "Edge triggered" for this to work.
 
 If you provide `"long_press_duration_millis" : <duration_in_millis>` in the config, the states will be either `NOT_PRESSED`, `SHORT_PRESS` or `LONG_PRESS`.
 

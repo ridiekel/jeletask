@@ -17,11 +17,16 @@ You can find the latest docker images at: https://hub.docker.com/r/ridiekel/jele
 
 # Configuring
 
+## Teletask2MQTT
+
 Create a configuration json file following this example.
 At this time I can only test with MICROS_PLUS. Please log an issue when you are having trouble with the other types of central unit.
 If teletask has not changed their binary API, it should be compatible.
 
 The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
+
+<details>
+  <summary>Example config (click me)</summary>
 
 ```json
 {
@@ -151,6 +156,23 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
   }
 }
 ```
+
+</details>
+
+More detailed info can also be found in:
+
+[MESSAGES.md](MESSAGES.md)
+
+## Prosoft
+
+### Inputs
+
+For input to work correctly, you have to enable `Edge triggered`.
+
+I also had to create dummy flags for my inputs, otherwise the central would silently uncheck the `Edge triggered` checkbox.
+Maybe this was a bug in one of their version.
+
+<img src="src/main/resources/prosoft_input_edge_triggered.png" alt="drawing" width="600px"/>
 
 # Running
 
