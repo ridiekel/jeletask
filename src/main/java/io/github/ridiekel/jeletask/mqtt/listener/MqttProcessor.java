@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.TeletaskSensorType;
@@ -72,8 +73,10 @@ public class MqttProcessor implements StateChangeListener {
 
 
     private MqttClient mqttClient;
+    @Getter
     private final String prefix;
     private final MqttConnectOptions connOpts;
+    @Getter
     private final String teletaskIdentifier;
 
     private final MotorProgressor motorProgressor;
@@ -150,44 +153,6 @@ public class MqttProcessor implements StateChangeListener {
         };
     }
 
-    public void refresh() {
-//        this.teletaskClient.groupGet();
-        this.publishOnline();
-    }
-
-    private String remoteStopTopic() {
-        return this.prefix + "/" + this.teletaskIdentifier + "/stop";
-    }
-
-    private String remoteRefreshTopic() {
-        return this.prefix + "/" + this.teletaskIdentifier + "/refresh";
-    }
-
-    private synchronized void connectMqtt() {
-        if (!this.mqttClient.isConnected()) {
-            try {
-                this.mqttClient.connect(this.connOpts);
-            } catch (MqttException e) {
-                LOG.debug(() -> String.format("Connect warning: %s", e.getMessage()));
-            }
-
-            Awaitility.await().pollDelay(100, TimeUnit.MILLISECONDS).atMost(TIMEOUT, TimeUnit.SECONDS).until(() -> {
-                LOG.info(() -> "Waiting for mqtt connection...");
-                return this.mqttClient.isConnected();
-            });
-        }
-    }
-
-    public void publishConfig() {
-        LOG.info(() -> "Publishing config...");
-        this.centralUnit.getAllComponents().forEach(this::publishConfig);
-        publishOnline();
-    }
-
-    private void publishConfig(ComponentSpec c) {
-        this.toConfig(c).forEach((t, m) -> this.publish(What.CONFIG, getLoggingStringForComponent(c), t, m, this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug));
-    }
-
     public MqttProcessor(CentralUnit centralUnit,
                          TeletaskClient teletaskClient,
                          Teletask2MqttConfigurationProperties configuration,
@@ -234,28 +199,72 @@ public class MqttProcessor implements StateChangeListener {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             this.teletaskClient.disconnect();
-            this.publishOnline();
+            this.checkAndPublishConnectedStatus();
         }));
     }
 
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
-    public void publishOnline() {
-        boolean currentConnectionStatus = this.teletaskClient.isConnected();
-        if (currentConnectionStatus != CONNECTED_STATUS.connected) {
-            this.publish(What.ONLINE, () -> "Bridge", HAConfigParameters.availabilityTopic(this.baseTopic()), currentConnectionStatus ? "online" : "offline", LOG::info);
-            CONNECTED_STATUS.connected = currentConnectionStatus;
-            CONNECTED_STATUS.since = Instant.now();
-            CONNECTED_STATUS.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
-        } else if (CONNECTED_STATUS.nextPublish.isBefore(Instant.now())) {
-            this.publish(What.ONLINE, () -> "Bridge", HAConfigParameters.availabilityTopic(this.baseTopic()), currentConnectionStatus ? "online" : "offline", LOG::info);
-            CONNECTED_STATUS.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
+    private String remoteStopTopic() {
+        return this.prefix + "/" + this.teletaskIdentifier + "/stop";
+    }
+
+    private String remoteRefreshTopic() {
+        return this.prefix + "/" + this.teletaskIdentifier + "/refresh";
+    }
+
+    private synchronized void connectMqtt() {
+        if (!this.mqttClient.isConnected()) {
+            try {
+                this.mqttClient.connect(this.connOpts);
+            } catch (MqttException e) {
+                LOG.debug(() -> String.format("Connect warning: %s", e.getMessage()));
+            }
+
+            Awaitility.await().pollDelay(100, TimeUnit.MILLISECONDS).atMost(TIMEOUT, TimeUnit.SECONDS).until(() -> {
+                LOG.info(() -> "Waiting for mqtt connection...");
+                return this.mqttClient.isConnected();
+            });
         }
     }
 
-    private static class ConnectedStatus {
-        private boolean connected;
-        private Instant since;
-        private Instant nextPublish = Instant.now();
+    public void refresh() {
+//        this.teletaskClient.groupGet();
+        this.checkAndPublishConnectedStatus();
+    }
+
+    private void publishConfig(ComponentSpec c) {
+        this.toConfig(c).forEach((t, m) -> this.publish(What.CONFIG, getLoggingStringForComponent(c), t, m, this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug));
+    }
+
+    public void publishConfig() {
+        LOG.info(() -> "Publishing config...");
+        this.centralUnit.getAllComponents().forEach(this::publishConfig);
+        checkAndPublishConnectedStatus();
+    }
+
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    public void checkAndPublishConnectedStatus() {
+        boolean currentConnectionStatus = this.teletaskClient.isConnected();
+        if (currentConnectionStatus != CONNECTED_STATUS.connected) {
+            CONNECTED_STATUS.connected = currentConnectionStatus;
+            CONNECTED_STATUS.since = Instant.now();
+            CONNECTED_STATUS.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
+            publishConnectionStatus();
+        } else if (CONNECTED_STATUS.nextPublish.isBefore(Instant.now())) {
+            CONNECTED_STATUS.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
+            publishConnectionStatus();
+        }
+    }
+
+    private void publishConnectionStatus() {
+        try {
+            this.publish(What.ONLINE, () -> "Bridge", HAConfigParameters.availabilityTopic(this.baseTopic()), State.OBJECT_MAPPER.writeValueAsString(CONNECTED_STATUS), LOG::info);
+        } catch (JsonProcessingException e) {
+            LOG.error(e);
+        }
+    }
+
+    private String payloadToLogWithColors(String payload) {
+        return AnsiOutput.toString(AnsiColor.GREEN, payload, AnsiColor.DEFAULT);
     }
 
     private Map<String, String> toConfig(ComponentSpec component) {
@@ -461,36 +470,20 @@ public class MqttProcessor implements StateChangeListener {
         DELETE
     }
 
-    private String payloadToLogWithColors(String payload) {
-        return AnsiOutput.toString(PAYLOAD_LOG_COLORS.entrySet().stream().filter(e -> payload.contains(e.getKey())).findFirst().map(Map.Entry::getValue).orElse(AnsiColor.DEFAULT), payload, AnsiColor.DEFAULT);
+    private static class ConnectedStatus {
+        @Getter
+        private boolean connected;
+        @Getter
+        private Instant since = Instant.now();
+        private Instant nextPublish = Instant.now();
+
+        public String getState() {
+            return isConnected() ? "online" : "offline";
+        }
     }
 
     private String topicToLogWithColors(String topic) {
         return this.getConfiguration().getLog().isTopicEnabled() ? AnsiOutput.toString(AnsiColor.MAGENTA, "[" + StringUtils.rightPad(topic, 60) + "] - ", AnsiColor.DEFAULT) : "";
-    }
-
-    public String getPrefix() {
-        return prefix;
-    }
-
-    public String getTeletaskIdentifier() {
-        return teletaskIdentifier;
-    }
-
-    private static final Map<String, AnsiColor> PAYLOAD_LOG_COLORS = new LinkedHashMap<>();
-
-    static {
-        PAYLOAD_LOG_COLORS.put("OPEN", AnsiColor.GREEN);
-        PAYLOAD_LOG_COLORS.put("UP", AnsiColor.GREEN);
-        PAYLOAD_LOG_COLORS.put("DOWN", AnsiColor.GREEN);
-        PAYLOAD_LOG_COLORS.put("STOP", AnsiColor.RED);
-        PAYLOAD_LOG_COLORS.put("ON", AnsiColor.GREEN);
-        PAYLOAD_LOG_COLORS.put("OFF", AnsiColor.RED);
-        PAYLOAD_LOG_COLORS.put("CLOSED", AnsiColor.RED);
-        PAYLOAD_LOG_COLORS.put("0", AnsiColor.RED);
-        for (int i = 1; i <= 100; i++) {
-            PAYLOAD_LOG_COLORS.put(String.valueOf(i), AnsiColor.GREEN);
-        }
     }
 
     private class ChangeStateMqttCallback implements IMqttMessageListener {
