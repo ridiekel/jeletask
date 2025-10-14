@@ -188,42 +188,56 @@ class TeletaskServiceTest extends MockingTeletaskTestSupport {
 
     @Test
     void generalmood() {
-        ha().web().generalmood(6).toggle();
-        mqtt().expect().generalmood(6).lastStateMessage().toHave().state().off();
-        ha().web().generalmood(6).toggle();
-        mqtt().expect().generalmood(6).lastStateMessage().toHave().state().on();
+        ha().web().generalmood(60).toggle();
+        mqtt().expect().generalmood(60).lastStateMessage().toHave().state().off();
+        ha().web().generalmood(60).toggle();
+        mqtt().expect().generalmood(60).lastStateMessage().toHave().state().on();
 
-        teletask().generalmood(6).turnOff();
-        ha().web().generalmood(6)
+        teletask().generalmood(60).turnOff();
+        ha().web().generalmood(60)
                 .shouldNotBeChecked()
                 .shouldHaveSwitchIcon()
                 .shouldHaveIconStateOff();
 
-        teletask().generalmood(6).turnOn();
-        ha().web().generalmood(6)
+        teletask().generalmood(60).turnOn();
+        ha().web().generalmood(60)
                 .shouldBeChecked()
                 .shouldHaveSwitchIcon()
                 .shouldHaveIconStateOn();
     }
 
     @Test
-    void localmood() {
-        ha().web().localmood(8).toggle();
-        mqtt().expect().localmood(8).lastStateMessage().toHave().state().off();
-        ha().web().localmood(8).toggle();
-        mqtt().expect().localmood(8).lastStateMessage().toHave().state().on();
+    void generalmoodScene() {
+        teletask().generalmood(61).turnOff();
+        ha().web().generalmoodScene(61).click();
+        mqtt().expect().generalmood(61).lastStateMessage().toHave().state().on();
+    }
 
-        teletask().localmood(8).turnOff();
-        ha().web().localmood(8)
+    @Test
+    void localmood() {
+        ha().web().localmood(80).toggle();
+        mqtt().expect().localmood(80).lastStateMessage().toHave().state().off();
+        ha().web().localmood(80).toggle();
+        mqtt().expect().localmood(80).lastStateMessage().toHave().state().on();
+
+        teletask().localmood(80).turnOff();
+        ha().web().localmood(80)
                 .shouldNotBeChecked()
                 .shouldHaveSwitchIcon()
                 .shouldHaveIconStateOff();
 
-        teletask().localmood(8).turnOn();
-        ha().web().localmood(8)
+        teletask().localmood(80).turnOn();
+        ha().web().localmood(80)
                 .shouldBeChecked()
                 .shouldHaveIconStateOn()
                 .shouldHaveSwitchIcon();
+    }
+
+    @Test
+    void localmoodScene() {
+        teletask().localmood(81).turnOff();
+        ha().web().localmoodScene(81).click();
+        mqtt().expect().localmood(81).lastStateMessage().toHave().state().on();
     }
 
     @Test

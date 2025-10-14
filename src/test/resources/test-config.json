@@ -20,13 +20,29 @@
       { "number": 5, "description": "Flag 1" }
     ],
     "GENMOOD": [
-      { "number": 6, "description": "General Mood 1" }
+      {
+        "number": 60,
+        "description": "General Mood 1"
+      },
+      {
+        "number": 61,
+        "description": "General Scene 1",
+        "type": "scene"
+      }
     ],
     "MOTOR": [
       { "number": 7, "description": "Motor 1" }
     ],
     "LOCMOOD": [
-      { "number": 8, "description": "Local Mood 1" }
+      {
+        "number": 80,
+        "description": "Local Mood 1"
+      },
+      {
+        "number": 81,
+        "description": "Local Scene 1",
+        "type": "scene"
+      }
     ],
     "DIMMER": [
       { "number": 9, "description": "Dimmer 1" }

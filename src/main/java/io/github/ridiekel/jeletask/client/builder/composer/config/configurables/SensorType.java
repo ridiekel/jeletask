@@ -4,7 +4,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 
 import java.util.Optional;
 
-public enum TeletaskSensorType {
+public enum SensorType {
     TEMPERATURE,
     LIGHT,
     HUMIDITY,
@@ -12,7 +12,7 @@ public enum TeletaskSensorType {
     TEMPERATURECONTROL,
     PULSECOUNTER;
 
-    public static TeletaskSensorType from(ComponentSpec spec) {
-        return Optional.ofNullable(spec.getType()).map(TeletaskSensorType::valueOf).orElse(null);
+    public static SensorType from(ComponentSpec spec) {
+        return Optional.ofNullable(spec.getType()).map(SensorType::valueOf).orElse(null);
     }
 }

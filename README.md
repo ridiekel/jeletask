@@ -102,6 +102,11 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 1,
         "description": "All off"
+      },
+      {
+        "number": 2,
+        "description": "Downstairs off",
+        "type": "scene"
       }
     ],
     "MOTOR": [
@@ -114,6 +119,11 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 1,
         "description": "Watch TV"
+      },
+      {
+        "number": 2,
+        "description": "Romantic Dinner",
+        "type": "scene"
       }
     ],
     "TIMEDMOOD": [
@@ -132,7 +142,7 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 42,
         "description": "State of TDS12117 input nr 42",
-        "long_press_duration_millis" : 2000
+        "long_press_duration_millis": 2000
       },
       {
         "number": 43,

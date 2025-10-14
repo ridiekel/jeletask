@@ -3,7 +3,7 @@ package io.github.ridiekel.jeletask.mqtt.listener;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
-import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.TeletaskSensorType;
+import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.SensorType;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
@@ -12,7 +12,6 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HARelayType;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types.*;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor;
@@ -227,7 +226,6 @@ public class MqttProcessor implements StateChangeListener {
     }
 
     public void refresh() {
-//        this.teletaskClient.groupGet();
         this.checkAndPublishConnectedStatus();
     }
 
@@ -290,25 +288,30 @@ public class MqttProcessor implements StateChangeListener {
             // Mood functions actually act like a switch in Teletask. They can be turned ON/OFF?
             // HA scenes can only be 'activated' and do not support a state?
             // -> HA auto discovery: switch
-            Map.entry(Function.GENMOOD, f(HADeviceType.SWITCH, HASwitchConfig::new)),
-            Map.entry(Function.LOCMOOD, f(HADeviceType.SWITCH, HASwitchConfig::new)),
+            Map.entry(Function.GENMOOD, f(c -> {
+                String type = Optional.ofNullable(c.getType()).orElse("switch").toLowerCase();
+                return Objects.equals(type, "switch") ? HADeviceType.SWITCH : HADeviceType.SCENE;
+            }, HASwitchConfig::new)),
+            Map.entry(Function.LOCMOOD, f(c -> {
+                String type = Optional.ofNullable(c.getType()).orElse("switch").toLowerCase();
+                return Objects.equals(type, "switch") ? HADeviceType.SWITCH : HADeviceType.SCENE;
+            }, HASwitchConfig::new)),
             Map.entry(Function.TIMEDMOOD, f(HADeviceType.SWITCH, HASwitchConfig::new)),
             // Motors -> HA auto discovery: cover. Sufficient?
             Map.entry(Function.MOTOR, f(HADeviceType.COVER, HAMotorConfig::new)),
             Map.entry(Function.SENSOR, f(haDeviceTypeFromTypeToHaTypeMap(Map.of(
-                    TeletaskSensorType.TEMPERATURE, HADeviceType.SENSOR,
-                    TeletaskSensorType.LIGHT, HADeviceType.SENSOR,
-                    TeletaskSensorType.HUMIDITY, HADeviceType.SENSOR,
-                    TeletaskSensorType.GAS, HADeviceType.SENSOR,
-                    TeletaskSensorType.TEMPERATURECONTROL, HADeviceType.CLIMATE,
-                    TeletaskSensorType.PULSECOUNTER, HADeviceType.SENSOR
+                    SensorType.TEMPERATURE, HADeviceType.SENSOR,
+                    SensorType.LIGHT, HADeviceType.SENSOR,
+                    SensorType.HUMIDITY, HADeviceType.SENSOR,
+                    SensorType.GAS, HADeviceType.SENSOR,
+                    SensorType.TEMPERATURECONTROL, HADeviceType.CLIMATE,
+                    SensorType.PULSECOUNTER, HADeviceType.SENSOR
             )), HASensorConfig::new)),
             Map.entry(Function.RELAY,
-                    f(c -> Optional.ofNullable(c.getType())
-                                    .map(t -> HARelayType.valueOf(t.toUpperCase()))
-                                    .filter(t -> Objects.equals(t, HARelayType.SWITCH))
-                                    .map(t -> HADeviceType.SWITCH)
-                                    .orElse(HADeviceType.LIGHT),
+                    f(c -> {
+                                String type = Optional.ofNullable(c.getType()).orElse("light").toLowerCase();
+                                return Objects.equals(type, "switch") ? HADeviceType.SWITCH : HADeviceType.LIGHT;
+                            },
                             c -> {
                                 String type = Optional.ofNullable(c.getComponentSpec().getType()).orElse("light").toLowerCase();
                                 if (Objects.equals(type, "light")) {
@@ -343,6 +346,7 @@ public class MqttProcessor implements StateChangeListener {
         LIGHT,
         CLIMATE,
         SWITCH,
+        SCENE,
         COVER;
 
         @Override

@@ -362,12 +362,16 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
                                                     .sorted(Comparator.comparing(MqttCapture::getTimestamp).reversed())
                                                     .filter(m -> Objects.equals(m.getTopic(), topic))
                                                     .toList();
-                                            MqttCapture mqttCapture = captureList.get(this.messageBuilder.topicBuilder.index);
-                                            capture.set(mqttCapture);
-                                            MatchTest.MatchTestResult test = matcher.test(mqttCapture);
-                                            actual.set(test.actual());
-                                            return test.result();
-                                        });
+                                            if (captureList.size() > this.messageBuilder.topicBuilder.index) {
+                                                MqttCapture mqttCapture = captureList.get(this.messageBuilder.topicBuilder.index);
+                                                capture.set(mqttCapture);
+                                                MatchTest.MatchTestResult test = matcher.test(mqttCapture);
+                                                actual.set(test.actual());
+                                                return test.result();
+                                            } else {
+                                                return false;
+                                            }
+                                        });// 0 1 2 3    1 2 3 4
                             } catch (Exception e) {
                                 LOGGER.error(AnsiOutput.toString(AnsiColor.BRIGHT_RED, String.format(msg, "FAILED"), " - but was: ", AnsiColor.RED, actual.get(), "\n", capture.get(), AnsiColor.DEFAULT));
                                 throw e;

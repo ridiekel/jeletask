@@ -7,6 +7,7 @@ import com.codeborne.selenide.SelenideElement;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.Selenide.$;
@@ -37,6 +39,14 @@ public class HaWebFunctions {
 
     public HaOnOffWebElementFunctions generalmood(int number) {
         return new HaOnOffWebElementFunctions(centralUnit, Function.GENMOOD, number);
+    }
+
+    public HaSceneWebElementFunctions generalmoodScene(int number) {
+        return new HaSceneWebElementFunctions(centralUnit, Function.GENMOOD, number);
+    }
+
+    public HaSceneWebElementFunctions localmoodScene(int number) {
+        return new HaSceneWebElementFunctions(centralUnit, Function.LOCMOOD, number);
     }
 
     public HaOnOffWebElementFunctions condition(int number) {
@@ -126,17 +136,17 @@ public class HaWebFunctions {
     public static class HaWebElementFunctions<F extends HaWebElementFunctions<F>> {
         private static final Logger LOG = LogManager.getLogger();
 
-        private static final Map<Function, String> FUNTION_TO_ROWTYPE = Map.of(
-                Function.DIMMER, "toggle",
-                Function.RELAY, "toggle",
-                Function.FLAG, "toggle",
-                Function.GENMOOD, "toggle",
-                Function.LOCMOOD, "toggle",
-                Function.TIMEDMOOD, "toggle",
-                Function.MOTOR, "cover",
-                Function.COND, "simple",
-                Function.SENSOR, "sensor",
-                Function.INPUT, "sensor"
+        private static final Map<Function, java.util.function.Function<ComponentSpec, String>> FUNTION_TO_ROWTYPE = Map.of(
+                Function.DIMMER, c -> "hui-toggle-entity-row",
+                Function.RELAY, c -> "hui-toggle-entity-row",
+                Function.FLAG, c -> "hui-toggle-entity-row",
+                Function.GENMOOD, c -> Objects.equals(c.getType(), "scene") ? "ha-assist-chip" : "hui-toggle-entity-row",
+                Function.LOCMOOD, c -> Objects.equals(c.getType(), "scene") ? "ha-assist-chip" : "hui-toggle-entity-row",
+                Function.TIMEDMOOD, c -> "hui-toggle-entity-row",
+                Function.MOTOR, c -> "hui-cover-entity-row",
+                Function.COND, c -> "hui-simple-entity-row",
+                Function.SENSOR, c -> "hui-sensor-entity-row",
+                Function.INPUT, c -> "hui-sensor-entity-row"
         );
 
         protected final int index;
@@ -145,11 +155,11 @@ public class HaWebFunctions {
 
         public HaWebElementFunctions(CentralUnit centralUnit, Function function, int number) {
             this.centralUnit = centralUnit;
-            this.baseCss = "#states hui-" + FUNTION_TO_ROWTYPE.get(function) + "-entity-row ";
+            this.baseCss = FUNTION_TO_ROWTYPE.get(function).apply(centralUnit.getComponent(function, number)) + " ";
             this.index = getIndexOf(function, number);
         }
 
-        private int getIndexOf(Function function, int number) {
+        protected int getIndexOf(Function function, int number) {
             String elementToFind = baseCss + "div[title]";
             String description = this.centralUnit.getComponent(function, number).getDescription();
 
@@ -159,7 +169,7 @@ public class HaWebFunctions {
             int index = titles.indexOf(description);
 
             if (index < 0) {
-                throw new IllegalStateException(String.format("'%s' not found in: '%s' - List of possible values: \n%s", description, elementToFind, titles.stream().map(s->String.format("\t'%s'", s)).collect(Collectors.joining("\n"))));
+                throw new IllegalStateException(String.format("'%s' not found in: '%s' - List of possible values: \n%s", description, elementToFind, titles.stream().map(s -> String.format("\t'%s'", s)).collect(Collectors.joining("\n"))));
             }
 
             return index;
@@ -223,6 +233,36 @@ public class HaWebFunctions {
     public static class HaOnOffWebElementFunctions extends HaOnOffWebElementFunctionsSupport<HaOnOffWebElementFunctions> {
         public HaOnOffWebElementFunctions(CentralUnit centralUnit, Function function, int number) {
             super(centralUnit, function, number);
+        }
+    }
+
+    public static class HaSceneWebElementFunctions extends HaWebElementFunctions<HaSceneWebElementFunctions> {
+        public HaSceneWebElementFunctions(CentralUnit centralUnit, Function function, int number) {
+            super(centralUnit, function, number);
+        }
+
+        protected SelenideElement controlElement() {
+            return $$(Selectors.shadowDeepCss(baseCss + "button")).get(index);
+        }
+
+        public void click() {
+            this.controlElement().click();
+        }
+
+        protected int getIndexOf(Function function, int number) {
+            String elementToFind = baseCss + ".label";
+            String description = this.centralUnit.getComponent(function, number).getDescription();
+
+            List<@Nullable String> titles = $$(Selectors.shadowDeepCss(elementToFind))
+                    .texts();
+
+            int index = titles.indexOf(description);
+
+            if (index < 0) {
+                throw new IllegalStateException(String.format("'%s' not found in: '%s' - List of possible values: \n%s", description, elementToFind, titles.stream().map(s -> String.format("\t'%s'", s)).collect(Collectors.joining("\n"))));
+            }
+
+            return index;
         }
     }
 
