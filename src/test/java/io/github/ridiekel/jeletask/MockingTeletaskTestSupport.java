@@ -8,10 +8,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
-import io.github.ridiekel.jeletask.client.spec.state.impl.DimmerState;
-import io.github.ridiekel.jeletask.client.spec.state.impl.LuxState;
-import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
-import io.github.ridiekel.jeletask.client.spec.state.impl.TemperatureState;
+import io.github.ridiekel.jeletask.client.spec.state.impl.*;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import io.github.ridiekel.jeletask.server.TeletaskTestServer;
 import org.jetbrains.annotations.NotNull;
@@ -73,6 +70,10 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
         public TemperatureSensorSetBuilder temperatureSensor(int number) {
             return new TemperatureSensorSetBuilder(this, Function.SENSOR, number);
+        }
+
+        public HumiditySensorSetBuilder humiditySensor(int number) {
+            return new HumiditySensorSetBuilder(this, Function.SENSOR, number);
         }
 
         public OnOffSetBuilder flag(int number) {
@@ -194,6 +195,17 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
             public void update(BigDecimal value) {
                 set(new TemperatureState(value));
+            }
+        }
+
+        public static class HumiditySensorSetBuilder extends FunctionSetBuilder {
+
+            public HumiditySensorSetBuilder(TeletaskTestClient testClient, Function function, int number) {
+                super(testClient, function, number);
+            }
+
+            public void update(BigDecimal value) {
+                set(new HumidityState(value));
             }
         }
 

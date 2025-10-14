@@ -28,20 +28,17 @@ public class LuxStateCalculator extends StateCalculatorSupport<LuxState> {
     }
 
     @Override
-    protected Class<LuxState> getStateType() {
-        return LuxState.class;
-    }
-
-    @Override
     public LuxState fromEvent(ComponentSpec component, byte[] dataBytes) {
-        long asLong = NUMBER_CONVERTER.convert(dataBytes).longValue();
-        BigDecimal luxValue = byteToLux(asLong);
-        return new LuxState(luxValue);
+        return new LuxState(byteToLux(NUMBER_CONVERTER.convert(dataBytes).longValue()));
     }
 
     @Override
     public byte[] toCommand(LuxState value) {
-        long byteValue = luxToByte(value.getState());
-        return NUMBER_CONVERTER.convert(byteValue);
+        return NUMBER_CONVERTER.convert(luxToByte(value.getState()));
+    }
+
+    @Override
+    protected Class<LuxState> getStateType() {
+        return LuxState.class;
     }
 }

@@ -88,14 +88,23 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
             mockGet(e);
             mockLightSensor(e);
             mockTemperatureSensor(e);
+            mockHumiditySensor(e);
             mockInput(e);
             mockDisplayMessage(e);
+            mockSensorGroupGet(e);
         });
     }
 
 
     public static java.util.function.Function<String, String> template(String key) {
         return s -> "{\"" + key + "\":\"" + s + "\"}";
+    }
+
+    private void mockSensorGroupGet(ExpectationBuilder e) {
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR);
+        e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+        );
     }
 
     private void mockLightSensor(ExpectationBuilder e) {
@@ -106,9 +115,6 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
             e.with(c.getFunction(), c.getNumber()).when(set(new LuxState(new BigDecimal("3548")))).thenRespond(new LuxState(new BigDecimal("3548")));
             e.with(c.getFunction(), c.getNumber()).when(set(new LuxState(new BigDecimal("794")))).thenRespond(new LuxState(new BigDecimal("794")));
         });
-        e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
-        );
     }
 
     private void mockTemperatureSensor(ExpectationBuilder e) {
@@ -116,11 +122,23 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
 
-            e.with(c.getFunction(), c.getNumber()).when(set(new TemperatureState(new BigDecimal("25.6")))).thenRespond(new TemperatureState(new BigDecimal("25.6")));
+            for (int i = -200; i <= 300; i++) {
+                BigDecimal value = BigDecimal.valueOf(i).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
+                e.with(c.getFunction(), c.getNumber()).when(set(new TemperatureState(value))).thenRespond(new TemperatureState(value));
+            }
         });
-        e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
-        );
+    }
+
+    private void mockHumiditySensor(ExpectationBuilder e) {
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("humidity")).toList();
+        components.forEach(c -> {
+            c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
+
+            for (int i = 0; i <= 100; i++) {
+                BigDecimal value = BigDecimal.valueOf(i);
+                e.with(c.getFunction(), c.getNumber()).when(set(new HumidityState(value))).thenRespond(new HumidityState(value));
+            }
+        });
     }
 
     private void mockDisplayMessage(ExpectationBuilder e) {

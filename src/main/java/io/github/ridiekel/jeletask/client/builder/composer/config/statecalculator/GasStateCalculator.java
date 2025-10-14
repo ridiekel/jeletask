@@ -9,11 +9,6 @@ import java.math.RoundingMode;
 
 public class GasStateCalculator extends StateCalculatorSupport<GasState> {
     @Override
-    protected Class<GasState> getStateType() {
-        return GasState.class;
-    }
-
-    @Override
     public GasState fromEvent(ComponentSpec component, byte[] dataBytes) {
         // Default value
         float gas_value = NumberConverter.UNSIGNED_SHORT.convert(dataBytes).longValue();
@@ -40,5 +35,10 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
     @Override
     public byte[] toCommand(GasState state) {
         throw new IllegalArgumentException("Gas state is read only. Strange that we get in the serialize method");
+    }
+
+    @Override
+    protected Class<GasState> getStateType() {
+        return GasState.class;
     }
 }

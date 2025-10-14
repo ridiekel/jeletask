@@ -10,6 +10,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -18,6 +19,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class SetMessage extends FunctionStateBasedMessageSupport<State<?>> {
 
+    @Getter
     private final int number;
 
     private byte[] functionBytes;
@@ -49,11 +51,6 @@ public class SetMessage extends FunctionStateBasedMessageSupport<State<?>> {
                 StringUtils.rightPad(this.getCommand().toString(), 10),
                 this.getState()
         );
-    }
-
-
-    public int getNumber() {
-        return this.number;
     }
 
     public byte[] getFunctionBytes() {

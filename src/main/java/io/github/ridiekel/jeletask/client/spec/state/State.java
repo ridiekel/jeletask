@@ -8,33 +8,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.stream.Collectors;
 
+@Setter
+@Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class State<S> {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules().disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    ;
 
-    @SuppressWarnings("java:S1700")
     private S state;
 
     protected State() {
     }
 
     protected State(S state) {
-        this.state = state;
-    }
-
-    public S getState() {
-        return state;
-    }
-
-    public void setState(S state) {
         this.state = state;
     }
 
@@ -61,7 +55,7 @@ public abstract class State<S> {
 
         if (o == null || getClass() != o.getClass()) return false;
 
-        State that = (State) o;
+        State<?> that = (State<?>) o;
 
         return new EqualsBuilder()
                 .append(state, that.state)

@@ -51,16 +51,21 @@ class TemperatureStateCalculatorTest {
         Assertions.assertThat(bytes[1]).isEqualTo((byte) -34);
     }
 
-    @Test
-    void roundTrip1() {
+    private static void roundTrip(String val) {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
         ComponentSpec component = new ComponentSpec();
         component.setDecimals(5);
 
-        byte[] bytes = c.toCommand(new TemperatureState(new BigDecimal("25.6")));
+        byte[] bytes = c.toCommand(new TemperatureState(new BigDecimal(val)));
         TemperatureState state = c.fromEvent(component, bytes);
 
-        Assertions.assertThat(state.getState()).isEqualTo(new BigDecimal("25.6").setScale(component.getDecimals(), RoundingMode.UNNECESSARY));
+        Assertions.assertThat(state.getState()).isEqualTo(new BigDecimal(val).setScale(component.getDecimals(), RoundingMode.UNNECESSARY));
+    }
+
+    @Test
+    void roundTrip1() {
+        roundTrip("25.6");
+        roundTrip("16.2");
     }
 
     @Test
