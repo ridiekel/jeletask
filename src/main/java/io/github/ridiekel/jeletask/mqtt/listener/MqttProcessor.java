@@ -257,7 +257,8 @@ public class MqttProcessor implements StateChangeListener {
 
     private void publishConnectionStatus() {
         try {
-            this.publish(What.ONLINE, () -> "Bridge", HAConfigParameters.availabilityTopic(this.baseTopic()), State.OBJECT_MAPPER.writeValueAsString(CONNECTED_STATUS), LOG::info);
+            LOG.debug("Publishing connection status: " + State.OBJECT_MAPPER.writeValueAsString(CONNECTED_STATUS));
+            this.publish(What.ONLINE, () -> "Bridge", HAConfigParameters.availabilityTopic(this.baseTopic()), CONNECTED_STATUS.getState(), LOG::info);
         } catch (JsonProcessingException e) {
             LOG.error(e);
         }
@@ -477,6 +478,7 @@ public class MqttProcessor implements StateChangeListener {
         private Instant since = Instant.now();
         private Instant nextPublish = Instant.now();
 
+        @SuppressWarnings("unused")
         public String getState() {
             return isConnected() ? "online" : "offline";
         }
