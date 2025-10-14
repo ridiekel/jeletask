@@ -51,6 +51,10 @@ public class HaWebFunctions {
         return new HaInputWebElementFunctions(centralUnit, Function.INPUT, number);
     }
 
+    public HaSensorWebElementFunctions sensor(int number) {
+        return new HaSensorWebElementFunctions(centralUnit, Function.SENSOR, number);
+    }
+
     public HaOnOffWebElementFunctions flag(int number) {
         return new HaOnOffWebElementFunctions(centralUnit, Function.FLAG, number);
     }
@@ -131,6 +135,7 @@ public class HaWebFunctions {
                 Function.TIMEDMOOD, "toggle",
                 Function.MOTOR, "cover",
                 Function.COND, "simple",
+                Function.SENSOR, "sensor",
                 Function.INPUT, "sensor"
         );
 
@@ -267,6 +272,41 @@ public class HaWebFunctions {
             this.iconElement().shouldHave(Condition.attribute("data-state", "off"));
             return this.self();
         }
+    }
+
+    public static class HaSensorWebElementFunctions extends HaWebElementFunctions<HaSensorWebElementFunctions> {
+        public HaSensorWebElementFunctions(CentralUnit centralUnit, Function function, int number) {
+            super(centralUnit, function, number);
+        }
+
+        protected SelenideElement textElement() {
+            return $$(Selectors.shadowDeepCss(baseCss)).get(index);
+        }
+
+        public HaSensorWebElementFunctions shouldHaveState(String value) {
+            this.textElement().shouldHave(Condition.text(value));
+            return this.self();
+        }
+
+//        public HaSensorWebElementFunctions shouldHaveIconStateOpen() {
+//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.OPEN.toString()));
+//            return this.self();
+//        }
+//
+//        public HaSensorWebElementFunctions shouldHaveIconStateClosed() {
+//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.CLOSED.toString()));
+//            return this.self();
+//        }
+//
+//        public HaSensorWebElementFunctions shouldHaveIconStateNotPressed() {
+//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.NOT_PRESSED.toString()));
+//            return this.self();
+//        }
+//
+//        public HaSensorWebElementFunctions shouldHaveIconStateShortPress() {
+//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.SHORT_PRESS.toString()));
+//            return this.self();
+//        }
     }
 
     public static class HaInputWebElementFunctions extends HaWebElementFunctions<HaInputWebElementFunctions> {

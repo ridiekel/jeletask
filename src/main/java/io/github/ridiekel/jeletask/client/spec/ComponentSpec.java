@@ -8,8 +8,6 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
@@ -30,17 +28,15 @@ public class ComponentSpec {
     @Setter
     @Getter
 
-    /*
-      type is the type as it is known to teletask
-     */
+    //type is the type as it is known to teletask
     private String type;
+
+    // Defaulting to 1 for temperature sensors. Otherwise we would have to always override this.
     @Setter
     @Getter
-    private int decimals = 0;
+    private int decimals = 1;
 
-    /*
-      haType is the type as it is known to Home Assistant and
-     */
+    //haType is the type as it is known to Home Assistant
     private String haType;
     @Setter
     @Getter

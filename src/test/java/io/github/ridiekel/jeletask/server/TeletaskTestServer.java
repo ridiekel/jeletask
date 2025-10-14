@@ -12,10 +12,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
-import io.github.ridiekel.jeletask.client.spec.state.impl.DimmerState;
-import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
-import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
-import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
+import io.github.ridiekel.jeletask.client.spec.state.impl.*;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -89,7 +86,8 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
             mockLog(e);
             mockKeepAlive(e);
             mockGet(e);
-            mockSensor(e);
+            mockLightSensor(e);
+            mockTemperatureSensor(e);
             mockInput(e);
             mockDisplayMessage(e);
         });
@@ -100,10 +98,25 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
         return s -> "{\"" + key + "\":\"" + s + "\"}";
     }
 
-    private void mockSensor(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR);
+    private void mockLightSensor(ExpectationBuilder e) {
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("light")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
+
+            e.with(c.getFunction(), c.getNumber()).when(set(new LuxState(new BigDecimal("3548")))).thenRespond(new LuxState(new BigDecimal("3548")));
+            e.with(c.getFunction(), c.getNumber()).when(set(new LuxState(new BigDecimal("794")))).thenRespond(new LuxState(new BigDecimal("794")));
+        });
+        e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+        );
+    }
+
+    private void mockTemperatureSensor(ExpectationBuilder e) {
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("temperature")).toList();
+        components.forEach(c -> {
+            c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
+
+            e.with(c.getFunction(), c.getNumber()).when(set(new TemperatureState(new BigDecimal("25.6")))).thenRespond(new TemperatureState(new BigDecimal("25.6")));
         });
         e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
                 components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())

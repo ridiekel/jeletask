@@ -99,24 +99,25 @@ class TeletaskServiceTest extends MockingTeletaskTestSupport {
 
     @Test
     void lightSensor() {
-//        teletask().lightSensor(30).update(new BigDecimal("3465"));
-//        mqtt().expect().sensor(30).lastStateMessage().toHave().state().value("3465");
-//        ha().web().input(11)
-//                .shouldHaveStateTextClosed()
-//                .shouldHaveSensorIcon()
-//                .shouldHaveIconStateClosed();
-//        Selenide.sleep(2000);
-//
-//        teletask().input(11).open();
-//
-//        Selenide.sleep(500);
-//
-//        mqtt().expect().input(11).lastStateMessage(0).toHave().state().inputOpen();
-//
-//        ha().web().input(11)
-//                .shouldHaveStateTextOpen()
-//                .shouldHaveSensorIcon()
-//                .shouldHaveIconStateOpen();
+        //Not all values can be converted correctly due to the math that is being done in teletask server. 3548 and 794 should work to convert to bytes and back.
+        teletask().lightSensor(30).update(new BigDecimal("3548"));
+        mqtt().expect().sensor(30).lastStateMessage().toHave().state().value("3548");
+
+        teletask().lightSensor(30).update(new BigDecimal("794"));
+        mqtt().expect().sensor(30).lastStateMessage().toHave().state().value("794");
+        ha().web().sensor(30)
+                .shouldHaveState("794")
+                .shouldHaveSensorIcon();
+    }
+
+    @Test
+    void temperatureSensor() {
+        teletask().temperatureSensor(31).update(new BigDecimal("25.6"));
+        mqtt().expect().sensor(31).lastStateMessage().toHave().state().value("25.6");
+
+        ha().web().sensor(31)
+                .shouldHaveState("25.6")
+                .shouldHaveSensorIcon();
     }
 
     @Test

@@ -401,7 +401,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         ComponentSpec component = centralUnit.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
         if (component != null) {
             LOG.debug(() ->
-                    String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_CYAN, "%s", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
+                    String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_CYAN, "%s - ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
                             StringUtils.rightPad("EVENT", 10),
                             StringUtils.rightPad(component.getFunction().toString(), 10),
                             StringUtils.leftPad(String.valueOf(component.getNumber()), 3),

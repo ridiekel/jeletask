@@ -11,6 +11,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DimmerState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.LuxState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
+import io.github.ridiekel.jeletask.client.spec.state.impl.TemperatureState;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
 import io.github.ridiekel.jeletask.server.TeletaskTestServer;
 import org.jetbrains.annotations.NotNull;
@@ -68,6 +69,10 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
         public LightSensorSetBuilder lightSensor(int number) {
             return new LightSensorSetBuilder(this, Function.SENSOR, number);
+        }
+
+        public TemperatureSensorSetBuilder temperatureSensor(int number) {
+            return new TemperatureSensorSetBuilder(this, Function.SENSOR, number);
         }
 
         public OnOffSetBuilder flag(int number) {
@@ -178,6 +183,17 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
             public void update(BigDecimal value) {
                 set(new LuxState(value));
+            }
+        }
+
+        public static class TemperatureSensorSetBuilder extends FunctionSetBuilder {
+
+            public TemperatureSensorSetBuilder(TeletaskTestClient testClient, Function function, int number) {
+                super(testClient, function, number);
+            }
+
+            public void update(BigDecimal value) {
+                set(new TemperatureState(value));
             }
         }
 
