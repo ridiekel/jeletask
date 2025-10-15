@@ -198,7 +198,7 @@ public class MqttProcessor implements StateChangeListener {
             LOG.debug(() -> String.format("Home assistent 'birth'/'last will' message: %s", message));
             if (message != null && Objects.equals(message.toString(), "online")) {
                 long seconds = ThreadLocalRandom.current().nextInt(2, 6);
-                LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_WHITE, "Received online message from Home Assistant, sending config and refreshing states in " + seconds + "seconds", AnsiColor.DEFAULT));
+                LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_WHITE, "Received online message from Home Assistant, sending config and refreshing states in " + seconds + " seconds", AnsiColor.DEFAULT));
                 EXECUTOR.schedule(() -> {
                     this.publishConfig();
                     this.publishConnectionStatus();
