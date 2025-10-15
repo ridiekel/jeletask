@@ -170,9 +170,12 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         org.awaitility.Awaitility.await("Home Assistent Teletask Config Published")
                 .atMost(10, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
-                .until(() -> this.states().size() > 10);
+                .until(() -> this.states().size() >= this.centralUnit.getAllComponents().size());
 
-        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant online according to published entities", AnsiColor.DEFAULT));
+        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant online according to published entities:", AnsiColor.DEFAULT));
+        this.states().forEach(state -> {
+            LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "\t", state.getEntity_id(), AnsiColor.DEFAULT));
+        });
 
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant startup complete ", AnsiColor.BRIGHT_WHITE, "(url: http://" + this.getHost() + ":", this.getPort(), ")", AnsiColor.DEFAULT));
     }
@@ -231,7 +234,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     }
 
     public List<Entity> states() {
-        return haWebClient.get().uri("/states").retrieve().toEntityList(Entity.class).block().getBody();
+        return Objects.requireNonNull(haWebClient.get().uri("/states").retrieve().toEntityList(Entity.class).block().getBody()).stream().filter(e -> e.getEntity_id().contains("teletask")).toList();
     }
 
     public String statesAsString() {

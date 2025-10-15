@@ -3,6 +3,8 @@ package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadOnlyConfig;
 
+import java.util.Optional;
+
 /**
  * <a href="https://www.home-assistant.io/integrations/sensor.mqtt/">MQTT Sensor Discovery</a>
  */
@@ -55,17 +57,20 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("value_template", "{{ value_json.current }}");
         } else {
             // Regular simple sensor
-            if (parameters.getComponentSpec().getHA_unit_of_measurement() != null)
-                this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
-
             this.put("value_template", "{{ value_json.state }}");
 
             if ("TEMPERATURE".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
                 this.deviceClass("temperature");
                 this.stateClass("measurement");
+                this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
             } else if ("LIGHT".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
                 this.deviceClass("illuminance");
                 this.stateClass("measurement");
+                this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("lx"));
+            } else {
+                if (parameters.getComponentSpec().getHA_unit_of_measurement() != null) {
+                    this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
+                }
             }
         }
 
