@@ -10,7 +10,7 @@ teletask:
 #    port: 1883
 #    username: ""
 #    password: ""
-    retained: "true"
+    retained: "false"
     clientId: "test_client_id_teletask2mqtt"
     prefix: "test_prefix_teletask2mqtt"
   test:

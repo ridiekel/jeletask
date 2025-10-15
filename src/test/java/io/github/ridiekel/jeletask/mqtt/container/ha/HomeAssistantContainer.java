@@ -15,7 +15,6 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.mqtt.container.RedirectingSlf4jLogConsumer;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
-import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,8 +35,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
-import java.awt.*;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -62,15 +59,13 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     private String apiUrl;
 
     private WebClient haWebClient;
-    private final MqttProcessor mqttProcessor;
     private final MqttContainer mqttContainer;
     private final Teletask2MqttConfigurationProperties configuration;
     private final CentralUnit centralUnit;
 
-    public HomeAssistantContainer(MqttProcessor mqttProcessor, MqttContainer mqttContainer, Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit) {
+    public HomeAssistantContainer(MqttContainer mqttContainer, Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit) {
         super(new ImageFromDockerfile()
                 .withDockerfile(Paths.get("src/test/resources/haconfig/Dockerfile")));
-        this.mqttProcessor = mqttProcessor;
         this.mqttContainer = mqttContainer;
         this.configuration = configuration;
         this.centralUnit = centralUnit;
@@ -86,14 +81,10 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         WebDriver driver = WebDriverRunner.getWebDriver();
         WebDriverWait wait = new WebDriverWait(driver, timeout);
 
-        // 1) Wacht op 'document.readyState == complete'
         wait.until(d -> "complete".equals(((JavascriptExecutor) d).executeScript("return document.readyState")));
 
-        // 2) Wacht op de hoofd-app en sidebar (betekent: user session + shell staat)
         $("home-assistant").should(exist);
 
-        // 3) Wacht tot de HA-websocket echt verbonden is
-        // We kunnen niet de status van een Promise uitlezen, dus we “markeren” readiness zodra hij resolved.
         wait.until(d -> (Boolean) ((JavascriptExecutor) d).executeScript(
                 "if (window.__haWsReady === true) return true;" +
                         "if (window.hassConnection && typeof window.hassConnection.then === 'function') {" +
@@ -107,26 +98,19 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         WebDriver driver = WebDriverRunner.getWebDriver();
         WebDriverWait wait = new WebDriverWait(driver, totalTimeout);
 
-        // Hou een referentie naar het huidige root-element vast.
         SelenideElement root = $("home-assistant").should(exist);
         WebElement rootEl = root.getWrappedElement();
 
-        // 1) Als er een reload komt, wordt dit element “stale”. Wacht daar (kort) op.
         try {
             new WebDriverWait(driver, Duration.ofSeconds(5))
                     .until(ExpectedConditions.stalenessOf(rootEl));
-            // Reload gedetecteerd -> opnieuw wachten op HA ready
             waitForHaReady(Duration.ofSeconds(30));
         } catch (TimeoutException ignore) {
-            // Geen reload binnen 5s => ga door
         }
 
-        // 2) Vereis een korte “rustperiode” zonder staleness (DOM is stabiel)
         wait.until(d -> {
             try {
-                // Tik het element aan, wacht even, tik opnieuw: geen StaleElementReference? -> stabiel
                 WebElement el = $("home-assistant").getWrappedElement();
-                // gebruik Selenide.sleep voor een korte quiet window
                 Selenide.sleep((int) quietPeriod.toMillis());
                 el.isEnabled();
                 return true;
@@ -146,8 +130,6 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
             started = true;
         }
     }
-
-
 
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(300)
@@ -189,8 +171,6 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 .atMost(10, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .until(() -> this.states().size() > 10);
-
-        mqttProcessor.refresh();
 
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant online according to published entities", AnsiColor.DEFAULT));
 
@@ -256,18 +236,6 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
     public String statesAsString() {
         return haWebClient.get().uri("/states").retrieve().bodyToMono(String.class).block();
-    }
-
-    public void openBrowser() {
-        try {
-            String url = "http://" + this.getHost() + ":" + this.getPort();
-            LOG.info(AnsiOutput.toString(AnsiColor.GREEN, "Starting browser and pointing it to: ", AnsiColor.BLUE, url, AnsiColor.DEFAULT));
-
-            Desktop.getDesktop().browse(new URI(url));
-            Thread.sleep(Long.MAX_VALUE);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public HomeAssistantExpectationBuilder with() {

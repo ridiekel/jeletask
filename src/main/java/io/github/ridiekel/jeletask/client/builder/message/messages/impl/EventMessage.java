@@ -7,6 +7,7 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import lombok.Getter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -15,8 +16,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class EventMessage extends FunctionBasedMessageSupport {
+    @Getter
     private final int number;
+    @Getter
     private final State<?> state;
+    @Getter
     private final byte[] rawBytes;
 
     private final byte[] stateBytes;
@@ -27,18 +31,6 @@ public class EventMessage extends FunctionBasedMessageSupport {
         this.number = number;
         this.state = state;
         this.stateBytes = ArrayUtils.subarray(rawBytes, 8, rawBytes.length - 1);
-    }
-
-    public State<?> getState() {
-        return this.state;
-    }
-
-    public int getNumber() {
-        return this.number;
-    }
-
-    public byte[] getRawBytes() {
-        return this.rawBytes;
     }
 
     @Override

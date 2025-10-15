@@ -30,11 +30,15 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.View;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -57,6 +61,7 @@ public class MqttProcessor implements StateChangeListener {
     private static final ConnectedStatus CONNECTED_STATUS = new ConnectedStatus();
     private final CentralUnitSsePublisher centralUnitSsePublisher;
     private final HomeAssistentAutoConfig homeAssistentAutoConfig;
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private MqttClient mqttClient;
     @Getter
@@ -69,59 +74,7 @@ public class MqttProcessor implements StateChangeListener {
     private final LongPressInputCaptor longPressInputCaptor;
     @Getter
     private final Teletask2MqttConfigurationProperties configuration;
-
-    public MqttProcessor(CentralUnit centralUnit,
-                         TeletaskClient teletaskClient,
-                         Teletask2MqttConfigurationProperties configuration,
-                         MqttMessageTraceService traceService,
-                         CentralUnitSsePublisher centralUnitSsePublisher
-    ) {
-        this.centralUnit = centralUnit;
-        this.teletaskClient = teletaskClient;
-        this.traceService = traceService;
-        this.centralUnitSsePublisher = centralUnitSsePublisher;
-        this.teletaskClient.registerStateChangeListener(this);
-        this.configuration = configuration;
-        this.motorProgressor = new MotorProgressor(configuration.getPublish().getMotorPositionInterval(), this::publishState);
-        this.longPressInputCaptor = new LongPressInputCaptor(this);
-
-        String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
-        char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
-        this.prefix = removeInvalid(configuration.getMqtt().getPrefix(), this.configuration.getMqtt().getClientId());
-
-        this.teletaskIdentifier = resolveTeletaskIdentifier(centralUnit, configuration);
-
-        LOG.info(() -> String.format("teletask id: '%s'", this.teletaskIdentifier));
-        LOG.info(() -> String.format("host: '%s'", this.configuration.getMqtt().getHost()));
-        LOG.info(() -> String.format("port: '%s'", this.configuration.getMqtt().getPort()));
-        LOG.info(() -> String.format("username: '%s'", Optional.ofNullable(username).orElse("<not specified>")));
-        LOG.info(() -> String.format("clientId: '%s'", this.configuration.getMqtt().getClientId()));
-        LOG.info(() -> String.format("retained: '%s'", configuration.getMqtt().isRetained()));
-        LOG.info(() -> String.format("prefix: '%s'", this.prefix));
-        LOG.info(() -> String.format("Remote stop topic: '%s'", this.remoteStopTopic()));
-        LOG.info(() -> String.format("Remote refresh states topic: '%s'", this.remoteRefreshTopic()));
-
-        this.connOpts = new MqttConnectOptions();
-        this.connOpts.setMaxInflight(100000);
-
-        // Do we need CleanSession?
-        // I have disabled it for now because it's not subscribing to the mqtt topics again
-        // after a reconnect (for ex. when you restart your mqtt broker).
-        this.connOpts.setCleanSession(false);
-
-        this.connOpts.setAutomaticReconnect(true);
-        this.connOpts.setUserName(username);
-        this.connOpts.setPassword(password);
-
-        this.homeAssistentAutoConfig = new HomeAssistentAutoConfig(this.configuration, this.centralUnit, this.baseTopic(), this.teletaskIdentifier);
-
-        new Timer("motor-service").schedule(motorProgressor, 0, configuration.getPublish().getMotorPositionInterval());
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            this.teletaskClient.disconnect();
-            this.checkAndPublishConnectedStatus();
-        }));
-    }
+    private final View error;
 
     private void scheduleGroupGet(Teletask2MqttConfigurationProperties configuration) {
         if (configuration.getPublish().getStatesInterval() > 0) {
@@ -170,10 +123,68 @@ public class MqttProcessor implements StateChangeListener {
         });
     }
 
+    public MqttProcessor(CentralUnit centralUnit,
+                         TeletaskClient teletaskClient,
+                         Teletask2MqttConfigurationProperties configuration,
+                         MqttMessageTraceService traceService,
+                         CentralUnitSsePublisher centralUnitSsePublisher,
+                         View error) {
+        this.centralUnit = centralUnit;
+        this.teletaskClient = teletaskClient;
+        this.traceService = traceService;
+        this.centralUnitSsePublisher = centralUnitSsePublisher;
+        this.teletaskClient.registerStateChangeListener(this);
+        this.configuration = configuration;
+        this.motorProgressor = new MotorProgressor(configuration.getPublish().getMotorPositionInterval(), this::publishState);
+        this.longPressInputCaptor = new LongPressInputCaptor(this);
+
+        String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
+        char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
+        this.prefix = removeInvalid(configuration.getMqtt().getPrefix(), this.configuration.getMqtt().getClientId());
+
+        this.teletaskIdentifier = resolveTeletaskIdentifier(centralUnit, configuration);
+
+        LOG.info(() -> String.format("teletask id: '%s'", this.teletaskIdentifier));
+        LOG.info(() -> String.format("host: '%s'", this.configuration.getMqtt().getHost()));
+        LOG.info(() -> String.format("port: '%s'", this.configuration.getMqtt().getPort()));
+        LOG.info(() -> String.format("username: '%s'", Optional.ofNullable(username).orElse("<not specified>")));
+        LOG.info(() -> String.format("clientId: '%s'", this.configuration.getMqtt().getClientId()));
+        LOG.info(() -> String.format("retained: '%s'", configuration.getMqtt().isRetained()));
+        LOG.info(() -> String.format("prefix: '%s'", this.prefix));
+        LOG.info(() -> String.format("Remote stop topic: '%s'", this.remoteStopTopic()));
+        LOG.info(() -> String.format("Remote refresh states topic: '%s'", this.remoteRefreshTopic()));
+
+        this.connOpts = new MqttConnectOptions();
+        this.connOpts.setMaxInflight(100000);
+
+        // Do we need CleanSession?
+        // I have disabled it for now because it's not subscribing to the mqtt topics again
+        // after a reconnect (for ex. when you restart your mqtt broker).
+        this.connOpts.setCleanSession(false);
+
+        this.connOpts.setAutomaticReconnect(true);
+        this.connOpts.setUserName(username);
+        this.connOpts.setPassword(password);
+
+        this.homeAssistentAutoConfig = new HomeAssistentAutoConfig(this.configuration, this.centralUnit, this.baseTopic(), this.teletaskIdentifier);
+
+        new Timer("motor-service").schedule(motorProgressor, 0, configuration.getPublish().getMotorPositionInterval());
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            this.teletaskClient.disconnect();
+            this.checkAndPublishConnectedStatus();
+        }));
+        this.error = error;
+    }
+
     private void subscribe() throws MqttException {
         LOG.info(() -> "Subscribing to topics...");
         this.mqttClient.subscribe(this.prefix + "/" + this.teletaskIdentifier + "/+/+/set", 0,
-                tracingListener(new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier))
+                tracingListener((topic, message) -> {
+                    EXECUTOR.execute(() -> {
+                        new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message);
+                    });
+                })
         );
         this.mqttClient.subscribe(remoteStopTopic(), 0, tracingListener((topic, message) -> {
             LOG.debug(() -> String.format("Stopping the service: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
@@ -181,7 +192,19 @@ public class MqttProcessor implements StateChangeListener {
         }));
         this.mqttClient.subscribe(remoteRefreshTopic(), 0, tracingListener((topic, message) -> {
             LOG.debug(() -> String.format("Refreshing states: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
-            this.teletaskClient.groupGet();
+            EXECUTOR.execute(this.teletaskClient::groupGet);
+        }));
+        this.mqttClient.subscribe("homeassistant/status", 0, tracingListener((topic, message) -> {
+            LOG.debug(() -> String.format("Home assistent 'birth'/'last will' message: %s", message));
+            if (message != null && Objects.equals(message.toString(), "online")) {
+                long seconds = ThreadLocalRandom.current().nextInt(2, 6);
+                LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_WHITE, "Received online message from Home Assistant, sending config and refreshing states in " + seconds + "seconds", AnsiColor.DEFAULT));
+                EXECUTOR.schedule(() -> {
+                    this.publishConfig();
+                    this.publishConnectionStatus();
+                    this.teletaskClient.groupGet();
+                }, seconds, TimeUnit.SECONDS);
+            }
         }));
     }
 
@@ -231,6 +254,11 @@ public class MqttProcessor implements StateChangeListener {
                                 message,
                                 this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug
                         );
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
                     });
         });
         checkAndPublishConnectedStatus();

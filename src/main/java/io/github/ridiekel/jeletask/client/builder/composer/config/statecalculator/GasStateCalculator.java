@@ -34,7 +34,7 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
 
     @Override
     public byte[] toCommand(GasState state) {
-        throw new IllegalArgumentException("Gas state is read only. Strange that we get in the serialize method");
+        return new byte[]{0, 0};
     }
 
     @Override

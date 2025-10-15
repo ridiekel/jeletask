@@ -48,7 +48,6 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
 
     public static final byte[] ACKNOWLEDGE = {10};
     private static final Executor RESPONSE_EXECUTOR = Executors.newSingleThreadExecutor(r -> new Thread(r, "teletask-test-server-responder"));
-    private static final int PAUSE_BETWEEN_RESPONSES = 1000;
 
     private int port;
     private final CentralUnit centralUnit;
@@ -280,30 +279,31 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                     try {
                         List<MessageSupport> messages = MessageUtilities.receive(LOG, TeletaskMockServer.this);
                         for (MessageSupport message : messages) {
-                            LOG.trace("Processing message: {}", message.toString());
+                            LOG.trace(() -> String.format("Processing message: %S", message.toString()));
                             TeletaskMockServer.this.outputStream.write(ACKNOWLEDGE);
 
+                            LOG.trace(() -> "Creating mock command");
                             MockServerCommand command = new MockServerCommand(message);
+                            LOG.trace(() -> String.format("Created mock command: %s", command));
 
                             List<Supplier<MockServerResponse>> responses = getMocks().get(command);
                             if (responses != null) {
-                                boolean pauseBetweenResponses = responses.size() > 1;
+                                LOG.trace(() -> String.format("Got command responses from mocks. Size: %s", responses.size()));
                                 responses.forEach(response -> {
                                     try {
+                                        LOG.trace(() -> "Creating event message");
                                         EventMessage eventMessage = response.get().create(centralUnit, message);
+                                        LOG.trace(() -> String.format("Created event message %s: ", eventMessage));
                                         RESPONSE_EXECUTOR.execute(() -> {
                                             try {
                                                 byte[] rawBytes = eventMessage.getRawBytes();
-                                                LOG.trace("Sending bytes to client: {}", Bytes.bytesToHex(rawBytes));
+                                                LOG.trace(() -> String.format("Sending bytes to client: %s", Bytes.bytesToHex(rawBytes)));
                                                 TeletaskMockServer.this.outputStream.write(rawBytes);
                                                 TeletaskMockServer.this.outputStream.flush();
                                             } catch (IOException e) {
                                                 throw new RuntimeException(e);
                                             }
                                         });
-                                        if (pauseBetweenResponses) {
-                                            Thread.sleep(PAUSE_BETWEEN_RESPONSES);
-                                        }
                                     } catch (Exception e) {
                                         throw new RuntimeException("Could not create response for command: " + command.command(), e);
                                     }
