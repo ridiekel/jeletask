@@ -116,7 +116,7 @@ public abstract class MessageHandlerSupport implements MessageHandler {
         rawBytes[rawBytes.length - 1] = checksum;
     }
 
-    protected byte[] getEventStateBytes(CentralUnit centralUnit, Function function, OutputState outputState) {
+    protected byte[] getEventStateBytesForTesting(CentralUnit centralUnit, Function function, OutputState outputState) {
         int number = outputState.number();
         FunctionConfigurable functionConfig = this.getFunctionConfig(function);
         StateCalculator<State<?>> stateCalculator = functionConfig.getStateCalculator(centralUnit.getComponent(function, number));

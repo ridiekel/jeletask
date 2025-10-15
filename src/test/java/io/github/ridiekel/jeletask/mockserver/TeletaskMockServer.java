@@ -1,10 +1,7 @@
 package io.github.ridiekel.jeletask.mockserver;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.DimmerStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.MotorStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.*;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
@@ -13,6 +10,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.*;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types.HASensorConfig;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,11 +54,28 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     private InputStream inputStream;
     private OutputStream outputStream;
     private final Timer timer = new Timer();
-    private Map<MockServerCommand, List<Supplier<MockServerResponse>>> mocks;
+    private Map<String, List<Supplier<MockServerResponse>>> mocks;
 
     public TeletaskMockServer(int port, CentralUnit centralUnit) {
         this.port = port;
         this.centralUnit = centralUnit;
+    }
+
+    private static TemperatureControlState.TemperatureControlStateBuilder<?, ?> defaultTemperatureControlStateBuilder() {
+        return TemperatureControlState.builder()
+                .state(OnOffToggleStateCalculator.ValidOnOffToggle.ON)
+                .currentTemperature(new BigDecimal("25.0"))
+                .targetTemperature(new BigDecimal("26.0"))
+                .dayPresetTemperature(new BigDecimal("25.5"))
+                .nightAtCoolingPresetTemperature(new BigDecimal("22.0"))
+                .nightAtHeatingPresetTemperature(new BigDecimal("16.0"))
+                .ecoPresetOffset(new BigDecimal("2.0"))
+                .preset(TemperatureControlStateCalculator.ValidTemperatureControlPreset.DAY)
+                .fanspeed(TemperatureControlStateCalculator.ValidTemperatureControlSpeed.MEDIUM)
+                .windowOpen(0)
+                .outputState(0)
+                .swingDirection(0)
+                .mode(TemperatureControlStateCalculator.ValidTemperatureControlMode.AUTO);
     }
 
     public void mock(Consumer<ExpectationBuilder> mockDefinition) {
@@ -68,30 +83,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
 
         mockDefinition.accept(expectationBuilder);
 
-        this.mocks = expectationBuilder.getMocks().stream().collect(Collectors.toMap(MockServerExpectation::command, MockServerExpectation::responses));
-    }
-
-    @EventListener(classes = {ContextRefreshedEvent.class})
-    @Order(50)
-    public void start() {
-        LOG.debug("Starting teletask test server");
-
-        new Thread(this, "teletask-test-server").start();
-
-        this.mock(e -> {
-            mockOnOff(e);
-            mockDimmer(e);
-            mockMotor(e);
-            mockLog(e);
-            mockKeepAlive(e);
-            mockGet(e);
-            mockLightSensor(e);
-            mockTemperatureSensor(e);
-            mockHumiditySensor(e);
-            mockInput(e);
-            mockDisplayMessage(e);
-            mockSensorGroupGet(e);
-        });
+        this.mocks = expectationBuilder.getMocks().stream().collect(Collectors.toMap(e -> e.command().toString(), MockServerExpectation::responses));
     }
 
 
@@ -124,6 +116,82 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             for (int i = -200; i <= 300; i++) {
                 BigDecimal value = BigDecimal.valueOf(i).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
                 e.with(c.getFunction(), c.getNumber()).when(set(new TemperatureState(value))).thenRespond(new TemperatureState(value));
+            }
+        });
+    }
+
+    @EventListener(classes = {ContextRefreshedEvent.class})
+    @Order(50)
+    public void start() {
+        LOG.debug("Starting teletask test server");
+
+        new Thread(this, "teletask-test-server").start();
+
+        LOG.info("Creating mocks...");
+        this.mock(e -> {
+            mockOnOff(e);
+            mockDimmer(e);
+            mockMotor(e);
+            mockLog(e);
+            mockKeepAlive(e);
+            mockGet(e);
+            mockLightSensor(e);
+            mockTemperatureSensor(e);
+            mockTemperatureControlSensor(e);
+            mockHumiditySensor(e);
+            mockInput(e);
+            mockDisplayMessage(e);
+            mockSensorGroupGet(e);
+        });
+        LOG.info("Finsihed creating mocks ({})!", mocks.size());
+    }
+
+    private void mockTemperatureControlSensor(ExpectationBuilder e) {
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("temperaturecontrol")).toList();
+
+        List<TemperatureControlStateCalculator.ValidTemperatureControlMode> modes = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlMode.values()));
+        modes.add(null);
+        List<TemperatureControlStateCalculator.ValidTemperatureControlSpeed> speeds = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlSpeed.values()));
+        speeds.add(null);
+        List<TemperatureControlStateCalculator.ValidTemperatureControlPreset> presets = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlPreset.values()));
+        presets.add(null);
+        List<TemperatureControlStateCalculator.ValidTemperatureControlAction> actions = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlAction.values()));
+        actions.add(null);
+
+        components.forEach(c -> {
+            c.setState(defaultTemperatureControlStateBuilder().build());
+
+            List<TemperatureControlState> states = List.of(
+                    defaultTemperatureControlStateBuilder().state(OnOffToggleStateCalculator.ValidOnOffToggle.OFF).mode(TemperatureControlStateCalculator.ValidTemperatureControlMode.OFF).build()
+            );
+
+            states.forEach(state -> {
+                e.with(c.getFunction(), c.getNumber()).when(set(state)).thenRespond(state);
+            });
+
+            for (int currentTemperature = HASensorConfig.TEMPERATURE_MINIMUM * 10; currentTemperature <= HASensorConfig.TEMPERATURE_MAXIMUM * 10; currentTemperature += 5) {
+                BigDecimal currentTemp = new BigDecimal(currentTemperature).setScale(1, RoundingMode.HALF_UP).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
+                for (int targetTemperature = HASensorConfig.TEMPERATURE_MINIMUM * 10; targetTemperature <= HASensorConfig.TEMPERATURE_MAXIMUM * 10; targetTemperature += 5) {
+                    BigDecimal targetTemp = new BigDecimal(targetTemperature).setScale(1, RoundingMode.HALF_UP).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
+                    modes.forEach(mode -> {
+                        speeds.forEach(speed -> {
+                            presets.forEach(preset -> {
+                                actions.forEach(action -> {
+                                    TemperatureControlState auto = defaultTemperatureControlStateBuilder()
+                                            .state(OnOffToggleStateCalculator.ValidOnOffToggle.ON)
+                                            .mode(mode)
+                                            .preset(preset)
+                                            .fanspeed(speed)
+                                            .action(action)
+                                            .targetTemperature(targetTemp)
+                                            .currentTemperature(currentTemp)
+                                            .build();
+                                    e.with(c.getFunction(), c.getNumber()).when(set(auto)).thenRespond(auto);
+                                });
+                            });
+                        });
+                    });
+                }
             }
         });
     }
@@ -286,7 +354,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                             MockServerCommand command = new MockServerCommand(message);
                             LOG.trace(() -> String.format("Created mock command: %s", command));
 
-                            List<Supplier<MockServerResponse>> responses = getMocks().get(command);
+                            List<Supplier<MockServerResponse>> responses = getMocks().get(command.toString());
                             if (responses != null) {
                                 LOG.trace(() -> String.format("Got command responses from mocks. Size: %s", responses.size()));
                                 responses.forEach(response -> {
@@ -339,7 +407,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         LOG.debug("Stopped test server.");
     }
 
-    public Map<MockServerCommand, List<Supplier<MockServerResponse>>> getMocks() {
+    public Map<String, List<Supplier<MockServerResponse>>> getMocks() {
         return Optional.ofNullable(mocks).orElseGet(Map::of);
     }
 

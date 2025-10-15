@@ -9,6 +9,10 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 
+/**
+ * To change from byte to lux = (10 (byte / 40)) - 1
+ * To change from lux to byte = Log10(lux + 1) * 40
+ */
 public class LuxStateCalculator extends StateCalculatorSupport<LuxState> {
 
     public static final NumberConverter NUMBER_CONVERTER = NumberConverter.UNSIGNED_SHORT;

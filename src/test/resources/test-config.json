@@ -21,6 +21,11 @@
       { "number": 30, "description": "Light Sensor", "type": "LIGHT" },
       { "number": 31, "description": "Temperature Sensor", "type": "TEMPERATURE", "ha_unit_of_measurement": "°C" },
       { "number": 32, "description": "General Analog Sensor", "type": "GAS", "gas_type": "4-20ma", "gas_min": 0, "gas_max": 14, "decimals": 2 },
+      {
+        "number": 33,
+        "description": "Temperature Control",
+        "type": "TEMPERATURECONTROL"
+      },
       { "number": 36, "description": "Humidity Sensor", "type": "HUMIDITY" }
     ],
     "COND": [

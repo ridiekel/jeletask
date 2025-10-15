@@ -7,6 +7,18 @@ import io.github.ridiekel.jeletask.client.spec.state.impl.GasState;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+/**
+ * With Smax en Smin being the minimum and maximum values for “value”, the value can be calculated from the short as:
+ * <p>
+ * 4-20mA:
+ * - Value = ( ( ( Smax – Smin ) / 720 ) x ( short - 180) ) + Smin
+ * <p>
+ * 0-20mA:
+ * Value = ( ( ( Smax – Smin ) / 900 ) x value ) + Smin
+ * <p>
+ * 0-10V and 5-10V:
+ * Value = ( ( ( Smax - Smin) / 1023) x value ) + Smin
+ */
 public class GasStateCalculator extends StateCalculatorSupport<GasState> {
     @Override
     public GasState fromEvent(ComponentSpec component, byte[] dataBytes) {

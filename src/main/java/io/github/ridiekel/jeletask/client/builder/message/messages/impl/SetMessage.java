@@ -105,7 +105,10 @@ public class SetMessage extends FunctionStateBasedMessageSupport<State<?>> {
 
         SetMessage that = (SetMessage) o;
 
-        return new EqualsBuilder().appendSuper(super.equals(o)).append(number, that.number).isEquals();
+        return new EqualsBuilder()
+                .appendSuper(super.equals(o))
+                .append(number, that.number)
+                .isEquals();
     }
 
     @Override

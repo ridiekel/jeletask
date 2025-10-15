@@ -12,66 +12,41 @@ import java.util.List;
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
  */
+@Setter
+@Getter
 public class ComponentSpec {
-    @Setter
-    @Getter
     private String description;
-    @Setter
-    @Getter
     private Function function;
-    @Setter
-    @Getter
     private int number;
-    @Setter
-    @Getter
     private State<?> state;
-    @Setter
-    @Getter
 
     //type is the type as it is known to teletask
     private String type;
 
     // Defaulting to 1 for temperature sensors. Otherwise we would have to always override this.
-    @Setter
-    @Getter
     private int decimals = 1;
 
     //haType is the type as it is known to Home Assistant
     private String haType;
-    @Setter
-    @Getter
     private String HA_unit_of_measurement;
-    @Setter
-    @Getter
+    private double HA_temperature_step = 0.5;
     private String HA_modes = "auto,off,cool,heat,dry,fan_only";
 
     // For GAS (General Analog Sensor)
-    @Setter
-    @Getter
     private String gas_type = "";
-    @Setter
-    @Getter
     private float gas_min = 0;
-    @Setter
-    @Getter
     private float gas_max = 0;
 
     // For DISPLAYMESSAGE
-    @Setter
     private String address_numbers;
-    @Setter
     private String bus_numbers;
 
     // For PULSECOUNTER
-    @Setter
-    @Getter
     private int pulses_per_unit = 1000;
 
     // For INPUT
-    @Getter
     private Integer long_press_duration_millis;
 
-    @Getter
     private List<HAConfig<?>> haPublishedConfig = new ArrayList<>();
 
     /**

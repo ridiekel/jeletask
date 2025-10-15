@@ -103,7 +103,7 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
         rawBytes = Bytes.concat(rawBytes, this.getFunctionConfig(function).getBytes());
         rawBytes = Bytes.concat(rawBytes, numberBytes);
         rawBytes = Bytes.concat(rawBytes, new byte[]{0});
-        rawBytes = Bytes.concat(rawBytes, this.getEventStateBytes(centralUnit, function, outputState));
+        rawBytes = Bytes.concat(rawBytes, this.getEventStateBytesForTesting(centralUnit, function, outputState));
         rawBytes = Bytes.concat(rawBytes, new byte[]{0});
 
         this.setLengthAndCheckSum(rawBytes);

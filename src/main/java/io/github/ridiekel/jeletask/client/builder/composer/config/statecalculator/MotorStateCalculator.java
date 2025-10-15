@@ -11,6 +11,53 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Optional;
 
+/**
+ * For the motors there most are no "Data" parameters, The setting can be:
+ * SET_MTRSTOP, SET_MTRSTARTSTOP, SET_MTRUPSTOP, SET_MTRDOWNSTOP and SET_MTRUPDOWN.
+ * <p>
+ * Also MOTOR_UP = 1, MOTOR_DOWN = 2 is available, but are deprecated
+ * <p>
+ * Actions with parameter:
+ * MOTOR_GO_TO_POSITION(=11) one data parameter = requested % of the motor
+ * MOTOR_SUN_PROTECTION(=15) one data parameter = OFF(0) ON(0xFF)
+ *
+ * <pre>
+ * +---------------------+-------+------------------------------------------------------------------+
+ * | Constant            | Value | Description                                                      |
+ * +---------------------+-------+------------------------------------------------------------------+
+ * | SET_MTRUP           | 1     | To start a motor in the UP direction (deprecated)               |
+ * | SET_MTRDOWN         | 2     | To start a motor in the DOWN direction (deprecated)             |
+ * | SET_MTRSTOP         | 3     | To stop a motor                                                 |
+ * | SET_MTRSTARTSTOP    | 6     | = PROSOFT motor start/stop function                             |
+ * | SET_MTRUPSTOP       | 7     | = PROSOFT motor up/stop function                                |
+ * | SET_MTRDOWNSTOP     | 8     | = PROSOFT motor down/stop function                              |
+ * | SET_MTRUPDOWN       | 55    | = PROSOFT motor up/down function                                |
+ * +---------------------+-------+------------------------------------------------------------------+
+ *
+ * Event:
+ * +----------------+--------------------------------------------------------------------------+
+ * | Field          | Description                                                              |
+ * +----------------+--------------------------------------------------------------------------+
+ * | Direction      | The current (or last) run direction of the motor                         |
+ * +----------------+--------------------------------------------------------------------------+
+ * | Power          | The on state of the motor                                                |
+ * +----------------+--------------------------------------------------------------------------+
+ * | Protection     | Info about SUN and wind protection. High nibble = sun, low nibble = wind.|
+ * |                | Possible values are (note that wind can&#x27;t have all the states):     |
+ * |                | - 0: no protection defined                                               |
+ * |                | - 1: on, and the motor is controlled by the protection                   |
+ * |                | - 2: on, but the motor is not controlled by the protection               |
+ * |                | - 3: on, but overruled by user                                           |
+ * |                | - 4: protection switched OFF                                             |
+ * +----------------+--------------------------------------------------------------------------+
+ * | Position       | Current position of the motor or position the motor is running to.       |
+ * |                | Note: this byte is only available if position indication is enabled      |
+ * |                | for this motor.                                                          |
+ * |                | Note: if the position byte is added, it is possible that 5 extra bytes   |
+ * |                | are added after it; those bytes can be ignored.                          |
+ * +----------------+--------------------------------------------------------------------------+
+ * </pre>
+ */
 public class MotorStateCalculator extends StateCalculatorSupport<MotorState> {
     private static final Mapper<ValidMotorDirectionState> DIRECTION_MAPPER = new Mapper<>(ValidMotorDirectionState.class, NumberConverter.UNSIGNED_BYTE)
             .add(ValidMotorDirectionState.UP, 1)

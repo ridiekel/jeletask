@@ -10,15 +10,19 @@ import java.util.Optional;
  */
 public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
 
+    public static final int TEMPERATURE_MINIMUM = 10;
+    public static final int TEMPERATURE_MAXIMUM = 30;
+
     public HASensorConfig(HAConfigParameters parameters) {
         super(parameters);
 
-        if ("TEMPERATURECONTROL".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
+        if (isType(parameters, "TEMPERATURECONTROL")) {
             // HA 'climate'
 
-            this.putInt("min_temp", 10);
-            this.putInt("max_temp", 30);
-            this.putDouble("precision", 0.1);
+            this.putInt("min_temp", TEMPERATURE_MINIMUM);
+            this.putInt("max_temp", TEMPERATURE_MAXIMUM);
+            this.putDouble("precision", parameters.getComponentSpec().getHA_temperature_step());
+            this.putDouble("temp_step", parameters.getComponentSpec().getHA_temperature_step());
             this.putArray("modes", parameters.getComponentSpec().getHA_modes().split(","));
             this.put("current_temperature_topic", "~/state");
             this.put("temperature_state_topic", "~/state");
@@ -42,28 +46,46 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("fan_mode_command_topic", "~/set");
             this.put("current_temperature_template", "{{ value_json.current_temperature }}");
             this.put("temperature_state_template", "{{ value_json.target_temperature }}");
-            this.put("temperature_command_template", "{\"target_temperature\": \"{{ value }}\"}");
-            this.put("mode_state_template", "{% if value_json.mode|upper == \"VENT\" %}fan_only{% else %}{{ value_json.mode|lower }}{% endif %}");
-            this.put("mode_command_template", "{% if value|lower == \"fan_only\" %}{\"state\": \"VENT\"}{% else %}{\"state\": \"{{ value | upper}}\"}{% endif %}");
-            this.put("fan_mode_command_template", "{% if value|lower == \"auto\" %}{\"state\": \"SPAUTO\"}{% elif value|lower == \"low\" %}{\"state\": \"SPLOW\"}{% elif value|lower == \"med\" %}{\"state\": \"SPMED\"}{% elif value|lower == \"high\" %}{\"state\": \"SPHIGH\"}{% endif %}");
-            this.put("fan_mode_state_template", "{% if value_json.fanspeed|upper == \"SPAUTO\" %}auto{% elif value_json.fanspeed|upper == \"SPLOW\" %}low{% elif value_json.fanspeed|upper == \"SPMED\" %}med{% elif value_json.fanspeed|upper == \"SPHIGH\" %}high{% endif %}");
-
-        } else if ("PULSECOUNTER".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
-
+            this.put("temperature_command_template", """
+                    { "state": "ON", "action": "TARGET", "target_temperature": {{ value|float }} }
+                    """);
+            this.put("mode_state_template", """
+                    {% if value_json.mode|upper == "VENT" %}
+                        fan_only
+                    {% else %}
+                        {{ value_json.mode|lower }}
+                    {% endif %}
+                    """);
+            this.put("mode_command_template", """
+                    {% if value|lower == "fan_only" %}
+                        {"state": "ON", "mode": "VENT"}
+                    {% else %}
+                        {"state": "ON", "mode": "{{ value | upper}}"}
+                    {% endif %}
+                    """);
+            this.put("fan_mode_command_template", """
+                    {"state": "ON", "fanspeed": "{{ value|upper }}"}
+                    """);
+            this.put("fan_mode_state_template", """
+                    {{ value_json.fanspeed|lower }}
+                    """);
+            this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
+        } else if (isType(parameters, "PULSECOUNTER")) {
             // TODO: implement both current + total. Only current is implemented right now.
-            if (parameters.getComponentSpec().getHA_unit_of_measurement() != null)
+            if (parameters.getComponentSpec().getHA_unit_of_measurement() != null) {
                 this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
+            }
 
             this.put("value_template", "{{ value_json.current }}");
         } else {
             // Regular simple sensor
             this.put("value_template", "{{ value_json.state }}");
 
-            if ("TEMPERATURE".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
+            if (isType(parameters, "TEMPERATURE")) {
                 this.deviceClass("temperature");
                 this.stateClass("measurement");
                 this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
-            } else if ("LIGHT".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
+            } else if (isType(parameters, "LIGHT")) {
                 this.deviceClass("illuminance");
                 this.stateClass("measurement");
                 this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("lx"));
@@ -73,6 +95,9 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
                 }
             }
         }
+    }
 
+    private static boolean isType(HAConfigParameters parameters, String expected) {
+        return expected.equalsIgnoreCase(parameters.getComponentSpec().getType());
     }
 }

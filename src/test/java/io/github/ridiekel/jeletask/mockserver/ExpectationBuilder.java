@@ -132,7 +132,7 @@ public class ExpectationBuilder {
                 MockServerCommand command = this.command.apply(this.builder);
 
                 if (command.command() instanceof SetMessage message) {
-                    LOG.info(String.format(AnsiOutput.toString(AnsiColor.BLUE, "[%s] - [%s] - [%s] - mocking requested state [", AnsiColor.GREEN, "%s", AnsiColor.BLUE, "] -> [", AnsiColor.YELLOW, "%s", AnsiColor.BLUE, "]", AnsiColor.DEFAULT),
+                    LOG.trace(String.format(AnsiOutput.toString(AnsiColor.BLUE, "[%s] - [%s] - [%s] - mocking requested state [", AnsiColor.GREEN, "%s", AnsiColor.BLUE, "] -> [", AnsiColor.YELLOW, "%s", AnsiColor.BLUE, "]", AnsiColor.DEFAULT),
                             StringUtils.rightPad("MOCK", 10),
                             StringUtils.rightPad(message.getFunction().toString(), 10),
                             StringUtils.leftPad(String.valueOf(message.getNumber()), 3),
@@ -140,7 +140,7 @@ public class ExpectationBuilder {
                             state
                     ));
                 } else {
-                    LOG.info(String.format("[%s] - [%s]",
+                    LOG.trace(String.format("[%s] - [%s]",
                             StringUtils.rightPad("MOCK", 10),
                             command.command()));
                 }

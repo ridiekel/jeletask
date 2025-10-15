@@ -23,6 +23,11 @@ import java.math.BigDecimal;
 @SpringBootTest(classes = {Teletask2MqttTestApplication.class})
 @ActiveProfiles("test")
 public class MockingTeletaskTestSupport extends TeletaskTestSupport {
+    static {
+        System.setProperty("teletask.test.startbrowser", "false");
+        System.setProperty("spring.boot.admin.client.enabled", "false");
+    }
+
     @Autowired
     private TeletaskTestClient teletask;
 

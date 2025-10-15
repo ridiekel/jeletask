@@ -8,6 +8,7 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
@@ -33,12 +34,12 @@ public abstract class MessageSupport {
      */
     private static final Logger LOG = LogManager.getLogger();
 
-    private static final Pattern REMOVE_NAMES = Pattern.compile("[^\\|]");
-    private static final Pattern INSERT_PLACEHOLDERS = Pattern.compile("\\|   ");
-    public static final int ACK_WAIT_TIME = 10000;
+    public static final int ACK_WAIT_TIME = 2000;
+    private static final Pattern REMOVE_NAMES = Pattern.compile("[^|]");
+    private static final Pattern INSERT_PLACEHOLDERS = Pattern.compile("\\| {3}");
 
     private final CentralUnit centralUnit;
-
+    @Getter
     private boolean acknowledged = false;
 
     protected MessageSupport(CentralUnit centralUnit) {
@@ -78,7 +79,7 @@ public abstract class MessageSupport {
         long startWaitingTime = System.currentTimeMillis();
         try {
             Awaitility.await(String.format("Acknowlegde - %s", this.getId()))
-                    .pollInterval(10, TimeUnit.MILLISECONDS)
+                    .pollInterval(5, TimeUnit.MILLISECONDS)
                     .atMost(ACK_WAIT_TIME, TimeUnit.MILLISECONDS)
                     .pollInSameThread()
                     .until(() -> {
@@ -215,10 +216,6 @@ public abstract class MessageSupport {
     @Override
     public String toString() {
         return ReflectionToStringBuilder.toString(this, ToStringStyle.SHORT_PREFIX_STYLE);
-    }
-
-    public boolean isAcknowledged() {
-        return this.acknowledged;
     }
 
     public void acknowledge() {

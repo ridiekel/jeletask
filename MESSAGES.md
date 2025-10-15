@@ -308,32 +308,32 @@ Use TEMPERATURECONTROL for any temperature controllable 'sensor' like an AC (HVA
 
 The following json attributes are provided on the /state MQTT topic:
 
-| Attribute                           | Possible Values           | Description                                       |
-|-------------------------------------|---------------------------|---------------------------------------------------|
-| state                               | ON/OFF                    |                                                   |
-| current_temperature                 |                           | The current temperature                           |
-| target_temperature                  |                           | The set target temperature                        |
-| decimals                            |                           | How many decimals you want returned (rounded up)  |
-| preset                              | DAY/NIGHT/ECO             | The current preset                                |
-| mode                                | AUTO/HEAT/COOL/VENT/DRY   | The current mode                                  |
-| fanspeed                            | SPAUTO/SPLOW/SPMED/SPHIGH | The current fan speed                             |
-| window_open                         | 0 = closed / 255 = open   | Window state (Untested)                           |
-| swing_direction                     |                           | switch direction as value (Untested)              |
-| output_state                        |                           | Untested/Unsure                                   |
-| day_preset_temperature              |                           | Day preset temperature (see prosoft)              |
-| night_at_heating_preset_temperature |                           | Night at heating temperature (see prosoft)        |
-| night_at_cooling_preset_temperature |                           | Night at cooling temperature (see prosoft)        |
-| eco_preset_offset                   |                           | ECO offset preset temperature (see prosoft)       |
+| Attribute                           | Possible Values           | Description                                      |
+|-------------------------------------|---------------------------|--------------------------------------------------|
+| state                               | ON/OFF                    |                                                  |
+| action                              | ON/OFF                    |                                                  |
+| current_temperature                 |                           | The current temperature                          |
+| target_temperature                  |                           | The set target temperature                       |
+| decimals                            |                           | How many decimals you want returned (rounded up) |
+| preset                              | DAY/NIGHT/ECO             | The current preset                               |
+| mode                                | AUTO/HEAT/COOL/VENT/DRY   | The current mode                                 |
+| fanspeed                            | SPAUTO/SPLOW/SPMED/SPHIGH | The current fan speed                            |
+| window_open                         | 0 = closed / 255 = open   | Window state (Untested)                          |
+| swing_direction                     |                           | switch direction as value (Untested)             |
+| output_state                        |                           | Untested/Unsure                                  |
+| day_preset_temperature              |                           | Day preset temperature (see prosoft)             |
+| night_at_heating_preset_temperature |                           | Night at heating temperature (see prosoft)       |
+| night_at_cooling_preset_temperature |                           | Night at cooling temperature (see prosoft)       |
+| eco_preset_offset                   |                           | ECO offset preset temperature (see prosoft)      |
 
-The following "state" attribute commands are supported on the /set MQTT topic:
+| For actions | Description                                              |
+|-------------|----------------------------------------------------------|
+| TARGET      | Set target state, also pass the target_temperature value |
 
 | For state change            | Description                                 |
 |-----------------------------|---------------------------------------------|
 | ON                          | Turn on the device                          |
 | OFF                         | Turn off the device                         |
-| ONOFF                       | Toggle on or off the device                 |
-| UP                          | Set target temperature up 0.5°C             |
-| DOWN                        | Set target temperature down 0.5°C           |
 
 | For preset change | Description            |
 |-------------------|------------------------|
@@ -348,15 +348,13 @@ The following "state" attribute commands are supported on the /set MQTT topic:
 | COOL                      | Set operating mode to cool     |
 | VENT                      | Set operating mode to vent     |
 | DRY                       | Set operating mode to dry      |
-| MODE                      | Toggle between available modes |
 
-| For fan speed change   | Description                    |
-|------------------------|--------------------------------|
-| SPAUTO                 | Set fan speed to auto          |
-| SPLOW                  | Set fan speed to slow          |
-| SPMED                  | Set fan speed to medium        |
-| SPHIGH                 | Set fan speed to high          |
-| SPEED                  | Toggle between available modes |
+| For fan speed change | Description             |
+|----------------------|-------------------------|
+| AUTO                 | Set fan speed to auto   |
+| LOW                  | Set fan speed to slow   |
+| MEDIUM               | Set fan speed to medium |
+| HIGH                 | Set fan speed to high   |
 
 You can also set the target temperature by sending the desired temperature to the "target_temperature" attribute.
 

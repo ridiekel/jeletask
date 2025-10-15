@@ -16,7 +16,7 @@ public abstract class StateCalculatorSupport<S extends State<?>> implements Stat
         try {
             stateObject = OBJECT_MAPPER.readValue(message, getStateType());
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Could not parse JSON message: " + message, e);
+            throw new IllegalArgumentException("Could not parse JSON message to correct state type (" + getStateType() + "): " + message, e);
         }
 
         return stateObject;

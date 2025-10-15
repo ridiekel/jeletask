@@ -4,6 +4,17 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverte
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DimmerState;
 
+/**
+ * For dimmers the setting parameter needs to be 0-100 indicating the level to which you want to set the dimmer.
+ *
+ * <pre>
+ * +---------------------+---------+------------------------------------------------------------------+
+ * | Constant            | Value   | Description                                                      |
+ * +---------------------+---------+------------------------------------------------------------------+
+ * | SET_DIM             | 0 - 100 | The level to which you want to set the dimmer                    |
+ * +---------------------+---------+------------------------------------------------------------------+
+ * </pre>
+ */
 public class DimmerStateCalculator extends StateCalculatorSupport<DimmerState> {
     public DimmerStateCalculator() {
     }

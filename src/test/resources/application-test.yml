@@ -18,6 +18,7 @@ teletask:
     timeout: 5000
     gitlabci: false
     keeprunning: false
+    startbrowser: true
   log:
     topic-enabled: true
     haconfig-enabled: true
@@ -31,7 +32,7 @@ spring:
   boot:
     admin:
       client:
-        enabled: false
+        enabled: true
 
 logging:
   level:

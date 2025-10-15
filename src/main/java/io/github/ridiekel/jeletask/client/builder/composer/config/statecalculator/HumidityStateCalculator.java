@@ -6,6 +6,9 @@ import io.github.ridiekel.jeletask.client.spec.state.impl.HumidityState;
 
 import java.math.BigDecimal;
 
+/**
+ * Byte = % humidity
+ */
 public class HumidityStateCalculator extends StateCalculatorSupport<HumidityState> {
     public static final NumberConverter NUMBER_CONVERTER = NumberConverter.UNSIGNED_SHORT;
 

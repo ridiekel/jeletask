@@ -6,16 +6,21 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
 
+/**
+ * For FNC_TPKEY number is the input number.
+ * Setting can be SET_PULSE, SET_CLOSED or SET_OPENED.
+ *
+ * <pre>
+ * +--------------+-------+--------------------------------------+
+ * | Constant     | Value | Description                          |
+ * +--------------+-------+--------------------------------------+
+ * | SET_PULSE    | 1     | For a "Short" press                  |
+ * | SET_CLOSED   | 2     | For a long press                     |
+ * | SET_OPENED   | 3     | For the end of a long press          |
+ * +--------------+-------+--------------------------------------+
+ * </pre>
+ */
 public class InputStateCalculator extends StateCalculatorSupport<InputState> {
-    /*
-Close short press: 1
-Close long press: 2
-
-Close edge triggered: 2
-Open edge triggered: 3
-
-Inverted and button control returns 3 then 2 then 9??
-     */
     private static final Mapper<ValidInputState> MAPPER = new Mapper<>(ValidInputState.class, NumberConverter.UNSIGNED_BYTE)
             .add(ValidInputState.UNKNOWN_0, 0)
             .add(ValidInputState.SHORT_PRESS, 1)

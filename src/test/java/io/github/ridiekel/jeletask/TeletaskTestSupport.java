@@ -4,8 +4,6 @@ import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import io.github.ridiekel.jeletask.mqtt.container.ha.HomeAssistantContainer;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static com.codeborne.selenide.Configuration.*;
 
 public abstract class TeletaskTestSupport {
-    private static final Logger LOGGER = LogManager.getLogger();
-
-    static {
-        System.setProperty("java.awt.headless", "false");
-    }
-
     @Autowired
     private HomeAssistantContainer ha;
     @Autowired

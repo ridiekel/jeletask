@@ -4,6 +4,20 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverte
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.PulseCounterState;
 
+/**
+ * For pulse counter sensor there are two recalculations possible:
+ * <p>
+ * - The real time value, with
+ * o PU = number of pulses per unit
+ * o rtU = number of realtime Units per unit
+ * o sec = number of seconds in the timebase
+ * <p>
+ * can be calculated as
+ * Value = (short * rtU * sec ) / (3600 * PU)
+ * <p>
+ * The total value (note this is a four byte value (int32)):
+ * Value = int32 / number of pulses per Unit
+ */
 public class PulseCounterStateCalculator extends StateCalculatorSupport<PulseCounterState> {
     @Override
     protected Class<PulseCounterState> getStateType() {
