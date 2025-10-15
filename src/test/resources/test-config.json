@@ -2,8 +2,20 @@
   "type": "MICROS_PLUS",
   "componentsTypes": {
     "RELAY": [
-      { "number": 1, "description": "Light Relay 1" },
-      { "number": 2, "description": "Switch Relay 1", "type": "switch" }
+      {
+        "number": 10,
+        "description": "Light Relay 1"
+      },
+      {
+        "number": 11,
+        "description": "Switch Relay 1",
+        "type": "switch"
+      },
+      {
+        "number": 12,
+        "description": "Scene Relay 1",
+        "type": "scene"
+      }
     ],
     "SENSOR": [
       { "number": 30, "description": "Light Sensor", "type": "LIGHT" },
@@ -17,7 +29,20 @@
       { "number": 4, "description": "Condition 1" }
     ],
     "FLAG": [
-      { "number": 5, "description": "Flag 1" }
+      {
+        "number": 50,
+        "description": "Flag 1"
+      },
+      {
+        "number": 51,
+        "description": "Light Flag 1",
+        "type": "light"
+      },
+      {
+        "number": 52,
+        "description": "Scene Flag 1",
+        "type": "scene"
+      }
     ],
     "GENMOOD": [
       {
@@ -26,6 +51,11 @@
       },
       {
         "number": 61,
+        "description": "General Light 1",
+        "type": "light"
+      },
+      {
+        "number": 62,
         "description": "General Scene 1",
         "type": "scene"
       }
@@ -40,6 +70,11 @@
       },
       {
         "number": 81,
+        "description": "Local Light 1",
+        "type": "light"
+      },
+      {
+        "number": 82,
         "description": "Local Scene 1",
         "type": "scene"
       }

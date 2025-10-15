@@ -130,6 +130,11 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 1,
         "description": "Outdoor light"
+      },
+      {
+        "number": 2,
+        "description": "Garage lights",
+        "type": "scene"
       }
     ],
     "DIMMER": [
@@ -153,6 +158,11 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 3,
         "description": "Timed function nr 3 (pulse for garage door)"
+      },
+      {
+        "number": 4,
+        "description": "Timed Function 4",
+        "type": "scene"
       }
     ],
     "DISPLAYMESSAGE": [
@@ -399,11 +409,11 @@ In the test source tree, there is a `io.github.ridiekel.jeletask.Teletask2MqttTe
 When you start that class, you should have a fully working application with 2 docker containers started in the background:
 * Home assistant
 * MQTT
-Also, the test server `io.github.ridiekel.jeletask.server.TeletaskTestServer` is started in the background.
+  Also, the test server `io.github.ridiekel.jeletask.mockserver.TeletaskMockServer` is started in the background.
 
 All three services start on a random available port that is logged in the console.
 
-Mocks can be defined in `io.github.ridiekel.jeletask.server.TeletaskTestServer`.
+Mocks can be defined in `io.github.ridiekel.jeletask.mockserver.TeletaskMockServer`.
 Mocks should already be present for the test devices that can be found in `src/test/resources/test-config.json`
 
 ## Testing

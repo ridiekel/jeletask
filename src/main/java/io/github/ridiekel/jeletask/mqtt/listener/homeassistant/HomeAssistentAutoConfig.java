@@ -11,7 +11,10 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class HomeAssistentAutoConfig {
     private static final Logger LOG = LogManager.getLogger();
@@ -45,19 +48,13 @@ public class HomeAssistentAutoConfig {
             // Dimmers -> -> HA auto discovery: light
             Map.entry(Function.DIMMER, f(HADeviceType.LIGHT, HADimmerConfig::new)),
             // Flags can be read + turned on/off -> HA auto discovery: switch
-            Map.entry(Function.FLAG, f(HADeviceType.SWITCH, HASwitchConfig::new)),
+            Map.entry(Function.FLAG, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
             // Mood functions actually act like a switch in Teletask. They can be turned ON/OFF?
             // HA scenes can only be 'activated' and do not support a state?
             // -> HA auto discovery: switch
-            Map.entry(Function.GENMOOD, f(c -> {
-                String type = Optional.ofNullable(c.getType()).orElse("switch").toLowerCase();
-                return Objects.equals(type, "switch") ? HADeviceType.SWITCH : HADeviceType.SCENE;
-            }, HASwitchConfig::new)),
-            Map.entry(Function.LOCMOOD, f(c -> {
-                String type = Optional.ofNullable(c.getType()).orElse("switch").toLowerCase();
-                return Objects.equals(type, "switch") ? HADeviceType.SWITCH : HADeviceType.SCENE;
-            }, HASwitchConfig::new)),
-            Map.entry(Function.TIMEDMOOD, f(HADeviceType.SWITCH, HASwitchConfig::new)),
+            Map.entry(Function.GENMOOD, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
+            Map.entry(Function.LOCMOOD, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
+            Map.entry(Function.TIMEDMOOD, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
             // Motors -> HA auto discovery: cover. Sufficient?
             Map.entry(Function.MOTOR, f(HADeviceType.COVER, HAMotorConfig::new)),
             Map.entry(Function.SENSOR, f(haDeviceTypeFromTypeToHaTypeMap(Map.of(
@@ -68,22 +65,14 @@ public class HomeAssistentAutoConfig {
                     SensorType.TEMPERATURECONTROL, HADeviceType.CLIMATE,
                     SensorType.PULSECOUNTER, HADeviceType.SENSOR
             )), HASensorConfig::new)),
-            Map.entry(Function.RELAY,
-                    f(c -> {
-                                String type = Optional.ofNullable(c.getType()).orElse("light").toLowerCase();
-                                return Objects.equals(type, "switch") ? HADeviceType.SWITCH : HADeviceType.LIGHT;
-                            },
-                            c -> {
-                                String type = Optional.ofNullable(c.getComponentSpec().getType()).orElse("light").toLowerCase();
-                                if (Objects.equals(type, "light")) {
-                                    return new HALightConfig(c);
-                                } else {
-                                    return new HASwitchConfig(c);
-                                }
-                            })),
+            Map.entry(Function.RELAY, f(switchSceneLight(HADeviceType.LIGHT), HAOnOffConfig::new)),
             // Timed functions actually act like a switch. They can only be ON or OFF -> HA auto discovery: switch
-            Map.entry(Function.TIMEDFNC, f(HADeviceType.SWITCH, HASwitchConfig::new))
+            Map.entry(Function.TIMEDFNC, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new))
     );
+
+    private static java.util.function.Function<ComponentSpec, HADeviceType> switchSceneLight(HADeviceType defaultType) {
+        return c -> Optional.ofNullable(c.getType()).map(String::toUpperCase).map(HADeviceType::valueOf).orElse(defaultType);
+    }
 
     private static <T extends Enum<T>> java.util.function.Function<ComponentSpec, HADeviceType> haDeviceTypeFromTypeToHaTypeMap(Map<T, HADeviceType> map) {
         Map<String, HADeviceType> result = new HashMap<>();

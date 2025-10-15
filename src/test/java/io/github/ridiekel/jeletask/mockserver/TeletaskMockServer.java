@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.server;
+package io.github.ridiekel.jeletask.mockserver;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.DimmerStateCalculator;
@@ -38,12 +38,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.ridiekel.jeletask.server.ExpectationBuilder.WithBuilder.ResponseBuilder.cachedState;
-import static io.github.ridiekel.jeletask.server.ExpectationBuilder.WithBuilder.get;
-import static io.github.ridiekel.jeletask.server.ExpectationBuilder.WithBuilder.set;
-import static io.github.ridiekel.jeletask.server.ExpectationBuilder.*;
+import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.WithBuilder.ResponseBuilder.cachedState;
+import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.WithBuilder.get;
+import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.WithBuilder.set;
+import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.*;
 
-public class TeletaskTestServer implements Runnable, TeletaskReceiver {
+public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     private static final Logger LOG = LogManager.getLogger();
 
     public static final byte[] ACKNOWLEDGE = {10};
@@ -57,9 +57,9 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
     private InputStream inputStream;
     private OutputStream outputStream;
     private final Timer timer = new Timer();
-    private Map<TestServerCommand, List<Supplier<TestServerResponse>>> mocks;
+    private Map<MockServerCommand, List<Supplier<MockServerResponse>>> mocks;
 
-    public TeletaskTestServer(int port, CentralUnit centralUnit) {
+    public TeletaskMockServer(int port, CentralUnit centralUnit) {
         this.port = port;
         this.centralUnit = centralUnit;
     }
@@ -69,7 +69,7 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
 
         mockDefinition.accept(expectationBuilder);
 
-        this.mocks = expectationBuilder.getMocks().stream().collect(Collectors.toMap(TestServerExpectation::command, TestServerExpectation::responses));
+        this.mocks = expectationBuilder.getMocks().stream().collect(Collectors.toMap(MockServerExpectation::command, MockServerExpectation::responses));
     }
 
     @EventListener(classes = {ContextRefreshedEvent.class})
@@ -278,14 +278,14 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
                 @Override
                 public void run() {
                     try {
-                        List<MessageSupport> messages = MessageUtilities.receive(LOG, TeletaskTestServer.this);
+                        List<MessageSupport> messages = MessageUtilities.receive(LOG, TeletaskMockServer.this);
                         for (MessageSupport message : messages) {
                             LOG.trace("Processing message: {}", message.toString());
-                            TeletaskTestServer.this.outputStream.write(ACKNOWLEDGE);
+                            TeletaskMockServer.this.outputStream.write(ACKNOWLEDGE);
 
-                            TestServerCommand command = new TestServerCommand(message);
+                            MockServerCommand command = new MockServerCommand(message);
 
-                            List<Supplier<TestServerResponse>> responses = getMocks().get(command);
+                            List<Supplier<MockServerResponse>> responses = getMocks().get(command);
                             if (responses != null) {
                                 boolean pauseBetweenResponses = responses.size() > 1;
                                 responses.forEach(response -> {
@@ -295,8 +295,8 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
                                             try {
                                                 byte[] rawBytes = eventMessage.getRawBytes();
                                                 LOG.trace("Sending bytes to client: {}", Bytes.bytesToHex(rawBytes));
-                                                TeletaskTestServer.this.outputStream.write(rawBytes);
-                                                TeletaskTestServer.this.outputStream.flush();
+                                                TeletaskMockServer.this.outputStream.write(rawBytes);
+                                                TeletaskMockServer.this.outputStream.flush();
                                             } catch (IOException e) {
                                                 throw new RuntimeException(e);
                                             }
@@ -312,7 +312,7 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
                                 LOG.warn(AnsiOutput.toString(AnsiColor.YELLOW, "No expectations found for:\n\t", AnsiColor.BRIGHT_YELLOW, "{}"), command);
                             }
 
-                            TeletaskTestServer.this.outputStream.flush();
+                            TeletaskMockServer.this.outputStream.flush();
                         }
                     } catch (Exception e) {
                         LOG.error("Exception ({}) caught in run: {}", e.getClass().getName(), e.getMessage(), e);
@@ -339,7 +339,7 @@ public class TeletaskTestServer implements Runnable, TeletaskReceiver {
         LOG.debug("Stopped test server.");
     }
 
-    public Map<TestServerCommand, List<Supplier<TestServerResponse>>> getMocks() {
+    public Map<MockServerCommand, List<Supplier<MockServerResponse>>> getMocks() {
         return Optional.ofNullable(mocks).orElseGet(Map::of);
     }
 

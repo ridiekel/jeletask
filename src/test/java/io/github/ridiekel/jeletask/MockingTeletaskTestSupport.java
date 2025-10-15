@@ -9,8 +9,8 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.*;
+import io.github.ridiekel.jeletask.mockserver.TeletaskMockServer;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
-import io.github.ridiekel.jeletask.server.TeletaskTestServer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,7 +101,7 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
             }
 
             protected void set(Enum<?> state) {
-                set(this.testClient.teletaskClient.getCentralUnit().stateFromMessage(function, number, TeletaskTestServer.template("state").apply(state.toString())));
+                set(this.testClient.teletaskClient.getCentralUnit().stateFromMessage(function, number, TeletaskMockServer.template("state").apply(state.toString())));
             }
 
             protected void set(State<?> state) {
@@ -227,5 +227,4 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
     void login(){
         ha().login();
     }
-
 }

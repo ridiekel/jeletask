@@ -11,6 +11,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -45,8 +46,16 @@ public class HaWebFunctions {
         return new HaSceneWebElementFunctions(centralUnit, Function.GENMOOD, number);
     }
 
+    public HaSceneWebElementFunctions relayScene(int number) {
+        return new HaSceneWebElementFunctions(centralUnit, Function.RELAY, number);
+    }
+
     public HaSceneWebElementFunctions localmoodScene(int number) {
         return new HaSceneWebElementFunctions(centralUnit, Function.LOCMOOD, number);
+    }
+
+    public HaSceneWebElementFunctions flagScene(int number) {
+        return new HaSceneWebElementFunctions(centralUnit, Function.FLAG, number);
     }
 
     public HaOnOffWebElementFunctions condition(int number) {
@@ -138,16 +147,20 @@ public class HaWebFunctions {
 
         private static final Map<Function, java.util.function.Function<ComponentSpec, String>> FUNTION_TO_ROWTYPE = Map.of(
                 Function.DIMMER, c -> "hui-toggle-entity-row",
-                Function.RELAY, c -> "hui-toggle-entity-row",
-                Function.FLAG, c -> "hui-toggle-entity-row",
-                Function.GENMOOD, c -> Objects.equals(c.getType(), "scene") ? "ha-assist-chip" : "hui-toggle-entity-row",
-                Function.LOCMOOD, c -> Objects.equals(c.getType(), "scene") ? "ha-assist-chip" : "hui-toggle-entity-row",
-                Function.TIMEDMOOD, c -> "hui-toggle-entity-row",
+                Function.RELAY, onOffElementSelector(),
+                Function.FLAG, onOffElementSelector(),
+                Function.GENMOOD, onOffElementSelector(),
+                Function.LOCMOOD, onOffElementSelector(),
+                Function.TIMEDMOOD, onOffElementSelector(),
                 Function.MOTOR, c -> "hui-cover-entity-row",
-                Function.COND, c -> "hui-simple-entity-row",
+                Function.COND, onOffElementSelector(),
                 Function.SENSOR, c -> "hui-sensor-entity-row",
                 Function.INPUT, c -> "hui-sensor-entity-row"
         );
+
+        private static java.util.function.@NotNull Function<ComponentSpec, String> onOffElementSelector() {
+            return c -> Objects.equals(c.getType(), "scene") ? "ha-assist-chip" : "hui-toggle-entity-row";
+        }
 
         protected final int index;
         protected final CentralUnit centralUnit;

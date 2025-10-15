@@ -6,8 +6,8 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadWrit
 /**
  * <a href="https://www.home-assistant.io/integrations/switch.mqtt/">MQTT Switch Discovery</a>
  */
-public class HASwitchConfig extends HAReadWriteConfig<HASwitchConfig> {
-    public HASwitchConfig(HAConfigParameters parameters) {
+public class HAOnOffConfig extends HAReadWriteConfig<HAOnOffConfig> {
+    public HAOnOffConfig(HAConfigParameters parameters) {
         super(parameters);
 
         this.put("schema", "json");

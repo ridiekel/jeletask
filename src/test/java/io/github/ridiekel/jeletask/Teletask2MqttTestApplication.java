@@ -1,8 +1,8 @@
 package io.github.ridiekel.jeletask;
 
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
+import io.github.ridiekel.jeletask.mockserver.TeletaskMockServer;
 import io.github.ridiekel.jeletask.mqtt.container.TestContainers;
-import io.github.ridiekel.jeletask.server.TeletaskTestServer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,8 +14,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class Teletask2MqttTestApplication {
     @Bean
-    public TeletaskTestServer teletaskTestServer(CentralUnit centralUnit, TestContainers containers) {
-        return new TeletaskTestServer(centralUnit.getPort(), centralUnit);
+    public TeletaskMockServer teletaskTestServer(CentralUnit centralUnit, TestContainers containers) {
+        return new TeletaskMockServer(centralUnit.getPort(), centralUnit);
     }
 
     public static void main(String[] args) {
