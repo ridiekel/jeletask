@@ -30,7 +30,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.View;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -74,7 +73,6 @@ public class MqttProcessor implements StateChangeListener {
     private final LongPressInputCaptor longPressInputCaptor;
     @Getter
     private final Teletask2MqttConfigurationProperties configuration;
-    private final View error;
 
     private void scheduleGroupGet(Teletask2MqttConfigurationProperties configuration) {
         if (configuration.getPublish().getStatesInterval() > 0) {
@@ -127,8 +125,7 @@ public class MqttProcessor implements StateChangeListener {
                          TeletaskClient teletaskClient,
                          Teletask2MqttConfigurationProperties configuration,
                          MqttMessageTraceService traceService,
-                         CentralUnitSsePublisher centralUnitSsePublisher,
-                         View error) {
+                         CentralUnitSsePublisher centralUnitSsePublisher) {
         this.centralUnit = centralUnit;
         this.teletaskClient = teletaskClient;
         this.traceService = traceService;
@@ -174,7 +171,6 @@ public class MqttProcessor implements StateChangeListener {
             this.teletaskClient.disconnect();
             this.checkAndPublishConnectedStatus();
         }));
-        this.error = error;
     }
 
     private void subscribe() throws MqttException {
