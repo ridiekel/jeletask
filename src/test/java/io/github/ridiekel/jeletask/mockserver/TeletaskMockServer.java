@@ -146,37 +146,50 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         LOG.info("Finsihed creating mocks ({})!", mocks.size());
     }
 
+    private static <T> List<T> withNull(Collection<T> values) {
+        ArrayList<T> list = new ArrayList<>(values);
+        list.add(null);
+        return Collections.unmodifiableList(list);
+    }
+
+    private static List<BigDecimal> precomputedTemps(ComponentSpec componentSpec) {
+        List<BigDecimal> temps = new ArrayList<>();
+        int step = (int) (componentSpec.getHA_temperature_step() * 10);
+        int start = HASensorConfig.TEMPERATURE_MINIMUM * 10;
+        int end = HASensorConfig.TEMPERATURE_MAXIMUM * 10;
+        for (int temp = start; temp <= end; temp += step) {
+            temps.add(BigDecimal.valueOf(temp).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP));
+        }
+        return temps;
+    }
+
     private void mockTemperatureControlSensor(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("temperaturecontrol")).toList();
+        final List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream()
+                .filter(c -> "temperaturecontrol".equalsIgnoreCase(c.getType()))
+                .toList();
 
-        List<TemperatureControlStateCalculator.ValidTemperatureControlMode> modes = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlMode.values()));
-        modes.add(null);
-        List<TemperatureControlStateCalculator.ValidTemperatureControlSpeed> speeds = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlSpeed.values()));
-        speeds.add(null);
-        List<TemperatureControlStateCalculator.ValidTemperatureControlPreset> presets = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlPreset.values()));
-        presets.add(null);
-        List<TemperatureControlStateCalculator.ValidTemperatureControlAction> actions = new ArrayList<>(Arrays.asList(TemperatureControlStateCalculator.ValidTemperatureControlAction.values()));
-        actions.add(null);
+        final List<TemperatureControlStateCalculator.ValidTemperatureControlMode> modes = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlMode.class));
+        final List<TemperatureControlStateCalculator.ValidTemperatureControlSpeed> speeds = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlSpeed.class));
+        final List<TemperatureControlStateCalculator.ValidTemperatureControlPreset> presets = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlPreset.class));
+        final List<TemperatureControlStateCalculator.ValidTemperatureControlAction> actions = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlAction.class));
 
-        components.forEach(c -> {
+        for (ComponentSpec c : components) {
+            final List<BigDecimal> temps = precomputedTemps(c);
+
             c.setState(defaultTemperatureControlStateBuilder().build());
 
-            List<TemperatureControlState> states = List.of(
-                    defaultTemperatureControlStateBuilder().state(OnOffToggleStateCalculator.ValidOnOffToggle.OFF).mode(TemperatureControlStateCalculator.ValidTemperatureControlMode.OFF).build()
-            );
+            TemperatureControlState off = defaultTemperatureControlStateBuilder()
+                    .state(OnOffToggleStateCalculator.ValidOnOffToggle.OFF)
+                    .mode(TemperatureControlStateCalculator.ValidTemperatureControlMode.OFF)
+                    .build();
+            e.with(c.getFunction(), c.getNumber()).when(set(off)).thenRespond(off);
 
-            states.forEach(state -> {
-                e.with(c.getFunction(), c.getNumber()).when(set(state)).thenRespond(state);
-            });
-
-            for (int currentTemperature = HASensorConfig.TEMPERATURE_MINIMUM * 10; currentTemperature <= HASensorConfig.TEMPERATURE_MAXIMUM * 10; currentTemperature += 5) {
-                BigDecimal currentTemp = new BigDecimal(currentTemperature).setScale(1, RoundingMode.HALF_UP).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
-                for (int targetTemperature = HASensorConfig.TEMPERATURE_MINIMUM * 10; targetTemperature <= HASensorConfig.TEMPERATURE_MAXIMUM * 10; targetTemperature += 5) {
-                    BigDecimal targetTemp = new BigDecimal(targetTemperature).setScale(1, RoundingMode.HALF_UP).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
-                    modes.forEach(mode -> {
-                        speeds.forEach(speed -> {
-                            presets.forEach(preset -> {
-                                actions.forEach(action -> {
+            for (BigDecimal currentTemp : temps) {
+                for (BigDecimal targetTemp : temps) {
+                    for (TemperatureControlStateCalculator.ValidTemperatureControlMode mode : modes) {
+                        for (TemperatureControlStateCalculator.ValidTemperatureControlSpeed speed : speeds) {
+                            for (TemperatureControlStateCalculator.ValidTemperatureControlPreset preset : presets) {
+                                for (TemperatureControlStateCalculator.ValidTemperatureControlAction action : actions) {
                                     TemperatureControlState auto = defaultTemperatureControlStateBuilder()
                                             .state(OnOffToggleStateCalculator.ValidOnOffToggle.ON)
                                             .mode(mode)
@@ -187,14 +200,15 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                                             .currentTemperature(currentTemp)
                                             .build();
                                     e.with(c.getFunction(), c.getNumber()).when(set(auto)).thenRespond(auto);
-                                });
-                            });
-                        });
-                    });
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        });
+        }
     }
+
 
     private void mockHumiditySensor(ExpectationBuilder e) {
         List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("humidity")).toList();
