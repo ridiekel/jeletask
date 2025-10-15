@@ -1,7 +1,7 @@
-package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types;
+package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAReadWriteConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadWriteConfig;
 
 /**
  * <a href="https://www.home-assistant.io/integrations/switch.mqtt/">MQTT Switch Discovery</a>

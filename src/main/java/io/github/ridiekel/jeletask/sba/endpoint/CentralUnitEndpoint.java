@@ -10,7 +10,7 @@ import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import io.github.ridiekel.jeletask.utilities.ResourceUtilities;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;

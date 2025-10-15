@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.mqtt.listener.homeassistant;
+package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config;
 
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;

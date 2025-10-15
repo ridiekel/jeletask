@@ -2,7 +2,7 @@ package io.github.ridiekel.jeletask.client.spec;
 
 
 import io.github.ridiekel.jeletask.client.spec.state.State;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import lombok.Getter;
 import lombok.Setter;
 

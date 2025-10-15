@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.mqtt.listener.homeassistant;
+package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config;
 
 public class HAReadWriteConfig<T extends HAReadWriteConfig<T>> extends HAConfig<T> {
     public HAReadWriteConfig(HAConfigParameters parameters) {

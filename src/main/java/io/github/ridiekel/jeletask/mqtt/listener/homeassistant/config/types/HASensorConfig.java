@@ -1,7 +1,7 @@
-package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.types;
+package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAConfigParameters;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HAReadOnlyConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadOnlyConfig;
 
 /**
  * <a href="https://www.home-assistant.io/integrations/sensor.mqtt/">MQTT Sensor Discovery</a>

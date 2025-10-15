@@ -1,4 +1,4 @@
-package io.github.ridiekel.jeletask.mqtt.listener.homeassistant;
+package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
