@@ -153,7 +153,7 @@ public class HaWebFunctions {
                 Function.LOCMOOD, onOffElementSelector(),
                 Function.TIMEDMOOD, onOffElementSelector(),
                 Function.MOTOR, c -> "hui-cover-entity-row",
-                Function.COND, onOffElementSelector(),
+                Function.COND, c -> "hui-simple-entity-row",
                 Function.SENSOR, c -> "hui-sensor-entity-row",
                 Function.INPUT, c -> "hui-sensor-entity-row"
         );
