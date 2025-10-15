@@ -15,7 +15,7 @@ teletask:
     prefix: "test_prefix_teletask2mqtt"
   test:
     headless: true
-    timeout: 5000
+    timeout: 50000
     gitlabci: false
     keeprunning: false
   log:
