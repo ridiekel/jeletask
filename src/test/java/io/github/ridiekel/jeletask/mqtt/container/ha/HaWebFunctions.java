@@ -159,7 +159,7 @@ public class HaWebFunctions {
         );
 
         private static java.util.function.@NotNull Function<ComponentSpec, String> onOffElementSelector() {
-            return c -> Objects.equals(c.getType(), "scene") ? "ha-assist-chip" : "hui-toggle-entity-row";
+            return c -> Objects.equals(c.getType(), "scene") ? "hui-scene-entity-row" : "hui-toggle-entity-row";
         }
 
         protected final int index;
@@ -255,27 +255,11 @@ public class HaWebFunctions {
         }
 
         protected SelenideElement controlElement() {
-            return $$(Selectors.shadowDeepCss(baseCss + "button")).get(index);
+            return $$(Selectors.shadowDeepCss(baseCss + "ha-button")).get(index);
         }
 
         public void click() {
             this.controlElement().click();
-        }
-
-        protected int getIndexOf(Function function, int number) {
-            String elementToFind = baseCss + ".label";
-            String description = this.centralUnit.getComponent(function, number).getDescription();
-
-            List<@Nullable String> titles = $$(Selectors.shadowDeepCss(elementToFind))
-                    .texts();
-
-            int index = titles.indexOf(description);
-
-            if (index < 0) {
-                throw new IllegalStateException(String.format("'%s' not found in: '%s' - List of possible values: \n%s", description, elementToFind, titles.stream().map(s -> String.format("\t'%s'", s)).collect(Collectors.joining("\n"))));
-            }
-
-            return index;
         }
     }
 

@@ -30,8 +30,8 @@ public class HAConfig<T extends HAConfig<T>> {
 
         this.baseTopic(parameters.getComponentTopic())
                 .stateTopic("~/state")
-                .uniqueId(uniqueId)
-                .objectId(uniqueId)
+//                .uniqueId(uniqueId)
+                .defaultEntityId(uniqueId)
                 .name(parameters.getComponentSpec().getDescription())
                 .manufacturer("teletask")
                 .deviceIdentifier(parameters.getIdentifier())
@@ -59,12 +59,8 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.putDeviceProperty("model", value);
     }
 
-    public T uniqueId(String value) {
-        return this.put("unique_id", value);
-    }
-
-    public T objectId(String value) {
-        return this.put("object_id", value);
+    public T defaultEntityId(String value) {
+        return this.put("default_entity_id", value);
     }
 
     public T name(String value) {
@@ -145,7 +141,8 @@ public class HAConfig<T extends HAConfig<T>> {
 
     protected String id(HAConfigParameters parameters) {
         String id = "teletask-" + parameters.getIdentifier() + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
-        return removeInvalid(id, "_");
+        //For some reason. If I don't prefix this with <something>. HA will not use this value. It doesn't even have to be correct. Just for fun I tried it with smurf, and it also worked. I just added the domain, since that is what I think it should be.
+        return parameters.getDeviceType().toString().toLowerCase() + "." + removeInvalid(id, "_");
     }
 
     private static String removeInvalid(String value, String replacement) {

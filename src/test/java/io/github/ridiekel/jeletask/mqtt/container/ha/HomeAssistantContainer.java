@@ -168,16 +168,23 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant online according to MQTT", AnsiColor.DEFAULT));
 
         org.awaitility.Awaitility.await("Home Assistent Teletask Config Published")
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(20, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
-                .until(() -> this.states().size() >= this.centralUnit.getAllComponents().size());
+                .until(() -> {
+                    List<Entity> states = this.teletaskStates();
+                    return states.size() >= this.centralUnit.getAllComponents().size();
+//                    return true;
+                });
 
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant online according to published entities:", AnsiColor.DEFAULT));
-        this.states().forEach(state -> {
+        this.teletaskStates().forEach(state -> {
             LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "\t", state.getEntity_id(), AnsiColor.DEFAULT));
         });
 
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant startup complete ", AnsiColor.BRIGHT_WHITE, "(url: http://" + this.getHost() + ":", this.getPort(), ")", AnsiColor.DEFAULT));
+
+        Config config = this.config();
+        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant version: ", AnsiColor.BRIGHT_WHITE, config.getVersion(), AnsiColor.DEFAULT));
     }
 
     public Integer getPort() {
@@ -195,10 +202,22 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     public Entity state(String id) {
         String uri = "/states/" + id;
 
-        LOG.info(AnsiOutput.toString("[", AnsiColor.YELLOW, "GET", AnsiColor.DEFAULT, "] " + apiUrl + uri, " - simulate with:\n\t\t", AnsiColor.BRIGHT_WHITE,
-                "curl -X GET -H 'Authorization: Bearer " + BEARER + "' -H 'Content-Type: application/json' " + apiUrl + uri + " | jq .", AnsiColor.DEFAULT));
+        logSimulate(uri);
 
         return haWebClient.get().uri(uri).retrieve().toEntity(Entity.class).block().getBody();
+    }
+
+    private void logSimulate(String uri) {
+        LOG.info(AnsiOutput.toString("[", AnsiColor.YELLOW, "GET", AnsiColor.DEFAULT, "] " + apiUrl + uri, " - simulate with:\n\t\t", AnsiColor.BRIGHT_WHITE,
+                "curl -X GET -H 'Authorization: Bearer " + BEARER + "' -H 'Content-Type: application/json' " + apiUrl + uri + " | jq .", AnsiColor.DEFAULT));
+    }
+
+    public Config config() {
+        String uri = "/config";
+
+        logSimulate(uri);
+
+        return haWebClient.get().uri(uri).retrieve().toEntity(Config.class).block().getBody();
     }
 
     public void post(Function function, int number, String type, Entity entity) {
@@ -233,7 +252,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         return type + ".teletask_man_test_localhost_" + function.toString().toLowerCase() + "_" + number;
     }
 
-    public List<Entity> states() {
+    public List<Entity> teletaskStates() {
         return Objects.requireNonNull(haWebClient.get().uri("/states").retrieve().toEntityList(Entity.class).block().getBody()).stream().filter(e -> e.getEntity_id().contains("teletask")).toList();
     }
 

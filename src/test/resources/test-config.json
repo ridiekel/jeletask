@@ -4,21 +4,21 @@
     "RELAY": [
       {
         "number": 10,
-        "description": "Light Relay 1"
+        "description": "Shining Relay 1"
       },
       {
         "number": 11,
-        "description": "Switch Relay 1",
+        "description": "Toggle Relay 1",
         "type": "switch"
       },
       {
         "number": 12,
-        "description": "Scene Relay 1",
+        "description": "Scenery Relay 1",
         "type": "scene"
       }
     ],
     "SENSOR": [
-      { "number": 30, "description": "Light Sensor", "type": "LIGHT" },
+      { "number": 30, "description": "Shining Sensor", "type": "LIGHT" },
       { "number": 31, "description": "Temperature Sensor", "type": "TEMPERATURE", "ha_unit_of_measurement": "°C" },
       { "number": 321, "description": "GAS - 4-20ma", "type": "GAS", "gas_type": "4-20ma", "gas_min": 0, "gas_max": 200, "decimals": 2 },
       { "number": 322, "description": "GAS - 0-20ma", "type": "GAS", "gas_type": "0-20ma", "gas_min": 0, "gas_max": 200, "decimals": 2 },
@@ -41,12 +41,12 @@
       },
       {
         "number": 51,
-        "description": "Light Flag 1",
+        "description": "Shining Flag 1",
         "type": "light"
       },
       {
         "number": 52,
-        "description": "Scene Flag 1",
+        "description": "Scenery Flag 1",
         "type": "scene"
       }
     ],
@@ -57,12 +57,12 @@
       },
       {
         "number": 61,
-        "description": "General Light 1",
+        "description": "General Shining 1",
         "type": "light"
       },
       {
         "number": 62,
-        "description": "General Scene 1",
+        "description": "General Scenery 1",
         "type": "scene"
       }
     ],
@@ -76,12 +76,12 @@
       },
       {
         "number": 81,
-        "description": "Local Light 1",
+        "description": "Local Shining 1",
         "type": "light"
       },
       {
         "number": 82,
-        "description": "Local Scene 1",
+        "description": "Local Scenery 1",
         "type": "scene"
       }
     ],
