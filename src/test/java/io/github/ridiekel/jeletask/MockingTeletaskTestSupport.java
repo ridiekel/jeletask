@@ -81,6 +81,10 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
             return new HumiditySensorSetBuilder(this, Function.SENSOR, number);
         }
 
+        public GasSensorSetBuilder gasSensor(int number) {
+            return new GasSensorSetBuilder(this, Function.SENSOR, number);
+        }
+
         public OnOffSetBuilder flag(int number) {
             return new OnOffSetBuilder(this, Function.FLAG, number);
         }
@@ -211,6 +215,17 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
             public void update(BigDecimal value) {
                 set(new HumidityState(value));
+            }
+        }
+
+        public static class GasSensorSetBuilder extends FunctionSetBuilder {
+
+            public GasSensorSetBuilder(TeletaskTestClient testClient, Function function, int number) {
+                super(testClient, function, number);
+            }
+
+            public void update(BigDecimal value) {
+                set(new GasState(value));
             }
         }
 

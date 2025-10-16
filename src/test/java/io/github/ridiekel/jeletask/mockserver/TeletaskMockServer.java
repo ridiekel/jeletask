@@ -139,6 +139,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             mockTemperatureSensor(e);
             mockTemperatureControlSensor(e);
             mockHumiditySensor(e);
+            mockGasSensor(e);
             mockInput(e);
             mockDisplayMessage(e);
             mockSensorGroupGet(e);
@@ -219,6 +220,15 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                 BigDecimal value = BigDecimal.valueOf(i);
                 e.with(c.getFunction(), c.getNumber()).when(set(new HumidityState(value))).thenRespond(new HumidityState(value));
             }
+        });
+    }
+
+    private void mockGasSensor(ExpectationBuilder e) {
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("gas")).toList();
+        components.forEach(c -> {
+            c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("54")));
+
+            e.with(c.getFunction(), c.getNumber()).when(set(new GasState(new BigDecimal("21.02")))).thenRespond(new GasState(new BigDecimal("21.02")));
         });
     }
 

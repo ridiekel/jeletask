@@ -10,30 +10,44 @@ class End2EndSensorTest extends MockingTeletaskTestSupport {
     @Test
     void lightSensor() {
         //Not all values can be converted correctly due to the math that is being done in teletask server. 3548 and 794 should work to convert to bytes and back.
-        teletask().lightSensor(30).update(new BigDecimal("794"));
-        mqtt().expect().sensor(30).lastStateMessage().toHave().state().value("794");
+        String number = "794";
+        teletask().lightSensor(30).update(new BigDecimal(number));
+        mqtt().expect().sensor(30).lastStateMessage().toHave().state().value(number);
         ha().web().sensor(30)
-                .shouldHaveState("794")
+                .shouldHaveState(number)
                 .shouldHaveSensorIcon();
     }
 
     @Test
     void temperatureSensor() {
-        teletask().temperatureSensor(31).update(new BigDecimal("25.6"));
-        mqtt().expect().sensor(31).lastStateMessage().toHave().state().value("25.6");
+        String number = "25.6";
+        teletask().temperatureSensor(31).update(new BigDecimal(number));
+        mqtt().expect().sensor(31).lastStateMessage().toHave().state().value(number);
 
         ha().web().sensor(31)
-                .shouldHaveState("25.6")
+                .shouldHaveState(number)
                 .shouldHaveSensorIcon();
     }
 
     @Test
     void humiditySensor() {
-        teletask().humiditySensor(36).update(new BigDecimal("73"));
-        mqtt().expect().sensor(36).lastStateMessage().toHave().state().value("73");
+        String number = "73";
+        teletask().humiditySensor(36).update(new BigDecimal(number));
+        mqtt().expect().sensor(36).lastStateMessage().toHave().state().value(number);
 
         ha().web().sensor(36)
-                .shouldHaveState("73")
+                .shouldHaveState(number)
+                .shouldHaveSensorIcon();
+    }
+
+    @Test
+    void gasSensor() {
+        String number = "21.02";
+        teletask().gasSensor(321).update(new BigDecimal(number));
+        mqtt().expect().sensor(321).lastStateMessage().toHave().state().value(number);
+
+        ha().web().sensor(321)
+                .shouldHaveState(number)
                 .shouldHaveSensorIcon();
     }
 }
