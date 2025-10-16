@@ -47,9 +47,9 @@ class DisplayMessageStateCalculatorTest {
             byte[] result = calculator.toCommand(null, state);
 
             assertThat(result).isNotNull();
-            assertThat(result[0]).isEqualTo((byte) 1); // message type
-            assertThat(result[1]).isEqualTo((byte) 1); // isAscii
-            assertThat(result).hasSize(35); // 1 + 1 + 16 + 16 + 1
+            assertThat(result[0]).isEqualTo((byte) 1);
+            assertThat(result[1]).isEqualTo((byte) 1);
+            assertThat(result).hasSize(35);
         }
 
         @Test
@@ -64,7 +64,7 @@ class DisplayMessageStateCalculatorTest {
 
             byte[] result = calculator.toCommand(null, state);
 
-            assertThat(result[0]).isEqualTo((byte) 0); // alarm type
+            assertThat(result[0]).isEqualTo((byte) 0);
         }
 
         @Test
@@ -72,7 +72,7 @@ class DisplayMessageStateCalculatorTest {
         void shouldCreateCommandWithUtf16Encoding() {
             DisplayMessageState state = DisplayMessageState.builder()
                     .messageType("message")
-                    .ascii(false) // UTF-16
+                    .ascii(false)
                     .messageLine1("Test")
                     .messageLine2("Data")
                     .messageBeeps(2)
@@ -80,9 +80,9 @@ class DisplayMessageStateCalculatorTest {
 
             byte[] result = calculator.toCommand(null, state);
 
-            assertThat(result[0]).isEqualTo((byte) 1); // message type
-            assertThat(result[1]).isEqualTo((byte) 0); // not ASCII
-            assertThat(result).hasSize(35); // 1 + 1 + 16 + 16 + 1
+            assertThat(result[0]).isEqualTo((byte) 1);
+            assertThat(result[1]).isEqualTo((byte) 0);
+            assertThat(result).hasSize(35);
         }
 
         @Test
@@ -98,11 +98,9 @@ class DisplayMessageStateCalculatorTest {
 
             byte[] result = calculator.toCommand(null, state);
 
-            // Extract line 1 (bytes 2-17)
             String line1 = new String(result, 2, 16, StandardCharsets.US_ASCII);
             assertThat(line1).isEqualTo("ABC             ");
 
-            // Extract line 2 (bytes 18-33)
             String line2 = new String(result, 18, 16, StandardCharsets.US_ASCII);
             assertThat(line2).isEqualTo("XY              ");
         }
@@ -161,7 +159,7 @@ class DisplayMessageStateCalculatorTest {
 
             byte[] result = calculator.toCommand(null, state);
 
-            assertThat(result[34]).isEqualTo((byte) 1); // default beeps
+            assertThat(result[34]).isEqualTo((byte) 1);
         }
 
         @Test
@@ -185,13 +183,12 @@ class DisplayMessageStateCalculatorTest {
             DisplayMessageState state = DisplayMessageState.builder()
                     .messageType("message")
                     .ascii(false)
-                    .messageLine1("123456789ABCDEF") // 15 characters
+                    .messageLine1("123456789ABCDEF")
                     .messageBeeps(1)
                     .build();
 
             byte[] result = calculator.toCommand(null, state);
 
-            // UTF-16 uses 2 bytes per character, so 8 chars = 16 bytes
             assertThat(result).hasSize(35);
         }
 
@@ -272,18 +269,12 @@ class DisplayMessageStateCalculatorTest {
     @Test
     @DisplayName("RECOMMENDATION: Use UTF_16BE to avoid BOM issues")
     void recommendationUseUtf16BeToAvoidBomIssues() {
-        // Dit is hoe het ZOU MOETEN werken:
-        String message = "12345678"; // 8 chars
+        String message = "12345678";
         byte[] withBom = message.getBytes(StandardCharsets.UTF_16);
         byte[] withoutBom = message.getBytes(StandardCharsets.UTF_16BE);
 
-        System.out.println("UTF_16 size: " + withBom.length + " bytes");    // 18 (16 + 2 BOM)
-        System.out.println("UTF_16BE size: " + withoutBom.length + " bytes"); // 16
-
-        assertThat(withBom.length).isEqualTo(18); // 16 + 2 BOM
-        assertThat(withoutBom.length).isEqualTo(16); // Precies wat we willen!
-
-        // Suggest: Change production code to use UTF_16BE or UTF_16LE
+        assertThat(withBom.length).isEqualTo(18);
+        assertThat(withoutBom.length).isEqualTo(16);
     }
 
 
@@ -299,13 +290,11 @@ class DisplayMessageStateCalculatorTest {
 
         byte[] result = calculator.toCommand(null, state);
 
-        // Extract line 1 (bytes 2-17)
         byte[] line1Bytes = Arrays.copyOfRange(result, 2, 18);
         String line1 = new String(line1Bytes, StandardCharsets.US_ASCII);
 
         assertThat(line1).startsWith("Test Message");
 
-        // Verify: ASCII uses 1 byte per character
         assertThat(line1Bytes[0]).isEqualTo((byte) 'T');
         assertThat(line1Bytes[1]).isEqualTo((byte) 'e');
         assertThat(line1Bytes[2]).isEqualTo((byte) 's');
@@ -318,13 +307,12 @@ class DisplayMessageStateCalculatorTest {
         DisplayMessageState state = DisplayMessageState.builder()
                 .messageType("message")
                 .ascii(false)
-                .messageLine1("12345678901234567890") // 20 chars
+                .messageLine1("12345678901234567890")
                 .messageBeeps(1)
                 .build();
 
         byte[] result = calculator.toCommand(null, state);
 
-        // Extract line 1 (bytes 2-17)
         byte[] line1Bytes = Arrays.copyOfRange(result, 2, 18);
         String decoded = new String(line1Bytes, StandardCharsets.UTF_16);
 
@@ -337,7 +325,7 @@ class DisplayMessageStateCalculatorTest {
         DisplayMessageState state = DisplayMessageState.builder()
                 .messageType("message")
                 .ascii(false)
-                .messageLine1("Hello世界") // Mix van ASCII en Chinese karakters
+                .messageLine1("Hello世界")
                 .messageBeeps(1)
                 .build();
 
@@ -363,10 +351,8 @@ class DisplayMessageStateCalculatorTest {
 
         byte[] result = calculator.toCommand(null, state);
 
-        // Totaal: 1 (type) + 1 (ascii) + 16 (line1) + 16 (line2) + 1 (beeps) = 35
         assertThat(result).hasSize(35);
 
-        // Verifieer dat elke regel precies 16 bytes is
         byte[] line1 = Arrays.copyOfRange(result, 2, 18);
         byte[] line2 = Arrays.copyOfRange(result, 18, 34);
 
@@ -387,13 +373,11 @@ class DisplayMessageStateCalculatorTest {
 
         byte[] result = calculator.toCommand(null, state);
 
-        // Totaal moet nog steeds 35 zijn
         assertThat(result).hasSize(35);
 
         byte[] line1 = Arrays.copyOfRange(result, 2, 18);
         byte[] line2 = Arrays.copyOfRange(result, 18, 34);
 
-        // Elke regel is nog steeds 16 bytes, maar bevat minder karakters
         assertThat(line1).hasSize(16);
         assertThat(line2).hasSize(16);
     }
