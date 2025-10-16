@@ -30,7 +30,7 @@ public class DimmerStateCalculator extends StateCalculatorSupport<DimmerState> {
     }
 
     @Override
-    public byte[] toCommand(DimmerState state) {
+    public byte[] toCommand(ComponentSpec component, DimmerState state) {
         byte[] bytes = null;
         if (state != null) {
             if (state.getBrightness() != null) {

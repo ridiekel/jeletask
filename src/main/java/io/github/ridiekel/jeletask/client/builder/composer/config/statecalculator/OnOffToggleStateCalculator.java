@@ -35,7 +35,7 @@ public class OnOffToggleStateCalculator extends StateCalculatorSupport<OnOffStat
     }
 
     @Override
-    public byte[] toCommand(OnOffState state) {
+    public byte[] toCommand(ComponentSpec component, OnOffState state) {
         return MAPPER.toBytes(state.getState());
     }
 

@@ -134,16 +134,17 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
      * | TEMPMANUAL_TARGET      | Short as value: byte[0]=Higher byte, byte[1]=lower byte       |
      * +------------------------+---------------------------------------------------------------+
      *
-     * @param state The state that needs to be converted to a command
+     * @param component
+     * @param state     The state that needs to be converted to a command
      * @return The byte[] representation of the state
      */
     @Override
-    public byte[] toCommand(TemperatureControlState state) {
+    public byte[] toCommand(ComponentSpec component, TemperatureControlState state) {
         byte[] setting = new byte[]{};
         byte[] data = new byte[]{};
 
         if (state.getState() == OnOffToggleStateCalculator.ValidOnOffToggle.OFF) {
-            setting = ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
+            setting = ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(component, new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
         } else if (state.getAction() != null) {
             setting = ACTION_MAPPER.toBytes(state.getAction());
             data = state.getAction().getData(state);
@@ -159,7 +160,7 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
     }
 
     @Override
-    public byte[] toEventForTesting(TemperatureControlState state) {
+    public byte[] toEventForTesting(ComponentSpec component, TemperatureControlState state) {
         return Bytes.concat(
                 bigDecimalToBytes(state.getCurrentTemperature()),
                 bigDecimalToBytes(state.getTargetTemperature()),
@@ -169,7 +170,7 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
                 PRESET_MAPPER.toBytes(state.getPreset()),
                 MODE_MAPPER.toBytes(state.getMode()),
                 SPEED_MAPPER.toBytes(state.getFanspeed()),
-                ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(new OnOffState(state.getState())),
+                ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(component, new OnOffState(state.getState())),
                 UNSIGNED_BYTE.convert(state.getWindowOpen()),
                 UNSIGNED_BYTE.convert(state.getOutputState()),
                 UNSIGNED_BYTE.convert(state.getSwingDirection()),

@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 class HumidityStateCalculatorTest {
     private static void roundTrip(String number) {
         HumidityStateCalculator calculator = new HumidityStateCalculator();
-        byte[] bytes = calculator.toCommand(new HumidityState(new BigDecimal(number)));
+        byte[] bytes = calculator.toCommand(null, new HumidityState(new BigDecimal(number)));
         HumidityState luxState = calculator.fromEvent(null, bytes);
 
         Assertions.assertThat(luxState.getState()).isEqualTo(new BigDecimal(number));
@@ -26,7 +26,7 @@ class HumidityStateCalculatorTest {
     @Test
     void luxToByte() {
         HumidityStateCalculator calculator = new HumidityStateCalculator();
-        byte[] bytes = calculator.toCommand(new HumidityState(new BigDecimal("65")));
+        byte[] bytes = calculator.toCommand(null, new HumidityState(new BigDecimal("65")));
 
         Assertions.assertThat(bytes[0]).isEqualTo((byte) 0);
         Assertions.assertThat(bytes[1]).isEqualTo((byte) 65);
@@ -36,7 +36,7 @@ class HumidityStateCalculatorTest {
     void roundTrip1() {
         HumidityStateCalculator calculator = new HumidityStateCalculator();
         HumidityState luxState = calculator.fromEvent(null, new byte[]{0, -56});
-        byte[] bytes = calculator.toCommand(luxState);
+        byte[] bytes = calculator.toCommand(null, luxState);
 
         Assertions.assertThat(bytes[0]).isEqualTo((byte) 0);
         Assertions.assertThat(bytes[1]).isEqualTo((byte) -56);

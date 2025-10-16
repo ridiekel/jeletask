@@ -20,18 +20,19 @@ public interface StateCalculator<S extends State<?>> {
 
     S stateFromMessage(String message);
 
-    byte[] toCommand(S state);
+    byte[] toCommand(ComponentSpec component, S state);
 
     /**
      * Only used during testing. I added this here for convenience.
-     *
+     * <p>
      * This should return the byte[] representation of the state as the Teletask server would do.
      * This is used by the test server to convert a state to an event byte array. The test server will return this based on the mocking config.
      *
-     * @param state The state to convert.
+     * @param component
+     * @param state     The state to convert.
      * @return The byte array representation of the event.
      */
-    byte[] toEventForTesting(S state);
+    byte[] toEventForTesting(ComponentSpec component, S state);
 
     boolean isValidWriteState(S state);
 }

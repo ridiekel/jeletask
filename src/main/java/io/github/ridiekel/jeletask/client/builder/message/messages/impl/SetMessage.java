@@ -37,7 +37,7 @@ public class SetMessage extends FunctionStateBasedMessageSupport<State<?>> {
             ComponentSpec component = this.getCentralUnit().getComponent(this.getFunction(), this.getNumber());
             this.functionBytes = new byte[]{(byte) functionConfig.getNumber()};
             this.outputBytes = MessageHandlerFactory.getMessageHandler(this.getCentralUnit().getCentralUnitType()).composeOutput(this.getNumber());
-            this.stateBytes = functionConfig.<StateCalculator<State<?>>>getStateCalculator(component).toCommand(this.getState());
+            this.stateBytes = functionConfig.<StateCalculator<State<?>>>getStateCalculator(component).toCommand(component, this.getState());
         }
     }
 

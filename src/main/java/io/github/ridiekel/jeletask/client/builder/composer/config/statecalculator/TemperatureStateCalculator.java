@@ -46,7 +46,7 @@ public class TemperatureStateCalculator extends StateCalculatorSupport<Temperatu
     }
 
     @Override
-    public byte[] toCommand(TemperatureState state) {
+    public byte[] toCommand(ComponentSpec component, TemperatureState state) {
         return bigDecimalToBytes(state.getState());
     }
 }

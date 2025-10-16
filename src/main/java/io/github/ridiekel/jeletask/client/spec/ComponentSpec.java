@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class ComponentSpec {
     private String type;
 
     // Defaulting to 1 for temperature sensors. Otherwise we would have to always override this.
-    private int decimals = 1;
+    private Integer decimals = 1;
 
     //haType is the type as it is known to Home Assistant
     private String haType;
@@ -34,8 +35,8 @@ public class ComponentSpec {
 
     // For GAS (General Analog Sensor)
     private String gas_type = "";
-    private float gas_min = 0;
-    private float gas_max = 0;
+    private BigDecimal gas_min = BigDecimal.ZERO;
+    private BigDecimal gas_max = BigDecimal.ZERO;
 
     // For DISPLAYMESSAGE
     private String address_numbers;

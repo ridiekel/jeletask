@@ -54,7 +54,7 @@ public class PulseCounterStateCalculator extends StateCalculatorSupport<PulseCou
     }
 
     @Override
-    public byte[] toCommand(PulseCounterState state) {
+    public byte[] toCommand(ComponentSpec component, PulseCounterState state) {
         throw new IllegalArgumentException("Pulse counter is read only. Strange that we get in the serialize method");
     }
 }

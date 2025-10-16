@@ -19,7 +19,7 @@ public class HumidityStateCalculator extends StateCalculatorSupport<HumidityStat
     }
 
     @Override
-    public byte[] toCommand(HumidityState state) {
+    public byte[] toCommand(ComponentSpec component, HumidityState state) {
         return NUMBER_CONVERTER.convert(state.getState());
     }
 

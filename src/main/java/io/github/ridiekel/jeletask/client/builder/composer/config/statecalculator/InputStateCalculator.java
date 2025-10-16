@@ -38,7 +38,7 @@ public class InputStateCalculator extends StateCalculatorSupport<InputState> {
     }
 
     @Override
-    public byte[] toCommand(InputState state) {
+    public byte[] toCommand(ComponentSpec component, InputState state) {
         return MAPPER.toBytes(state.getState());
     }
 

@@ -34,7 +34,7 @@ class TemperatureStateCalculatorTest {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
         ComponentSpec component = new ComponentSpec();
         component.setDecimals(5);
-        byte[] bytes = c.toCommand(new TemperatureState(new BigDecimal("30.89")));
+        byte[] bytes = c.toCommand(null, new TemperatureState(new BigDecimal("30.89")));
 
         Assertions.assertThat(bytes[0]).isEqualTo((byte) 11);
         Assertions.assertThat(bytes[1]).isEqualTo((byte) -34);
@@ -45,7 +45,7 @@ class TemperatureStateCalculatorTest {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
         ComponentSpec component = new ComponentSpec();
         component.setDecimals(0);
-        byte[] bytes = c.toCommand(new TemperatureState(new BigDecimal("30.89")));
+        byte[] bytes = c.toCommand(null, new TemperatureState(new BigDecimal("30.89")));
 
         Assertions.assertThat(bytes[0]).isEqualTo((byte) 11);
         Assertions.assertThat(bytes[1]).isEqualTo((byte) -34);
@@ -56,7 +56,7 @@ class TemperatureStateCalculatorTest {
         ComponentSpec component = new ComponentSpec();
         component.setDecimals(5);
 
-        byte[] bytes = c.toCommand(new TemperatureState(new BigDecimal(val)));
+        byte[] bytes = c.toCommand(null, new TemperatureState(new BigDecimal(val)));
         TemperatureState state = c.fromEvent(component, bytes);
 
         Assertions.assertThat(state.getState()).isEqualTo(new BigDecimal(val).setScale(component.getDecimals(), RoundingMode.UNNECESSARY));
@@ -75,7 +75,7 @@ class TemperatureStateCalculatorTest {
         component.setDecimals(5);
 
         TemperatureState state = c.fromEvent(component, new byte[]{0, 20});
-        byte[] bytes = c.toCommand(state);
+        byte[] bytes = c.toCommand(null, state);
 
         Assertions.assertThat(bytes[0]).isEqualTo((byte) 0);
         Assertions.assertThat(bytes[1]).isEqualTo((byte) 20);

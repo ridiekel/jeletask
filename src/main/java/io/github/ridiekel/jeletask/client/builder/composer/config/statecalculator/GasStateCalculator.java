@@ -3,12 +3,12 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.GasState;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.function.TriFunction;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,101 +26,34 @@ import java.util.stream.Stream;
  * Value = ( ( ( Smax - Smin) / 1023) x value ) + Smin
  */
 public class GasStateCalculator extends StateCalculatorSupport<GasState> {
-    private static final Map<String, GasTypeConfig> CONFIGS = Stream.of(
-            new GasTypeConfig(
-                    "4-20ma",
-                    (value, min, max) -> {
-                        return max.subtract(min)
-                                .divide(new BigDecimal("704.0"), 10, RoundingMode.HALF_UP)
-                                .multiply(value.subtract(new BigDecimal("176")))
-                                .add(min);
-                    },
-                    (value, min, max) -> {
-                        return max;
-                    }
-            ),
-            new GasTypeConfig(
-                    "0-10v",
-                    (value, min, max) -> {
-                        return max.subtract(min)
-                                .divide(new BigDecimal("1023.0"), 10, RoundingMode.HALF_UP)
-                                .multiply(value)
-                                .add(min);
-                    },
-                    (value, min, max) -> {
-                        return max;
-                    }
-            ),
-            new GasTypeConfig(
-                    "5-10v",
-                    (value, min, max) -> {
-                        return max.subtract(min)
-                                .divide(new BigDecimal("1023.0"), 10, RoundingMode.HALF_UP)
-                                .multiply(value)
-                                .add(min);
-                    },
-                    (value, min, max) -> {
-                        return max;
-                    }
-            ),
-            new GasTypeConfig(
-                    "0-20ma",
-                    (value, min, max) -> {
-                        return max.subtract(min)
-                                .divide(new BigDecimal("880.0"), 10, RoundingMode.HALF_UP)
-                                .multiply(value)
-                                .add(min);
-                    },
-                    (value, min, max) -> {
-                        return max;
-                    }
-            )
-    ).collect(Collectors.toMap(t -> t.name, Function.identity()));
-
     @Override
     public GasState fromEvent(ComponentSpec component, byte[] dataBytes) {
-        // Default value
-        float gas_value = NumberConverter.UNSIGNED_SHORT.convert(dataBytes).longValue();
-
-        // Min and Max values are configurable. Use the same values you already use in PROSOFT!
-        float mMax = component.getGas_max();
-        float mMin = component.getGas_min();
-
-        // There are 3 different General Analog Sensors in Teletask.
-        gas_value = switch (component.getGas_type().toLowerCase()) {
-            case "4-20ma" -> fromOne(gas_value, mMin, mMax);
-            case "0-10v", "5-10v" -> fromTwo(gas_value, mMin, mMax);
-            case "0-20ma" -> (mMax - mMin) / 880.0f * gas_value + mMin;
-            default -> gas_value;
-        };
-
-        // Round up to X decimals
-        BigDecimal gas_rounded_value = new BigDecimal(gas_value);
-        gas_rounded_value = gas_rounded_value.setScale(component.getDecimals(), RoundingMode.HALF_UP);
-
-        return new GasState(gas_rounded_value);
+        return new GasState(fromEventValue(component, new BigDecimal(NumberConverter.UNSIGNED_SHORT.convert(dataBytes).longValue())));
     }
 
-    private static float fromThree(float gas_value, float mMin, float mMax) {
-        return (mMax - mMin) / 880.0f * gas_value + mMin;
-    }
+    public static BigDecimal fromEventValue(ComponentSpec component, BigDecimal value) {
+        BigDecimal min = Optional.ofNullable(component.getGas_min()).orElseThrow(() -> new IllegalArgumentException("Gas min cannot be null"));
+        BigDecimal max = Optional.ofNullable(component.getGas_max()).orElseThrow(() -> new IllegalArgumentException("Gas max cannot be null"));
 
-    private static float fromTwo(float gas_value, float mMin, float mMax) {
-        return (mMax - mMin) / 1023.0f * gas_value + mMin;
-    }
+        BigDecimal calculated = Optional.ofNullable(component.getGas_type()).map(CONFIGS::get).map(c -> c.fromEvent.apply(value, min, max)).orElseThrow(() -> new IllegalArgumentException("Gas type '" + component.getGas_type() + "' not found in: " + CONFIGS));
 
-    private static float fromOne(float gas_value, float mMin, float mMax) {
-        return (mMax - mMin) / 704.0f * (gas_value - 176) + mMin;
+        return calculated.setScale(Optional.ofNullable(component.getDecimals()).orElse(2), RoundingMode.HALF_UP);
     }
 
     @Override
-    public byte[] toCommand(GasState state) {
-        return new byte[]{0, 0};
+    public byte[] toCommand(ComponentSpec component, GasState state) {
+        BigDecimal value = state.getState();
+
+        BigDecimal calculated = toCommandValue(component, value);
+
+        return NumberConverter.UNSIGNED_SHORT.convert(calculated);
     }
 
-    @Override
-    public GasState fromCommandForTesting(ComponentSpec component, byte[] dataBytes) {
-        return super.fromCommandForTesting(component, dataBytes);
+    public static BigDecimal toCommandValue(ComponentSpec component, BigDecimal value) {
+        BigDecimal min = Optional.ofNullable(component.getGas_min()).orElseThrow(() -> new IllegalArgumentException("Gas min cannot be null"));
+        BigDecimal max = Optional.ofNullable(component.getGas_max()).orElseThrow(() -> new IllegalArgumentException("Gas max cannot be null"));
+
+        return Optional.ofNullable(component.getGas_type()).map(CONFIGS::get).map(c -> c.toCommand.apply(value, min, max)).orElseThrow(() -> new IllegalArgumentException("Gas type '" + component.getGas_type() + "' not found in: " + CONFIGS));
     }
 
     @Override
@@ -128,12 +61,58 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
         return GasState.class;
     }
 
-    @RequiredArgsConstructor
-    private static final class GasTypeConfig {
+    private static final Map<String, GasTypeConfig> CONFIGS = Stream.of(
+            new GasTypeConfig(
+                    "4-20ma",
+                    (value, min, max) -> max.subtract(min)
+                            .divide(new BigDecimal("704.0"), 10, RoundingMode.HALF_UP)
+                            .multiply(value.subtract(new BigDecimal("176")))
+                            .add(min),
+                    (value, min, max) -> value.subtract(min)
+                            .multiply(new BigDecimal("704.0"))
+                            .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
+                            .add(new BigDecimal("176"))
+                            .setScale(0, RoundingMode.HALF_UP)
+            ),
+            new GasTypeConfig(
+                    "0-10v",
+                    (value, min, max) -> max.subtract(min)
+                            .divide(new BigDecimal("1023.0"), 10, RoundingMode.HALF_UP)
+                            .multiply(value)
+                            .add(min),
+                    (value, min, max) -> value.subtract(min)
+                            .multiply(new BigDecimal("1023.0"))
+                            .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
+                            .setScale(0, RoundingMode.HALF_UP)
+            ),
+            new GasTypeConfig(
+                    "5-10v",
+                    (value, min, max) -> max.subtract(min)
+                            .divide(new BigDecimal("1023.0"), 10, RoundingMode.HALF_UP)
+                            .multiply(value)
+                            .add(min),
+                    (value, min, max) -> value.subtract(min)
+                            .multiply(new BigDecimal("1023.0"))
+                            .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
+                            .setScale(0, RoundingMode.HALF_UP)
+            ),
+            new GasTypeConfig(
+                    "0-20ma",
+                    (value, min, max) -> max.subtract(min)
+                            .divide(new BigDecimal("880.0"), 10, RoundingMode.HALF_UP)
+                            .multiply(value)
+                            .add(min),
+                    (value, min, max) -> value.subtract(min)
+                            .multiply(new BigDecimal("880.0"))
+                            .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
+                            .setScale(0, RoundingMode.HALF_UP)
+            )
+    ).collect(Collectors.toMap(t -> t.name, Function.identity()));
 
-        private final String name;
-        private final TriFunction<BigDecimal, BigDecimal, BigDecimal, BigDecimal> fromEvent;
-        private final TriFunction<BigDecimal, BigDecimal, BigDecimal, BigDecimal> toCommand;
+    private record GasTypeConfig(
+            String name,
+            TriFunction<BigDecimal, BigDecimal, BigDecimal, BigDecimal> fromEvent,
+            TriFunction<BigDecimal, BigDecimal, BigDecimal, BigDecimal> toCommand
+    ) {
     }
-
 }

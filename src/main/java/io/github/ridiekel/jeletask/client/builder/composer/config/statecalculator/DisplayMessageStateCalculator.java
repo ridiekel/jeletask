@@ -17,7 +17,7 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
     }
 
     @Override
-    public byte[] toCommand(DisplayMessageState state) {
+    public byte[] toCommand(ComponentSpec component, DisplayMessageState state) {
         return Bytes.concat(
                 toMessageTypeBytes(state),
                 toIsAsciiBytes(state),

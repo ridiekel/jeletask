@@ -121,7 +121,7 @@ public abstract class MessageHandlerSupport implements MessageHandler {
         FunctionConfigurable functionConfig = this.getFunctionConfig(function);
         StateCalculator<State<?>> stateCalculator = functionConfig.getStateCalculator(centralUnit.getComponent(function, number));
         State<?> state = outputState.state();
-        byte[] writeBytes = stateCalculator.toEventForTesting(state);
+        byte[] writeBytes = stateCalculator.toEventForTesting(centralUnit.getComponent(function, number), state);
 
         if (writeBytes == null) {
             throw new IllegalArgumentException(String.format("State should be null for function '%s' and output '%s'", function, outputState));

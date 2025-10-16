@@ -44,7 +44,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(3)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             assertThat(result).isNotNull();
             assertThat(result[0]).isEqualTo((byte) 1); // message type
@@ -62,7 +62,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(5)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             assertThat(result[0]).isEqualTo((byte) 0); // alarm type
         }
@@ -78,7 +78,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(2)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             assertThat(result[0]).isEqualTo((byte) 1); // message type
             assertThat(result[1]).isEqualTo((byte) 0); // not ASCII
@@ -96,7 +96,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(1)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             // Extract line 1 (bytes 2-17)
             String line1 = new String(result, 2, 16, StandardCharsets.US_ASCII);
@@ -118,7 +118,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(1)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             String line1 = new String(result, 2, 16, StandardCharsets.US_ASCII);
             assertThat(line1).hasSize(16);
@@ -140,7 +140,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(1)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             String line1 = new String(result, 2, 16, StandardCharsets.US_ASCII);
             assertThat(line1).isEqualTo("                ");
@@ -159,7 +159,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(null)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             assertThat(result[34]).isEqualTo((byte) 1); // default beeps
         }
@@ -174,7 +174,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(7)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             assertThat(result[34]).isEqualTo((byte) 7);
         }
@@ -189,7 +189,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(1)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             // UTF-16 uses 2 bytes per character, so 8 chars = 16 bytes
             assertThat(result).hasSize(35);
@@ -212,7 +212,7 @@ class DisplayMessageStateCalculatorTest {
                     .messageBeeps(beeps)
                     .build();
 
-            byte[] result = calculator.toCommand(state);
+            byte[] result = calculator.toCommand(null, state);
 
             assertThat(result[0]).isEqualTo(expectedMessageType);
             assertThat(result[1]).isEqualTo(expectedAsciiFlag);
@@ -297,7 +297,7 @@ class DisplayMessageStateCalculatorTest {
                 .messageBeeps(1)
                 .build();
 
-        byte[] result = calculator.toCommand(state);
+        byte[] result = calculator.toCommand(null, state);
 
         // Extract line 1 (bytes 2-17)
         byte[] line1Bytes = Arrays.copyOfRange(result, 2, 18);
@@ -322,7 +322,7 @@ class DisplayMessageStateCalculatorTest {
                 .messageBeeps(1)
                 .build();
 
-        byte[] result = calculator.toCommand(state);
+        byte[] result = calculator.toCommand(null, state);
 
         // Extract line 1 (bytes 2-17)
         byte[] line1Bytes = Arrays.copyOfRange(result, 2, 18);
@@ -341,7 +341,7 @@ class DisplayMessageStateCalculatorTest {
                 .messageBeeps(1)
                 .build();
 
-        byte[] result = calculator.toCommand(state);
+        byte[] result = calculator.toCommand(null, state);
 
         byte[] line1Bytes = Arrays.copyOfRange(result, 2, 18);
         String decoded = new String(line1Bytes, StandardCharsets.UTF_16);
@@ -361,7 +361,7 @@ class DisplayMessageStateCalculatorTest {
                 .messageBeeps(1)
                 .build();
 
-        byte[] result = calculator.toCommand(state);
+        byte[] result = calculator.toCommand(null, state);
 
         // Totaal: 1 (type) + 1 (ascii) + 16 (line1) + 16 (line2) + 1 (beeps) = 35
         assertThat(result).hasSize(35);
@@ -385,7 +385,7 @@ class DisplayMessageStateCalculatorTest {
                 .messageBeeps(1)
                 .build();
 
-        byte[] result = calculator.toCommand(state);
+        byte[] result = calculator.toCommand(null, state);
 
         // Totaal moet nog steeds 35 zijn
         assertThat(result).hasSize(35);

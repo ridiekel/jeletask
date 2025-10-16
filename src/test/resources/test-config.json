@@ -20,7 +20,10 @@
     "SENSOR": [
       { "number": 30, "description": "Light Sensor", "type": "LIGHT" },
       { "number": 31, "description": "Temperature Sensor", "type": "TEMPERATURE", "ha_unit_of_measurement": "°C" },
-      { "number": 32, "description": "General Analog Sensor", "type": "GAS", "gas_type": "4-20ma", "gas_min": 0, "gas_max": 14, "decimals": 2 },
+      { "number": 321, "description": "GAS - 4-20ma", "type": "GAS", "gas_type": "4-20ma", "gas_min": 0, "gas_max": 200, "decimals": 2 },
+      { "number": 322, "description": "GAS - 0-20ma", "type": "GAS", "gas_type": "0-20ma", "gas_min": 0, "gas_max": 200, "decimals": 2 },
+      { "number": 323, "description": "GAS - 5-10v", "type": "GAS", "gas_type": "5-10v", "gas_min": 0, "gas_max": 200, "decimals": 2 },
+      { "number": 324, "description": "GAS - 0-10v", "type": "GAS", "gas_type": "0-10v", "gas_min": 0, "gas_max": 200, "decimals": 2 },
       {
         "number": 33,
         "description": "Temperature Control",

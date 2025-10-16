@@ -37,7 +37,7 @@ public class LuxStateCalculator extends StateCalculatorSupport<LuxState> {
     }
 
     @Override
-    public byte[] toCommand(LuxState value) {
+    public byte[] toCommand(ComponentSpec component, LuxState value) {
         return NUMBER_CONVERTER.convert(luxToByte(value.getState()));
     }
 

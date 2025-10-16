@@ -23,8 +23,8 @@ public abstract class StateCalculatorSupport<S extends State<?>> implements Stat
     }
 
     @Override
-    public byte[] toEventForTesting(S state) {
-        return toCommand(state);
+    public byte[] toEventForTesting(ComponentSpec component, S state) {
+        return toCommand(component, state);
     }
 
     @Override

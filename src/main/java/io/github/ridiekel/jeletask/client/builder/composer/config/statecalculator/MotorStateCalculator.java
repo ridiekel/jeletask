@@ -110,7 +110,7 @@ public class MotorStateCalculator extends StateCalculatorSupport<MotorState> {
     }
 
     @Override
-    public byte[] toCommand(MotorState state) {
+    public byte[] toCommand(ComponentSpec component, MotorState state) {
         byte[] setting = null;
 
         byte[] data = Bytes.EMPTY;
@@ -148,8 +148,8 @@ public class MotorStateCalculator extends StateCalculatorSupport<MotorState> {
     }
 
     @Override
-    public byte[] toEventForTesting(MotorState state) {
-        byte[] power = POWER_CALCULATOR.toEventForTesting(new OnOffState(state.getPower()));
+    public byte[] toEventForTesting(ComponentSpec component, MotorState state) {
+        byte[] power = POWER_CALCULATOR.toEventForTesting(component, new OnOffState(state.getPower()));
         byte[] direction = DIRECTION_MAPPER.toBytes(state.getState());
         byte[] protection = PROTECTION_STATE_MAPPER.toBytes(Optional.ofNullable(state.getProtection()).orElse(ValidProtectionState.NOT_DEFINED));
         byte[] currentPosition = Optional.ofNullable(state.getCurrentPosition()).map(p -> {

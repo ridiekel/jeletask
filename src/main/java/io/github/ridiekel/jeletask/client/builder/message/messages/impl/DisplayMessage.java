@@ -48,7 +48,7 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMess
             addressNumbers_bytes = Bytes.concat(addressNumbers_bytes, new byte[]{Byte.valueOf(addressNumber)});
 
         this.bus_and_address_bytes = Bytes.concat(busNumbers_bytes, addressNumbers_bytes);
-        this.displaymessage_bytes = displayMessageStateCalculator.toCommand(this.getState());
+        this.displaymessage_bytes = displayMessageStateCalculator.toCommand(component, this.getState());
     }
 
     @Override
