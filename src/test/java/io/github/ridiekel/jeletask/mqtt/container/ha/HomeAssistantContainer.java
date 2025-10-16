@@ -178,6 +178,9 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         });
 
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "Home Assistant startup complete ", AnsiColor.BRIGHT_WHITE, "(url: http://" + this.getHost() + ":", this.getPort(), ")", AnsiColor.DEFAULT));
+
+        Config config = this.config();
+        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant version: ", AnsiColor.BRIGHT_WHITE, config.getVersion(), AnsiColor.DEFAULT));
     }
 
     public Integer getPort() {
@@ -195,10 +198,22 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     public Entity state(String id) {
         String uri = "/states/" + id;
 
-        LOG.info(AnsiOutput.toString("[", AnsiColor.YELLOW, "GET", AnsiColor.DEFAULT, "] " + apiUrl + uri, " - simulate with:\n\t\t", AnsiColor.BRIGHT_WHITE,
-                "curl -X GET -H 'Authorization: Bearer " + BEARER + "' -H 'Content-Type: application/json' " + apiUrl + uri + " | jq .", AnsiColor.DEFAULT));
+        logSimulate(uri);
 
         return haWebClient.get().uri(uri).retrieve().toEntity(Entity.class).block().getBody();
+    }
+
+    private void logSimulate(String uri) {
+        LOG.info(AnsiOutput.toString("[", AnsiColor.YELLOW, "GET", AnsiColor.DEFAULT, "] " + apiUrl + uri, " - simulate with:\n\t\t", AnsiColor.BRIGHT_WHITE,
+                "curl -X GET -H 'Authorization: Bearer " + BEARER + "' -H 'Content-Type: application/json' " + apiUrl + uri + " | jq .", AnsiColor.DEFAULT));
+    }
+
+    public Config config() {
+        String uri = "/config";
+
+        logSimulate(uri);
+
+        return haWebClient.get().uri(uri).retrieve().toEntity(Config.class).block().getBody();
     }
 
     public void post(Function function, int number, String type, Entity entity) {

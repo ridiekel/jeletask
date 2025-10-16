@@ -1,3 +1,3 @@
-FROM ghcr.io/home-assistant/home-assistant:stable
+FROM homeassistant/home-assistant:stable
 
 COPY . /config/
