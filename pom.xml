@@ -19,7 +19,7 @@
     <url>https://github.com/ridiekel/jeletask</url>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <exec.mainClass>io.github.ridiekel.jeletask.Teletask2MqttApplication</exec.mainClass>
 
         <sonar.projectKey>jeletask</sonar.projectKey>
