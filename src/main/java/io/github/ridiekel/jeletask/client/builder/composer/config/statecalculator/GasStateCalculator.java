@@ -61,49 +61,50 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
         return GasState.class;
     }
 
+    public static final String _704 = "704.0";
+    public static final String _176 = "176";
+    public static final String _1023 = "1023.0";
+    public static final String _880 = "880.0";
+
     private static final Map<String, GasTypeConfig> CONFIGS = Stream.of(
-            new GasTypeConfig(
-                    "4-20ma",
+            new GasTypeConfig("4-20ma",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal("704.0"), 10, RoundingMode.HALF_UP)
-                            .multiply(value.subtract(new BigDecimal("176")))
+                            .divide(new BigDecimal(_704), 10, RoundingMode.HALF_UP)
+                            .multiply(value.subtract(new BigDecimal(_176)))
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal("704.0"))
+                            .multiply(new BigDecimal(_704))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
-                            .add(new BigDecimal("176"))
+                            .add(new BigDecimal(_176))
                             .setScale(0, RoundingMode.HALF_UP)
             ),
-            new GasTypeConfig(
-                    "0-10v",
+            new GasTypeConfig("0-10v",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal("1023.0"), 10, RoundingMode.HALF_UP)
+                            .divide(new BigDecimal(_1023), 10, RoundingMode.HALF_UP)
                             .multiply(value)
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal("1023.0"))
+                            .multiply(new BigDecimal(_1023))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
                             .setScale(0, RoundingMode.HALF_UP)
             ),
-            new GasTypeConfig(
-                    "5-10v",
+            new GasTypeConfig("5-10v",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal("1023.0"), 10, RoundingMode.HALF_UP)
+                            .divide(new BigDecimal(_1023), 10, RoundingMode.HALF_UP)
                             .multiply(value)
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal("1023.0"))
+                            .multiply(new BigDecimal(_1023))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
                             .setScale(0, RoundingMode.HALF_UP)
             ),
-            new GasTypeConfig(
-                    "0-20ma",
+            new GasTypeConfig("0-20ma",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal("880.0"), 10, RoundingMode.HALF_UP)
+                            .divide(new BigDecimal(_880), 10, RoundingMode.HALF_UP)
                             .multiply(value)
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal("880.0"))
+                            .multiply(new BigDecimal(_880))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
                             .setScale(0, RoundingMode.HALF_UP)
             )
