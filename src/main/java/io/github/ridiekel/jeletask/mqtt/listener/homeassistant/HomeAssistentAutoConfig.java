@@ -33,7 +33,7 @@ public class HomeAssistentAutoConfig {
     public Map<String, String> toConfig(ComponentSpec component) {
         return Optional.ofNullable(component)
                 .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
-                        .map(f -> f.getConfigTopicsAndMessages(this.centralUnit, c, this.baseTopic, this.teletaskIdentifier, this.haDiscoveryPrefix()))
+                        .map(f -> f.getConfigTopicsAndMessages(this.centralUnit, c, this.baseTopic, this.teletaskIdentifier, this.haDiscoveryPrefix(), HADeviceType.valueOf(f.getHAType(c).toUpperCase())))
                 ).orElse(new HashMap<>());
     }
 
@@ -94,7 +94,7 @@ public class HomeAssistentAutoConfig {
         return new FunctionConfig(type, config);
     }
 
-    private enum HADeviceType {
+    public enum HADeviceType {
         BINARY_SENSOR,
         SENSOR,
         LIGHT,
@@ -123,12 +123,13 @@ public class HomeAssistentAutoConfig {
             return this.type.apply(componentSpec);
         }
 
-        public Map<String, String> getConfigTopicsAndMessages(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String haNodeId, String haDiscoveryPrefix) {
+        public Map<String, String> getConfigTopicsAndMessages(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String haNodeId, String haDiscoveryPrefix, HADeviceType deviceType) {
             HAConfigParameters params = new HAConfigParameters(
                     centralUnit,
                     componentSpec,
                     baseTopic,
-                    haNodeId
+                    haNodeId,
+                    deviceType
             );
 
             Map<String, String> topics = new HashMap<>();
