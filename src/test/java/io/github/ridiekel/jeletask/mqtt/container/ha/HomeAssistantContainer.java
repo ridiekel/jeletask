@@ -173,7 +173,6 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 .until(() -> {
                     List<Entity> states = this.teletaskStates();
                     return states.size() >= this.centralUnit.getAllComponents().size();
-//                    return true;
                 });
 
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant online according to published entities:", AnsiColor.DEFAULT));

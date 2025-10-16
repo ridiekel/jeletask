@@ -23,6 +23,9 @@ teletask:
     dir: /data
 
 spring:
+  http:
+    reactiveclient:
+      connector: jdk
   main:
     banner-mode: off
   application:

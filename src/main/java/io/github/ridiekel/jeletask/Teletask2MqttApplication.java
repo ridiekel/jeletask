@@ -42,6 +42,11 @@ public class Teletask2MqttApplication {
     }
 
     public static void handleDeprecations() {
+        /*
+        WARNING: sun.misc.Unsafe::allocateMemory has been called by io.netty.util.internal.PlatformDependent0$2 (netty-common-4.1.127.Final.jar)
+         */
+        System.setProperty("io.netty.noUnsafe", "true");
+
         copyDeprecatedVariable("TELETASK_HOST");
         copyDeprecatedVariable("TELETASK_PORT");
         copyDeprecatedVariable("TELETASK_ID");
