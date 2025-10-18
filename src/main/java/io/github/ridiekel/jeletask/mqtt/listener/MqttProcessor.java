@@ -54,7 +54,6 @@ public class MqttProcessor implements StateChangeListener {
     private static final Logger LOG = LogManager.getLogger();
 
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9_-]");
-    public static final int MQTT_CONNECTION_TIMEOUT_SECONDS = 5;
 
     private final CentralUnit centralUnit;
     private final TeletaskClient teletaskClient;
@@ -69,7 +68,6 @@ public class MqttProcessor implements StateChangeListener {
     private MqttClient mqttClient;
     @Getter
     private final String prefix;
-    private final MqttConnectOptions connOpts;
     @Getter
     private final String teletaskIdentifier;
 
@@ -92,8 +90,6 @@ public class MqttProcessor implements StateChangeListener {
         this.motorProgressor = new MotorProgressor(configuration.getPublish().getMotorPositionInterval(), this::publishState);
         this.longPressInputCaptor = new LongPressInputCaptor(this);
 
-        String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
-        char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
         this.prefix = removeInvalid(configuration.getMqtt().getPrefix(), this.configuration.getMqtt().getClientId());
 
         this.teletaskIdentifier = resolveTeletaskIdentifier(centralUnit, configuration);
@@ -101,25 +97,11 @@ public class MqttProcessor implements StateChangeListener {
         LOG.info(() -> String.format("teletask id: '%s'", this.teletaskIdentifier));
         LOG.info(() -> String.format("host: '%s'", this.configuration.getMqtt().getHost()));
         LOG.info(() -> String.format("port: '%s'", this.configuration.getMqtt().getPort()));
-        LOG.info(() -> String.format("username: '%s'", Optional.ofNullable(username).orElse("<not specified>")));
         LOG.info(() -> String.format("clientId: '%s'", this.configuration.getMqtt().getClientId()));
         LOG.info(() -> String.format("retained: '%s'", configuration.getMqtt().isRetained()));
         LOG.info(() -> String.format("prefix: '%s'", this.prefix));
         LOG.info(() -> String.format("Remote stop topic: '%s'", this.getRemoteStopTopic()));
         LOG.info(() -> String.format("Remote refresh states topic: '%s'", this.getRemoteRefreshTopic()));
-
-        this.connOpts = new MqttConnectOptions();
-        this.connOpts.setMaxInflight(100000);
-
-        // Do we need CleanSession?
-        // I have disabled it for now because it's not subscribing to the mqtt topics again
-        // after a reconnect (for ex. when you restart your mqtt broker).
-        this.connOpts.setCleanSession(false);
-
-        this.connOpts.setConnectionTimeout(MQTT_CONNECTION_TIMEOUT_SECONDS);
-        this.connOpts.setAutomaticReconnect(true);
-        this.connOpts.setUserName(username);
-        this.connOpts.setPassword(password);
 
         this.homeAssistentAutoConfig = new HomeAssistentAutoConfig(this.configuration, this.centralUnit, this.getBaseTopic(), this.teletaskIdentifier);
 
@@ -148,10 +130,16 @@ public class MqttProcessor implements StateChangeListener {
 
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(200)
-    public void reconnect() {
-        this.configureAndConnectMqtt();
-        this.teletaskClient.groupGet();
-        scheduleGroupGet(configuration);
+    public void startup() {
+        try {
+            this.configureAndConnectMqtt();
+            this.publishConfig();
+            this.subscribe();
+            this.teletaskClient.groupGet();
+            scheduleGroupGet(configuration);
+        } catch (MqttException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static String resolveTeletaskIdentifier(CentralUnit centralUnit, Teletask2MqttConfigurationProperties configuration) {
@@ -162,61 +150,67 @@ public class MqttProcessor implements StateChangeListener {
         return Optional.ofNullable(value).map(String::trim).filter(u -> !u.isEmpty()).map(u -> INVALID_CHARS.matcher(u).replaceAll("_")).orElseGet(() -> removeInvalid(defaultValue, "<not_found>"));
     }
 
-    private void configureAndConnectMqtt() {
-        String broker = "tcp://" + this.configuration.getMqtt().getHost() + ":" + this.configuration.getMqtt().getPort();
-        LOG.info(() -> "Connecting to MQTT broker...");
+    private void configureAndConnectMqtt() throws MqttException {
+        String brokerUrl = "tcp://" + this.configuration.getMqtt().getHost() + ":" + this.configuration.getMqtt().getPort();
+        String clientId = this.configuration.getMqtt().getClientId();
 
-        try {
-            tryDisconnect();
-            this.mqttClient = new MqttClient(broker, this.configuration.getMqtt().getClientId(), new MemoryPersistence());
-        } catch (MqttException e) {
-            throw new IllegalStateException(e);
-        }
-        Awaitility.await().atMost(MQTT_CONNECTION_TIMEOUT_SECONDS, TimeUnit.MINUTES).until(() -> {
-            this.connectAndWaitForMqtt();
-            this.publishConfig();
-            this.subscribe();
-            return true;
-        });
-    }
+        String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
+        char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
 
-    private void tryDisconnect() {
-        if (this.mqttClient != null) {
-            try {
-                this.mqttClient.disconnect(5000);
-            } catch (Exception e) {
-                try {
-                    this.mqttClient.disconnectForcibly(5000, 5000);
-                } catch (MqttException ex) {
-                    LOG.error(() -> "Could not disconnect cleanly from MQTT broker.", ex);
-                }
+        log(LOG::info, What.CONNECTION, "STATUS", String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", brokerUrl, clientId, username, password != null));
+
+        this.mqttClient = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
+
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setUserName(username);
+        options.setPassword(password);
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(false);
+        options.setKeepAliveInterval(10);
+        options.setConnectionTimeout(5);
+        options.setMaxReconnectDelay(10000);
+
+        this.mqttClient.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectionLost(Throwable cause) {
+                log(LOG::warn, What.CONNECTION, "STATUS", "Connection lost!");
             }
-        }
+
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                log(LOG::info, What.CONNECTION, "STATUS", String.format("Connected to MQTT (reconnect=%s, brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", reconnect, brokerUrl, clientId, username, password != null));
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) {
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+            }
+        });
+
+        this.mqttClient.connect(options);
     }
 
     private void subscribe() throws MqttException {
-        LOG.info(() -> "Subscribing to topics...");
-        this.mqttClient.subscribe(this.getBaseTopic() + "/+/+/set", 0,
-                toTracingListener((topic, message) -> {
-                    EXECUTOR.execute(() -> {
-                        new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message);
-                    });
-                })
-        );
-        this.mqttClient.subscribe(getPingTopic(), 0,
-                toTracingListener((topic, message) -> {
-                    this.pingMesage.setReceived(Instant.now());
-                })
-        );
-        this.mqttClient.subscribe(getRemoteStopTopic(), 0, toTracingListener((topic, message) -> {
+        this.subscribe(this.getBaseTopic() + "/+/+/set", (topic, message) -> {
+            EXECUTOR.execute(() -> {
+                new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message);
+            });
+        });
+        this.subscribe(getPingTopic(), (topic, message) -> {
+            this.pingMesage.setReceived(Instant.now());
+        });
+        this.subscribe(getRemoteStopTopic(), (topic, message) -> {
             LOG.debug(() -> String.format("Stopping the service: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
             System.exit(0);
-        }));
-        this.mqttClient.subscribe(getRemoteRefreshTopic(), 0, toTracingListener((topic, message) -> {
+        });
+        this.subscribe(getRemoteRefreshTopic(), (topic, message) -> {
             LOG.debug(() -> String.format("Refreshing states: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
             EXECUTOR.execute(this.teletaskClient::groupGet);
-        }));
-        this.mqttClient.subscribe("homeassistant/status", 0, toTracingListener((topic, message) -> {
+        });
+        this.subscribe("homeassistant/status", (topic, message) -> {
             LOG.debug(() -> String.format("Home assistent 'birth'/'last will' message: %s", message));
             if (message != null && Objects.equals(message.toString(), "online")) {
                 long seconds = ThreadLocalRandom.current().nextInt(2, 6);
@@ -227,7 +221,12 @@ public class MqttProcessor implements StateChangeListener {
                     this.teletaskClient.groupGet();
                 }, seconds, TimeUnit.SECONDS);
             }
-        }));
+        });
+    }
+
+    private void subscribe(String topic, IMqttMessageListener target) throws MqttException {
+        log(LOG::info, What.CONFIG, "SUBSCRIBE", topic);
+        this.mqttClient.subscribe(topic, 0, toTracingListener(target));
     }
 
     private String getPingTopic() {
@@ -249,27 +248,7 @@ public class MqttProcessor implements StateChangeListener {
         return getBaseTopic() + "/refresh";
     }
 
-    private synchronized void connectAndWaitForMqtt() {
-        while (!this.mqttClient.isConnected()) {
-            try {
-                this.mqttClient.connect(this.connOpts);
-            } catch (MqttException e) {
-                LOG.debug(() -> String.format("Connect warning: %s", e.getMessage()));
-            }
-
-            try {
-                Awaitility.await().pollDelay(1, TimeUnit.SECONDS).atMost(MQTT_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS).until(() -> {
-                    LOG.info(() -> "Waiting for mqtt connection...");
-                    return this.mqttClient.isConnected();
-                });
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
     private void publishConfig() {
-        LOG.info(() -> "Publishing config...");
         this.centralUnit.getAllComponents().forEach(component -> {
             this.homeAssistentAutoConfig.toConfig(component)
                     .forEach((topic, message) -> {
@@ -290,7 +269,7 @@ public class MqttProcessor implements StateChangeListener {
         checkAndPublishConnectedStatus();
     }
 
-    @Scheduled(fixedDelay = MQTT_CONNECTION_TIMEOUT_SECONDS, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
     public void checkAndPublishConnectedStatus() {
         boolean currentConnectionStatus = this.teletaskClient.isConnected();
         if (currentConnectionStatus != CONNECTED_STATUS.connected) {
@@ -309,12 +288,15 @@ public class MqttProcessor implements StateChangeListener {
         try {
             this.pingMesage = new PingMesage(Instant.now());
             this.publish(What.PING, () -> padded("SEND"), getPingTopic(), StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage), LOG::debug);
-            Awaitility.await("Waiting for ping response").atMost(MQTT_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> Objects.nonNull(this.pingMesage.getReceived()));
-            LOG.debug(String.format(WHAT_LOG_PATTERNS.get(What.PING), getWhat(What.PING), AnsiOutput.toString(padded("CHECK"), " - ", AnsiColor.BLUE, this.pingMesage.received.toEpochMilli() - this.pingMesage.sent.toEpochMilli() + "ms"), StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage)));
+            Awaitility.await("Waiting for ping response").atMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> Objects.nonNull(this.pingMesage.getReceived()));
+            log(LOG::debug, What.PING, "CHECK", AnsiOutput.toString(AnsiColor.BLUE, this.pingMesage.received.toEpochMilli() - this.pingMesage.sent.toEpochMilli() + "ms  - ", AnsiColor.DEFAULT, StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage)));
         } catch (Exception e) {
             LOG.error(() -> "MQTT ping failed: " + e.getMessage());
-            reconnect();
         }
+    }
+
+    private void log(Consumer<String> level, What what, String subWhat, String message) {
+        level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), padded(subWhat), message));
     }
 
     private static String padded(String msg) {
@@ -367,15 +349,13 @@ public class MqttProcessor implements StateChangeListener {
             mqttMessage.setQos(0);
             mqttMessage.setRetained(this.getConfiguration().getMqtt().isRetained());
 
-            this.connectAndWaitForMqtt();
-
             String logStringValue = logString.get();
 
             level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message)));
             this.mqttClient.publish(topic, mqttMessage);
             this.traceService.publish(topic, message, mqttMessage.getQos(), mqttMessage.isRetained());
         } catch (Exception e) {
-            LOG.warn(e.getMessage());
+            LOG.warn("Could not publish to MQTT: " + e.getMessage());
         }
     }
 
@@ -385,11 +365,11 @@ public class MqttProcessor implements StateChangeListener {
 
     @Override
     public void stop() {
-        try {
-            this.mqttClient.disconnect();
-        } catch (MqttException e) {
-            LOG.debug(e::getMessage);
-        }
+//        try {
+//            this.mqttClient.disconnect();
+//        } catch (MqttException e) {
+//            LOG.debug(e::getMessage);
+//        }
     }
 
     private static class ConnectedStatus {

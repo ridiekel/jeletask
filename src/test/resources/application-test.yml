@@ -39,5 +39,4 @@ logging:
     root: ERROR
     org.springframework: ERROR
     io.github.ridiekel.jeletask: DEBUG
-#    io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor: TRACE
-#    io.github.ridiekel.jeletask: TRACE
+    org.eclipse.paho: WARN
