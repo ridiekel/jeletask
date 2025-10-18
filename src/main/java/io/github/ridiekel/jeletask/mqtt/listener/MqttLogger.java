@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 public class MqttLogger {
     public static final Map<What, String> WHAT_LOG_PATTERNS = Map.of(
+            What.PING, whatPattern(AnsiColor.BRIGHT_BLUE),
             What.PUBLISH, whatPattern(AnsiColor.YELLOW),
             What.RECEIVE, whatPattern(AnsiColor.MAGENTA),
             What.ONLINE, whatPattern(AnsiColor.BRIGHT_WHITE),
@@ -22,6 +23,7 @@ public class MqttLogger {
     }
 
     public enum What {
+        PING,
         PUBLISH,
         RECEIVE,
         ONLINE,
