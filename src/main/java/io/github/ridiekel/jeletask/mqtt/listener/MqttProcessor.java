@@ -317,7 +317,7 @@ public class MqttProcessor implements StateChangeListener {
     private void publishConnectionStatus() {
         try {
             LOG.debug("Publishing connection status: " + State.OBJECT_MAPPER.writeValueAsString(CONNECTED_STATUS));
-            this.publish(What.ONLINE, () -> padded("BRIDGE"), HAConfigParameters.availabilityTopic(this.getBaseTopic()), CONNECTED_STATUS.getState(), LOG::info);
+            this.publish(What.ONLINE, () -> padded("BRIDGE"), HAConfigParameters.availabilityTopic(this.getBaseTopic()), CONNECTED_STATUS.getState(), LOG::debug);
         } catch (JsonProcessingException e) {
             LOG.error(e);
         }
