@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask;
 
-import de.codecentric.boot.admin.server.config.EnableAdminServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.SpringApplication;
@@ -14,7 +13,6 @@ import java.util.UUID;
 @SpringBootApplication
 @EnableConfigurationProperties({Teletask2MqttConfigurationProperties.class})
 @EnableScheduling
-@EnableAdminServer
 public class Teletask2MqttApplication {
     private static final Logger LOG = LogManager.getLogger();
 

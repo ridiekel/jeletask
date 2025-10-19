@@ -24,6 +24,10 @@ teletask:
   log:
     haconfig-enabled: true
 
+sba:
+  server:
+    enabled: true
+
 spring:
   http:
     reactiveclient:

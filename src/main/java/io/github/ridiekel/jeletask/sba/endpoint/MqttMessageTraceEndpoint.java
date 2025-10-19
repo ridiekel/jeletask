@@ -5,6 +5,7 @@ import io.github.ridiekel.jeletask.mqtt.listener.tracing.repository.MqttMessageT
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,7 @@ import java.util.List;
 @Component
 @Endpoint(id = "traces")
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "sba.server", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class MqttMessageTraceEndpoint {
     private final MqttMessageTraceRepository repo;
 

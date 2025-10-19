@@ -260,7 +260,7 @@ public class MqttProcessor implements StateChangeListener {
                                 this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug
                         );
                         try {
-                            Thread.sleep(25);
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }

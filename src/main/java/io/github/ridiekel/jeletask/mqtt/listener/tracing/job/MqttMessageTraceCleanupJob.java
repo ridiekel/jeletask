@@ -13,6 +13,7 @@ import java.time.Instant;
 
 @Component
 @ConditionalOnProperty(prefix = "mqtt.trace.cleanup", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "sba.server", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class MqttMessageTraceCleanupJob {
 
     private static final Logger log = LoggerFactory.getLogger(MqttMessageTraceCleanupJob.class);
