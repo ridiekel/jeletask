@@ -21,6 +21,8 @@ teletask:
       interval: P1D
   db:
     dir: /data
+  log:
+    haconfig-enabled: true
 
 spring:
   http:
@@ -28,6 +30,7 @@ spring:
       connector: jdk
   main:
     banner-mode: off
+    lazy-initialization: true
   application:
     name: Teletask2MQTT
   boot:
@@ -57,7 +60,6 @@ spring:
       minimum-idle: 1
       idle-timeout: 0
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
     open-in-view: false
@@ -66,6 +68,9 @@ spring:
         format_sql: true
         jdbc:
           time_zone: UTC
+  thymeleaf:
+    check-template-location: false
+
 
 management:
   endpoints:
@@ -84,8 +89,10 @@ management:
     quartz:
       show-values: when_authorized
 
-
 server:
+  tomcat:
+    threads:
+      max: 10
   forward-headers-strategy: framework
 
 logging:
