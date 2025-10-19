@@ -39,7 +39,7 @@ public class Teletask2MqttTestApplication {
     }
 
     public static void main(String[] args) {
-        System.setProperty("spring.profiles.active", "slim,test");
+        System.setProperty("spring.profiles.active", (System.getProperties().contains("spring.profiles.active") ? System.getProperty("spring.profiles.active") + "," : "") + "test");
         Teletask2MqttApplication.handleDeprecations();
         SpringApplication.run(Teletask2MqttTestApplication.class, args);
     }

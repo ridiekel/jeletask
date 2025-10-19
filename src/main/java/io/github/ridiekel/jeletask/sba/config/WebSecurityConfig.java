@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Configuration
-@ConditionalOnProperty(prefix = "sba.server", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "sba.server", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableWebSecurity
 public class WebSecurityConfig {
 

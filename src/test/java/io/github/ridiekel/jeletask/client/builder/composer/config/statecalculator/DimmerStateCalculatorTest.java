@@ -27,6 +27,25 @@ class DimmerStateCalculatorTest {
         }));
     }
 
+    @Test
+    void canDeserializeWrongCaseEnum() {
+        DimmerStateCalculator dimmerStateCalculator = new DimmerStateCalculator();
+        DimmerState dimmerState = dimmerStateCalculator.stateFromMessage("""
+                { "state": "off" }
+                """);
+        assertThat(dimmerState.getState()).isEqualTo(DimmerStateCalculator.ValidDimmerState.OFF);
+
+        dimmerState = dimmerStateCalculator.stateFromMessage("""
+                { "state": "On" }
+                """);
+        assertThat(dimmerState.getState()).isEqualTo(DimmerStateCalculator.ValidDimmerState.ON);
+
+        dimmerState = dimmerStateCalculator.stateFromMessage("""
+                { "state": "PREViOUs_STaTE" }
+                """);
+        assertThat(dimmerState.getState()).isEqualTo(DimmerStateCalculator.ValidDimmerState.PREVIOUS_STATE);
+    }
+
     void withDimmer(BiConsumer<DimmerStateCalculator, DimmerState> tester) {
         DimmerStateCalculator calculator = new DimmerStateCalculator();
         DimmerState state = new DimmerState();
