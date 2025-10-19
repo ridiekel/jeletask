@@ -225,6 +225,7 @@ Maybe this was a bug in one of their versions.
 | SPRING_SECURITY_USER_NAME                        | Optional | Random UUID   | The username with which you can login to the admin console.                                                                                                                 |
 | SPRING_SECURITY_USER_PASSWORD                    | Optional | Random UUID   | The password with which you can login to the admin console.                                                                                                                 |
 | SPRING_OUTPUT_ANSI_ENABLED                       | Optional | Always        | To disable log coloring, set this value to `Detect` or `Never`                                                                                                              |
+| SPRING_PROFILES_ACTIVE                           | Optional |               | Set this to `slim` for a service without tracing and web interface. Should help in decreasing memory consumption.                                                           |
 
 ### Duration and Period notation
 
