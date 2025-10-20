@@ -55,7 +55,7 @@ sonarqube-analysis:
 
 code-coverage-report-conversion:
   stage: visualize
-  image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
+  image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.10
   script:    
     - python /opt/cover2cover.py target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/src/main/java/ > target/site/cobertura.xml
   needs: ["test-job"]
