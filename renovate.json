@@ -6,7 +6,8 @@
   ],
   "enabledManagers": [
     "maven",
-    "github-actions"
+    "gitlabci",
+    "maven-wrapper"
   ],
   "commitBody": "Renovate Bot <bot@renovateapp.com>",
   "packageRules": [
