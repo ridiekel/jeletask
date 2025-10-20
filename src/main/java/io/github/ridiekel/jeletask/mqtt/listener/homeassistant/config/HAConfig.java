@@ -30,7 +30,6 @@ public class HAConfig<T extends HAConfig<T>> {
 
         this.baseTopic(parameters.getComponentTopic())
                 .stateTopic("~/state")
-//                .uniqueId(uniqueId)
                 .defaultEntityId(uniqueId)
                 .name(parameters.getComponentSpec().getDescription())
                 .manufacturer("teletask")
