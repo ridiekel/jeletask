@@ -380,9 +380,9 @@ For more information on setting and getting state using MQTT (if you want to do 
 
 ## Additional HA config
 
-### Relay
+### Types
 
-The default type of relay is ```light```, but can be overridden.
+The default type of relay is ```light```, for moods and other "on/off" devices, it is ```switch```, but can be overridden.
 Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 
 ```json
