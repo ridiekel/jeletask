@@ -50,9 +50,7 @@ public class CentralUnitEndpoint {
                     ComponentSpec component = this.centralUnit.getComponent(Function.valueOf(function.toUpperCase()), number);
                     if (item instanceof ObjectNode obj) {
                         obj.set("state", MAPPER.valueToTree(component.getState()));
-                        ArrayNode configs = JsonNodeFactory.instance.arrayNode();
-                        component.getHaPublishedConfig().stream().map(HAConfig::getConfig).collect(Collectors.toSet()).forEach(configs::add);
-                        obj.set("haPublishedConfig", configs);
+                        obj.set("haPublishedConfig", MAPPER.valueToTree(component.getHaPublishedConfig()));
                     }
                 }
             }

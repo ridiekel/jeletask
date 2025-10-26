@@ -135,7 +135,7 @@ public class HomeAssistentAutoConfig {
             Map<String, String> topics = new HashMap<>();
             for (java.util.function.Function<HAConfigParameters, HAConfig<?>> c : this.config) {
                 HAConfig<?> haConfig = c.apply(params);
-                componentSpec.getHaPublishedConfig().add(haConfig);
+                componentSpec.setHaPublishedConfig(haConfig);
                 String topic = createConfigTopic(componentSpec, haNodeId, haDiscoveryPrefix);
                 String message = Optional.ofNullable(haConfig).map(HAConfig::toString).orElse(null);
                 topics.put(topic, message);

@@ -48,7 +48,7 @@ public class ComponentSpec {
     // For INPUT
     private Integer long_press_duration_millis;
 
-    private List<HAConfig<?>> haPublishedConfig = new ArrayList<>();
+    private HAConfig<?> haPublishedConfig = null;
 
     /**
      * Default constructor.
