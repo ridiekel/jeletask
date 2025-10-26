@@ -18,6 +18,7 @@ import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @Endpoint(id = "centralunit")
@@ -50,7 +51,7 @@ public class CentralUnitEndpoint {
                     if (item instanceof ObjectNode obj) {
                         obj.set("state", MAPPER.valueToTree(component.getState()));
                         ArrayNode configs = JsonNodeFactory.instance.arrayNode();
-                        component.getHaPublishedConfig().stream().map(HAConfig::getConfig).forEach(configs::add);
+                        component.getHaPublishedConfig().stream().map(HAConfig::getConfig).collect(Collectors.toSet()).forEach(configs::add);
                         obj.set("haPublishedConfig", configs);
                     }
                 }

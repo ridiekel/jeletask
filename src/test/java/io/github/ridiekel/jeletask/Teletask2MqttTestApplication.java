@@ -50,7 +50,7 @@ public class Teletask2MqttTestApplication {
             System.setProperty("java.awt.headless", "true");
             Configuration.browserCapabilities = new ChromeOptions()
                     .addArguments("--no-sandbox")
-                    .addArguments("--lang=en_US")
+                    .addArguments("--lang=nl")
                     .addArguments("--disable-blink-features=AutomationControlled");
 
             downloadsFolder = ".ci/selenide";

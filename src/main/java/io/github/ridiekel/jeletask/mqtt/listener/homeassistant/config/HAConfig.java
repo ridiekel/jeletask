@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -26,16 +28,16 @@ public class HAConfig<T extends HAConfig<T>> {
 
         this.deviceIdentifiers = this.device.putArray("identifiers");
 
-        var uniqueId = id(parameters);
-
         this.baseTopic(parameters.getComponentTopic())
                 .stateTopic("~/state")
-                .defaultEntityId(uniqueId)
-                .name(parameters.getComponentSpec().getDescription())
+                .defaultEntityId(idWithDomain(parameters))
+                .uniqueId(id(parameters))
+                .name(null) // HA shows this name concatenated with the device name. In our case this would mean a double description. If you don't set this, HA generates a name. If you set this to null, HA just uses the device name
                 .manufacturer("teletask")
-                .deviceIdentifier(parameters.getIdentifier())
-                .deviceName(String.format("teletask-%s", parameters.getIdentifier()))
-                .model(parameters.getCentralUnit().getCentralUnitType().getDisplayName());
+                .deviceIdentifier(id(parameters))
+                .viaDevice(parameters.getIdentifier())
+                .deviceName(parameters.getComponentSpec().getDescription())
+                .model(String.format("%s %s (%s)", parameters.getCentralUnit().getCentralUnitType().getDisplayName(), parameters.getDeviceType(), parameters.getIdentifier()));
     }
 
     public T baseTopic(String value) {
@@ -46,8 +48,12 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.put(this.deviceIdentifiers, identifier);
     }
 
+    public T viaDevice(String identifier) {
+        return this.putDeviceProperty("via_device", identifier);
+    }
+
     public T deviceName(String name) {
-        return this.putDeviceProperty("name", removeInvalid(name, "."));
+        return this.putDeviceProperty("name", name);
     }
 
     public T manufacturer(String value) {
@@ -60,6 +66,10 @@ public class HAConfig<T extends HAConfig<T>> {
 
     public T defaultEntityId(String value) {
         return this.put("default_entity_id", value);
+    }
+
+    public T uniqueId(String value) {
+        return this.put("unique_id", value);
     }
 
     public T name(String value) {
@@ -138,10 +148,16 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.self();
     }
 
-    protected String id(HAConfigParameters parameters) {
-        String id = "teletask-" + parameters.getIdentifier() + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
+    protected String idWithDomain(HAConfigParameters parameters) {
+        String id = id(parameters);
         //For some reason. If I don't prefix this with <something>. HA will not use this value. It doesn't even have to be correct. Just for fun I tried it with smurf, and it also worked. I just added the domain, since that is what I think it should be.
-        return parameters.getDeviceType().toString().toLowerCase() + "." + removeInvalid(id, "_");
+        return parameters.getDeviceType().toString().toLowerCase() + "." + id;
+    }
+
+    private static String id(HAConfigParameters parameters) {
+        String id = "teletask-" + parameters.getIdentifier() + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
+        id = removeInvalid(id, "_");
+        return id;
     }
 
     private static String removeInvalid(String value, String replacement) {
@@ -160,5 +176,21 @@ public class HAConfig<T extends HAConfig<T>> {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        HAConfig<?> haConfig = (HAConfig<?>) o;
+
+        return new EqualsBuilder().append(toString(), haConfig.toString()).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).append(toString()).toHashCode();
     }
 }

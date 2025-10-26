@@ -359,7 +359,9 @@ Auto configuration should work with relays, dimmers, motors, sensors, timed func
 Other types are not yet supported, work in progress.
 Please log an issue when having trouble with auto configuration in HA.
 
-The bridge creates 1 device with id ```teletask-<TELETASK_CENTRAL_ID>```, and adds entities with the following entity id pattern: ```light.teletask_<TELETASK_CENTRAL_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
+The bridge creates 1 device for each entry in your `config.json` and adds 1 entity with the following entity id pattern: ```light.teletask_<TELETASK_CENTRAL_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
+
+![View of MQTT integration in Home Assistant](src/main/resources/ha-entities.png "MQTT Entities in HA")
 
 Examples:
 
@@ -367,6 +369,12 @@ Examples:
 switch.teletask_my_teletask_relay_1
 light.teletask_my_teletask_relay_36
 ```
+
+After that, you overview in HA should look something like this:
+
+![Home Assistant Overview](src/main/resources/ha-overview.png "Home Assistant Overview")
+
+# MQTT
 
 For more information on setting and getting state using MQTT (if you want to do this manually), please see the [MESSAGES.md](MESSAGES.md) file.
 
