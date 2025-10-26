@@ -267,6 +267,7 @@ public class MqttProcessor implements StateChangeListener {
                     });
         });
         checkAndPublishConnectedStatus();
+        this.publishState(centralUnit.getBridge(), centralUnit.getBridge().getState());
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)

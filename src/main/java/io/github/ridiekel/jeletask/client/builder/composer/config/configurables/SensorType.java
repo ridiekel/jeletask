@@ -5,6 +5,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import java.util.Optional;
 
 public enum SensorType {
+    STRING,
     TEMPERATURE,
     LIGHT,
     HUMIDITY,

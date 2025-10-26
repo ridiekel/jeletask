@@ -34,6 +34,7 @@ public class CentralUnitFactory {
 
         centralUnit.setHost(host);
         centralUnit.setPort(port);
+        centralUnit.setVersion(configuration.getCentral().getVersion());
 
         LOG.info("host: {}", host);
         LOG.info("port: {}", port);

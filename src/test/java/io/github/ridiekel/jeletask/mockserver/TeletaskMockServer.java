@@ -92,7 +92,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockSensorGroupGet(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR);
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(s -> s.getNumber() >= 0).toList();
         e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
                 components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
         );

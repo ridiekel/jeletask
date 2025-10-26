@@ -1,6 +1,7 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,6 +9,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -35,9 +37,16 @@ public class HAConfig<T extends HAConfig<T>> {
                 .name(null) // HA shows this name concatenated with the device name. In our case this would mean a double description. If you don't set this, HA generates a name. If you set this to null, HA just uses the device name
                 .manufacturer("teletask")
                 .deviceIdentifier(id(parameters))
-                .viaDevice(parameters.getIdentifier())
                 .deviceName(parameters.getComponentSpec().getDescription())
                 .model(String.format("%s %s (%s)", parameters.getCentralUnit().getCentralUnitType().getDisplayName(), parameters.getDeviceType(), parameters.getIdentifier()));
+
+        if (parameters.getViaDevice().isPresent()) {
+            this.viaDevice(parameters.getViaDevice().map(HAConfig::getDeviceIdentifier).orElse(null));
+        }
+    }
+
+    public String getDeviceIdentifier() {
+        return Optional.ofNullable(this.deviceIdentifiers.get(0)).map(JsonNode::asText).orElse(null);
     }
 
     public T baseTopic(String value) {

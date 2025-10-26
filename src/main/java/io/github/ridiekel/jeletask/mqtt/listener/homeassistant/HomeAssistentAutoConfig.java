@@ -8,32 +8,36 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types.*;
+import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Getter
 public class HomeAssistentAutoConfig {
     private static final Logger LOG = LogManager.getLogger();
     private final Teletask2MqttConfigurationProperties configuration;
     private final CentralUnit centralUnit;
     private final String baseTopic;
     private final String teletaskIdentifier;
+    private final HASensorConfig viaDevice;
 
     public HomeAssistentAutoConfig(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, String baseTopic, String teletaskIdentifier) {
         this.configuration = configuration;
         this.centralUnit = centralUnit;
         this.baseTopic = baseTopic;
         this.teletaskIdentifier = teletaskIdentifier;
+
+        this.viaDevice = (HASensorConfig) FUNCTION_TO_TYPE.get(Function.SENSOR).getHaConfig(centralUnit, centralUnit.getBridge(), baseTopic, teletaskIdentifier, null);
     }
 
     public Map<String, String> toConfig(ComponentSpec component) {
         return Optional.ofNullable(component)
                 .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
-                        .map(f -> f.getConfigTopicsAndMessages(this.centralUnit, c, this.baseTopic, this.teletaskIdentifier, this.haDiscoveryPrefix(), HADeviceType.valueOf(f.getHAType(c).toUpperCase())))
+                        .map(f -> f.getConfigTopicsAndMessages(this.centralUnit, c, this.baseTopic, this.teletaskIdentifier, this.haDiscoveryPrefix(), viaDevice))
                 ).orElse(new HashMap<>());
     }
 
@@ -58,6 +62,7 @@ public class HomeAssistentAutoConfig {
             // Motors -> HA auto discovery: cover. Sufficient?
             Map.entry(Function.MOTOR, f(HADeviceType.COVER, HAMotorConfig::new)),
             Map.entry(Function.SENSOR, f(haDeviceTypeFromTypeToHaTypeMap(Map.of(
+                    SensorType.STRING, HADeviceType.SENSOR,
                     SensorType.TEMPERATURE, HADeviceType.SENSOR,
                     SensorType.LIGHT, HADeviceType.SENSOR,
                     SensorType.HUMIDITY, HADeviceType.SENSOR,
@@ -109,39 +114,43 @@ public class HomeAssistentAutoConfig {
         }
     }
 
-    private static class FunctionConfig {
+    public static class FunctionConfig {
 
         private final java.util.function.Function<ComponentSpec, String> type;
-        private List<java.util.function.Function<HAConfigParameters, HAConfig<?>>> config;
+        private final java.util.function.Function<HAConfigParameters, HAConfig<?>> config;
 
         private FunctionConfig(java.util.function.Function<ComponentSpec, HADeviceType> typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
             this.type = c -> Optional.ofNullable(c.getHAType()).orElseGet(() -> typeIfAbsent.apply(c).toString());
-            this.config = List.of(config);
+            this.config = config;
         }
 
         protected String getHAType(ComponentSpec componentSpec) {
             return this.type.apply(componentSpec);
         }
 
-        public Map<String, String> getConfigTopicsAndMessages(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String haNodeId, String haDiscoveryPrefix, HADeviceType deviceType) {
+        public Map<String, String> getConfigTopicsAndMessages(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, String haDiscoveryPrefix, HASensorConfig viaDevice) {
+            HAConfig<?> haConfig = getHaConfig(centralUnit, componentSpec, baseTopic, teletaskIdentifier, viaDevice);
+
+            Map<String, String> topics = new HashMap<>();
+            String topic = createConfigTopic(componentSpec, teletaskIdentifier, haDiscoveryPrefix);
+            String message = Optional.ofNullable(haConfig).map(HAConfig::toString).orElse(null);
+            topics.put(topic, message);
+
+            return topics;
+        }
+
+        public HAConfig<?> getHaConfig(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, HASensorConfig viaDevice) {
             HAConfigParameters params = new HAConfigParameters(
                     centralUnit,
                     componentSpec,
                     baseTopic,
-                    haNodeId,
-                    deviceType
+                    teletaskIdentifier,
+                    HADeviceType.valueOf(this.getHAType(componentSpec).toUpperCase()),
+                    viaDevice
             );
-
-            Map<String, String> topics = new HashMap<>();
-            for (java.util.function.Function<HAConfigParameters, HAConfig<?>> c : this.config) {
-                HAConfig<?> haConfig = c.apply(params);
-                componentSpec.setHaPublishedConfig(haConfig);
-                String topic = createConfigTopic(componentSpec, haNodeId, haDiscoveryPrefix);
-                String message = Optional.ofNullable(haConfig).map(HAConfig::toString).orElse(null);
-                topics.put(topic, message);
-            }
-
-            return topics;
+            HAConfig<?> haConfig = this.config.apply(params);
+            componentSpec.setHaPublishedConfig(haConfig);
+            return haConfig;
         }
 
         private String createConfigTopic(ComponentSpec c, String haNodeId, String haDiscoveryPrefix) {

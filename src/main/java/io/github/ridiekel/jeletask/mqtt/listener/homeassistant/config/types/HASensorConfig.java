@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 
+import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.SensorType;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadOnlyConfig;
 
@@ -16,7 +17,7 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
     public HASensorConfig(HAConfigParameters parameters) {
         super(parameters);
 
-        if (isType(parameters, "TEMPERATURECONTROL")) {
+        if (isType(parameters, SensorType.TEMPERATURECONTROL)) {
             // HA 'climate'
 
             this.putInt("min_temp", TEMPERATURE_MINIMUM);
@@ -70,7 +71,7 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
                     {{ value_json.fanspeed|lower }}
                     """);
             this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
-        } else if (isType(parameters, "PULSECOUNTER")) {
+        } else if (isType(parameters, SensorType.PULSECOUNTER)) {
             // TODO: implement both current + total. Only current is implemented right now.
             if (parameters.getComponentSpec().getHA_unit_of_measurement() != null) {
                 this.put("unit_of_measurement", parameters.getComponentSpec().getHA_unit_of_measurement());
@@ -81,11 +82,11 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             // Regular simple sensor
             this.put("value_template", "{{ value_json.state }}");
 
-            if (isType(parameters, "TEMPERATURE")) {
+            if (isType(parameters, SensorType.TEMPERATURE)) {
                 this.deviceClass("temperature");
                 this.stateClass("measurement");
                 this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
-            } else if (isType(parameters, "LIGHT")) {
+            } else if (isType(parameters, SensorType.LIGHT)) {
                 this.deviceClass("illuminance");
                 this.stateClass("measurement");
                 this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("lx"));
@@ -97,7 +98,7 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
         }
     }
 
-    private static boolean isType(HAConfigParameters parameters, String expected) {
-        return expected.equalsIgnoreCase(parameters.getComponentSpec().getType());
+    private static boolean isType(HAConfigParameters parameters, SensorType expected) {
+        return expected == SensorType.from(parameters.getComponentSpec());
     }
 }
