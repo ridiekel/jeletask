@@ -70,7 +70,6 @@ public class Teletask2MqttConfigurationProperties {
     public static class LoggingConfiguration {
         private boolean haconfigEnabled = false;
         private boolean topicEnabled = false;
-
     }
 
     @Setter
@@ -79,7 +78,7 @@ public class Teletask2MqttConfigurationProperties {
         private boolean motorPosition = true;
         private Integer motorPositionInterval = 250;
         private Integer statesInterval = 300;
-
+        private boolean asOneDevice = false;
     }
 
     @Setter
@@ -92,7 +91,6 @@ public class Teletask2MqttConfigurationProperties {
 
         public CentralConfiguration() {
         }
-
     }
 
     @Setter

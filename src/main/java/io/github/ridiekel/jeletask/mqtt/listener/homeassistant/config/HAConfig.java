@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,17 +35,29 @@ public class HAConfig<T extends HAConfig<T>> {
                 .stateTopic("~/state")
                 .defaultEntityId(idWithDomain(parameters))
                 .uniqueId(id(parameters))
-                .name(null) // HA shows this name concatenated with the device name. In our case this would mean a double description. If you don't set this, HA generates a name. If you set this to null, HA just uses the device name
-                .manufacturer("teletask")
-                .deviceIdentifier(id(parameters))
-                .deviceName(parameters.getComponentSpec().getDescription())
+                .manufacturer("Teletask")
                 .model(String.format("%s %s (%s)", parameters.getCentralUnit().getCentralUnitType().getDisplayName(), parameters.getDeviceType(), parameters.getIdentifier()));
+
+        this.configureDevice(parameters);
 
         if (parameters.getViaDevice().isPresent()) {
             this.viaDevice(parameters.getViaDevice().map(HAConfig::getDeviceIdentifier).orElse(null));
         }
     }
 
+    private void configureDevice(HAConfigParameters parameters) {
+        if (parameters.getConfig().getPublish().isAsOneDevice()) {
+            this.name(parameters.getComponentSpec().getDescription())
+                    .deviceIdentifier(baseId(parameters))
+                    .deviceName("Teletask " + parameters.getCentralUnit().getType().getDisplayName() + " (" + parameters.getCentralUnit().getHost() + ":" + parameters.getCentralUnit().getPort() + ")");
+        } else {
+            this.name(null) // HA shows this name concatenated with the device name. In our case this would mean a double description. If you don't set this, HA generates a name. If you set this to null, HA just uses the device name
+                    .deviceIdentifier(id(parameters))
+                    .deviceName(parameters.getComponentSpec().getDescription());
+        }
+    }
+
+    @JsonIgnore
     public String getDeviceIdentifier() {
         return Optional.ofNullable(this.deviceIdentifiers.get(0)).map(JsonNode::asText).orElse(null);
     }
@@ -164,9 +177,13 @@ public class HAConfig<T extends HAConfig<T>> {
     }
 
     private static String id(HAConfigParameters parameters) {
-        String id = "teletask-" + parameters.getIdentifier() + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
+        String id = baseId(parameters) + "-" + parameters.getComponentSpec().getFunction().toString().toLowerCase() + "-" + parameters.getComponentSpec().getNumber();
         id = removeInvalid(id, "_");
         return id;
+    }
+
+    private static String baseId(HAConfigParameters parameters) {
+        return "teletask-" + parameters.getIdentifier();
     }
 
     private static String removeInvalid(String value, String replacement) {

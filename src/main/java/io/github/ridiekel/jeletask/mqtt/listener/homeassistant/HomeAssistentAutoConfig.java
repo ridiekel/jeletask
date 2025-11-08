@@ -31,13 +31,13 @@ public class HomeAssistentAutoConfig {
         this.baseTopic = baseTopic;
         this.teletaskIdentifier = teletaskIdentifier;
 
-        this.viaDevice = (HASensorConfig) FUNCTION_TO_TYPE.get(Function.SENSOR).getHaConfig(centralUnit, centralUnit.getBridge(), baseTopic, teletaskIdentifier, null);
+        this.viaDevice = (HASensorConfig) FUNCTION_TO_TYPE.get(Function.SENSOR).getHaConfig(configuration, centralUnit, centralUnit.getBridge(), baseTopic, teletaskIdentifier, null);
     }
 
     public Map<String, String> toConfig(ComponentSpec component) {
         return Optional.ofNullable(component)
                 .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
-                        .map(f -> f.getConfigTopicsAndMessages(this.centralUnit, c, this.baseTopic, this.teletaskIdentifier, this.haDiscoveryPrefix(), viaDevice))
+                        .map(f -> f.getConfigTopicsAndMessages(this.configuration, this.centralUnit, c, this.baseTopic, this.teletaskIdentifier, this.haDiscoveryPrefix(), viaDevice))
                 ).orElse(new HashMap<>());
     }
 
@@ -128,8 +128,8 @@ public class HomeAssistentAutoConfig {
             return this.type.apply(componentSpec);
         }
 
-        public Map<String, String> getConfigTopicsAndMessages(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, String haDiscoveryPrefix, HASensorConfig viaDevice) {
-            HAConfig<?> haConfig = getHaConfig(centralUnit, componentSpec, baseTopic, teletaskIdentifier, viaDevice);
+        public Map<String, String> getConfigTopicsAndMessages(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, String haDiscoveryPrefix, HASensorConfig viaDevice) {
+            HAConfig<?> haConfig = getHaConfig(configuration, centralUnit, componentSpec, baseTopic, teletaskIdentifier, viaDevice);
 
             Map<String, String> topics = new HashMap<>();
             String topic = createConfigTopic(componentSpec, teletaskIdentifier, haDiscoveryPrefix);
@@ -139,8 +139,9 @@ public class HomeAssistentAutoConfig {
             return topics;
         }
 
-        public HAConfig<?> getHaConfig(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, HASensorConfig viaDevice) {
+        public HAConfig<?> getHaConfig(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, HASensorConfig viaDevice) {
             HAConfigParameters params = new HAConfigParameters(
+                    configuration,
                     centralUnit,
                     componentSpec,
                     baseTopic,

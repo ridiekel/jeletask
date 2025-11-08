@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config;
 
+import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HomeAssistentAutoConfig;
@@ -12,6 +13,7 @@ import java.util.Optional;
 @Getter
 @Setter
 public class HAConfigParameters {
+    private final Teletask2MqttConfigurationProperties config;
     private final CentralUnit centralUnit;
     private final ComponentSpec componentSpec;
     private final HomeAssistentAutoConfig.HADeviceType deviceType;
@@ -20,7 +22,8 @@ public class HAConfigParameters {
     private final String availabilityTopic;
     private final String identifier;
 
-    public HAConfigParameters(CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String identifier, HomeAssistentAutoConfig.HADeviceType deviceType, HASensorConfig viaDevice) {
+    public HAConfigParameters(Teletask2MqttConfigurationProperties config, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String identifier, HomeAssistentAutoConfig.HADeviceType deviceType, HASensorConfig viaDevice) {
+        this.config = config;
         this.centralUnit = centralUnit;
         this.componentSpec = componentSpec;
         this.deviceType = deviceType;
