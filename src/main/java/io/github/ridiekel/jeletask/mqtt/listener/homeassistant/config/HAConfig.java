@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -21,6 +22,8 @@ public class HAConfig<T extends HAConfig<T>> {
     private final ObjectNode config;
     private final ObjectNode device;
     private final ArrayNode deviceIdentifiers;
+    @Setter
+    private MQTTConfigTopic mqttConfigTopic;
 
     public HAConfig(HAConfigParameters parameters) {
         this.config = OBJECT_MAPPER.createObjectNode();
@@ -40,16 +43,14 @@ public class HAConfig<T extends HAConfig<T>> {
 
         this.configureDevice(parameters);
 
-        if (parameters.getViaDevice().isPresent()) {
-            this.viaDevice(parameters.getViaDevice().map(HAConfig::getDeviceIdentifier).orElse(null));
-        }
+        this.viaDevice(parameters.getViaDevice().map(HAConfig::getDeviceIdentifier).orElse(this.getDeviceIdentifier()));
     }
 
     private void configureDevice(HAConfigParameters parameters) {
         if (parameters.getConfig().getPublish().isAsOneDevice()) {
             this.name(parameters.getComponentSpec().getDescription())
-                    .deviceIdentifier(baseId(parameters))
-                    .deviceName("Teletask " + parameters.getCentralUnit().getType().getDisplayName() + " (" + parameters.getCentralUnit().getHost() + ":" + parameters.getCentralUnit().getPort() + ")");
+                    .deviceIdentifier(parameters.getCentralUnit().getBridge().getHaPublishedConfig().getDeviceIdentifier())
+                    .deviceName(parameters.getCentralUnit().getBridge().getHaPublishedConfig().getDeviceName());
         } else {
             this.name(null) // HA shows this name concatenated with the device name. In our case this would mean a double description. If you don't set this, HA generates a name. If you set this to null, HA just uses the device name
                     .deviceIdentifier(id(parameters))
@@ -76,6 +77,11 @@ public class HAConfig<T extends HAConfig<T>> {
 
     public T deviceName(String name) {
         return this.putDeviceProperty("name", name);
+    }
+
+    @JsonIgnore
+    public String getDeviceName() {
+        return this.getDeviceProperty("name");
     }
 
     public T manufacturer(String value) {
@@ -114,6 +120,10 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.put(this.device, key, value);
     }
 
+    private String getDeviceProperty(String key) {
+        return this.get(this.device, key);
+    }
+
     public T put(String key, String value) {
         return this.put(this.config, key, value);
     }
@@ -121,6 +131,10 @@ public class HAConfig<T extends HAConfig<T>> {
     private T put(ObjectNode node, String key, String value) {
         node.put(key, value);
         return this.self();
+    }
+
+    private String get(ObjectNode node, String key) {
+        return node.get(key).asText();
     }
 
     public String getStringValue(String key) {
@@ -218,5 +232,17 @@ public class HAConfig<T extends HAConfig<T>> {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).append(toString()).toHashCode();
+    }
+
+    @JsonIgnore
+    public MQTTConfigTopic getMqttConfigTopic() {
+        return mqttConfigTopic;
+    }
+
+    public record MQTTConfigTopic(
+            String topic,
+            String message
+    ) {
+
     }
 }

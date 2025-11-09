@@ -10,6 +10,7 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.mqtt.listener.command.MQTTMessageToTeletaskCommand;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HomeAssistentAutoConfig;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor;
@@ -248,26 +249,46 @@ public class MqttProcessor implements StateChangeListener {
         return getBaseTopic() + "/refresh";
     }
 
-    private void publishConfig() {
-        this.centralUnit.getAllComponents().forEach(component -> {
-            this.homeAssistentAutoConfig.toConfig(component)
-                    .forEach((topic, message) -> {
-                        this.publish(
-                                What.CONFIG,
-                                getLoggingStringForComponent(component),
-                                topic,
-                                message,
-                                this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug
-                        );
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                    });
+    public void publishConfig() {
+        this.centralUnit.getAllComponents().stream().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> {
+            HAConfig.MQTTConfigTopic config = this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic();
+            this.publish(
+                    What.CONFIG,
+                    getLoggingStringForComponent(component),
+                    config.topic(),
+                    config.message(),
+                    this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug
+            );
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         });
         checkAndPublishConnectedStatus();
         this.publishState(centralUnit.getBridge(), centralUnit.getBridge().getState());
+    }
+
+    public void refreshStates() {
+        this.teletaskClient.groupGet();
+    }
+
+    public void removeConfig() {
+        this.centralUnit.getAllComponents().stream().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction).reversed()).forEach(component -> {
+            HAConfig.MQTTConfigTopic config = this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic();
+            this.publish(
+                    What.CONFIG,
+                    getLoggingStringForComponent(component),
+                    config.topic(),
+                    "",
+                    this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug
+            );
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
@@ -315,7 +336,7 @@ public class MqttProcessor implements StateChangeListener {
         }
     }
 
-    private void publishConnectionStatus() {
+    public void publishConnectionStatus() {
         try {
             LOG.debug("Publishing connection status: " + State.OBJECT_MAPPER.writeValueAsString(CONNECTED_STATUS));
             this.publish(What.ONLINE, () -> padded("BRIDGE"), HAConfigParameters.availabilityTopic(this.getBaseTopic()), CONNECTED_STATUS.getState(), LOG::debug);

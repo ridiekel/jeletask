@@ -23,26 +23,19 @@ public class HomeAssistentAutoConfig {
     private final CentralUnit centralUnit;
     private final String baseTopic;
     private final String teletaskIdentifier;
-    private final HASensorConfig viaDevice;
 
     public HomeAssistentAutoConfig(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, String baseTopic, String teletaskIdentifier) {
         this.configuration = configuration;
         this.centralUnit = centralUnit;
         this.baseTopic = baseTopic;
         this.teletaskIdentifier = teletaskIdentifier;
-
-        this.viaDevice = (HASensorConfig) FUNCTION_TO_TYPE.get(Function.SENSOR).getHaConfig(configuration, centralUnit, centralUnit.getBridge(), baseTopic, teletaskIdentifier, null);
     }
 
-    public Map<String, String> toConfig(ComponentSpec component) {
+    public HAConfig<?> toConfig(ComponentSpec component) {
         return Optional.ofNullable(component)
                 .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
-                        .map(f -> f.getConfigTopicsAndMessages(this.configuration, this.centralUnit, c, this.baseTopic, this.teletaskIdentifier, this.haDiscoveryPrefix(), viaDevice))
-                ).orElse(new HashMap<>());
-    }
-
-    private String haDiscoveryPrefix() {
-        return Optional.ofNullable(this.configuration.getMqtt().getDiscoveryPrefix()).orElse("homeassistant");
+                        .map(f -> f.getHaConfig(this.configuration, this.centralUnit, c, this.baseTopic, this.teletaskIdentifier))
+                ).orElse(null);
     }
 
     private static final Map<Function, FunctionConfig> FUNCTION_TO_TYPE = Map.ofEntries(
@@ -128,44 +121,37 @@ public class HomeAssistentAutoConfig {
             return this.type.apply(componentSpec);
         }
 
-        public Map<String, String> getConfigTopicsAndMessages(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, String haDiscoveryPrefix, HASensorConfig viaDevice) {
-            HAConfig<?> haConfig = getHaConfig(configuration, centralUnit, componentSpec, baseTopic, teletaskIdentifier, viaDevice);
-
-            Map<String, String> topics = new HashMap<>();
-            String topic = createConfigTopic(componentSpec, teletaskIdentifier, haDiscoveryPrefix);
-            String message = Optional.ofNullable(haConfig).map(HAConfig::toString).orElse(null);
-            topics.put(topic, message);
-
-            return topics;
-        }
-
-        public HAConfig<?> getHaConfig(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier, HASensorConfig viaDevice) {
+        public HAConfig<?> getHaConfig(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier) {
+            String configTopic = createConfigTopic(configuration, componentSpec, teletaskIdentifier);
             HAConfigParameters params = new HAConfigParameters(
                     configuration,
                     centralUnit,
                     componentSpec,
                     baseTopic,
+                    configTopic,
                     teletaskIdentifier,
                     HADeviceType.valueOf(this.getHAType(componentSpec).toUpperCase()),
-                    viaDevice
+                    (HASensorConfig) centralUnit.getBridge().getHaPublishedConfig()
             );
             HAConfig<?> haConfig = this.config.apply(params);
+            String message = Optional.ofNullable(haConfig).map(HAConfig::toString).orElse(null);
+            haConfig.setMqttConfigTopic(new HAConfig.MQTTConfigTopic(configTopic, message));
             componentSpec.setHaPublishedConfig(haConfig);
             return haConfig;
         }
 
-        private String createConfigTopic(ComponentSpec c, String haNodeId, String haDiscoveryPrefix) {
+        protected String haObjectId(ComponentSpec c) {
+            return c.getFunction().toString().toLowerCase() + "_" + c.getNumber();
+        }
+
+        private String createConfigTopic(Teletask2MqttConfigurationProperties configuration, ComponentSpec c, String haNodeId) {
             //<discovery_prefix>/<component>/[<node_id>/]<object_id>/config
             return String.format("%s/%s/%s/%s/config",
-                    haDiscoveryPrefix,
+                    Optional.ofNullable(configuration.getMqtt().getDiscoveryPrefix()).orElse("homeassistant"),
                     haComponent(c),
                     haNodeId,
                     haObjectId(c)
             );
-        }
-
-        protected String haObjectId(ComponentSpec c) {
-            return c.getFunction().toString().toLowerCase() + "_" + c.getNumber();
         }
 
         protected String haComponent(ComponentSpec c) {
