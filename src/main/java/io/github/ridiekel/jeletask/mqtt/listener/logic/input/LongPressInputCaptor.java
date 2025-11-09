@@ -59,7 +59,9 @@ public class LongPressInputCaptor {
         Captor captor = this.getCaptor(component);
         captor.startPress();
         captor.scheduler.schedule(() -> {
-            this.stopPress(component);
+            if (captor.running) {
+                this.stopPress(component);
+            }
         }, component.getLong_press_duration_millis(), TimeUnit.MILLISECONDS);
         logConditional("STARTED", component, captor);
     }
@@ -111,6 +113,7 @@ public class LongPressInputCaptor {
         private Long startPressTime;
         @JsonIgnore
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        private boolean running = false;
 
         private final long longPressConfigInMillis;
 
@@ -120,9 +123,11 @@ public class LongPressInputCaptor {
 
         public void stopPress() {
             this.stopPressTime = System.currentTimeMillis();
+            this.running = false;
         }
 
         public void startPress() {
+            this.running = true;
             this.startPressTime = System.currentTimeMillis();
         }
 
