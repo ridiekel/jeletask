@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.listener.logic.input;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
@@ -18,6 +19,9 @@ import org.springframework.boot.ansi.AnsiOutput;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -54,6 +58,9 @@ public class LongPressInputCaptor {
     public void startPress(ComponentSpec component) {
         Captor captor = this.getCaptor(component);
         captor.startPress();
+        captor.scheduler.schedule(() -> {
+            this.stopPress(component);
+        }, component.getLong_press_duration_millis(), TimeUnit.MILLISECONDS);
         logConditional("STARTED", component, captor);
     }
 
@@ -64,12 +71,12 @@ public class LongPressInputCaptor {
     }
 
     private void reset(ComponentSpec input, Captor captor) {
-        try {
-            Thread.sleep(500);
-        } catch (Exception e) {
-            LOG.trace(e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        }
+//        try {
+//            Thread.sleep(500);
+//        } catch (Exception e) {
+//            LOG.trace(e.getMessage(), e);
+//            Thread.currentThread().interrupt();
+//        }
         captor.reset();
         logConditional("PUBLISH", input, captor);
         this.processor.publishState(input, captor);
@@ -102,6 +109,8 @@ public class LongPressInputCaptor {
         private Long stopPressTime;
         @Getter
         private Long startPressTime;
+        @JsonIgnore
+        private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
         private final long longPressConfigInMillis;
 

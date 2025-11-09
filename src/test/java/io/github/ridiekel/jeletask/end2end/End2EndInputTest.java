@@ -53,7 +53,7 @@ class End2EndInputTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void inputLongPress() {
+    void inputLongPressWithRelease() {
         teletask().input(10).close();
         ha().web().input(10)
                 .shouldHaveStateTextNotPressed()
@@ -64,6 +64,26 @@ class End2EndInputTest extends MockingTeletaskTestSupport {
         teletask().input(10).open();
 
         Selenide.sleep(500);
+
+        mqtt().expect().input(10).lastStateMessage(1).toHave().state().longPress();
+        mqtt().expect().input(10).lastStateMessage(0).toHave().state().notPressed();
+
+        //LONG_PRESS is sent to HA, but at this time I cannot verify this, since it happens too fast. Maybe in the HA history page?
+
+        ha().web().input(10)
+                .shouldHaveStateTextNotPressed()
+                .shouldHaveSensorIcon()
+                .shouldHaveIconStateNotPressed();
+    }
+
+    @Test
+    void inputVeryLongPressWithoutRelease() {
+        teletask().input(10).close();
+        ha().web().input(10)
+                .shouldHaveStateTextNotPressed()
+                .shouldHaveSensorIcon()
+                .shouldHaveIconStateNotPressed();
+        Selenide.sleep(2000);
 
         mqtt().expect().input(10).lastStateMessage(1).toHave().state().longPress();
         mqtt().expect().input(10).lastStateMessage(0).toHave().state().notPressed();
