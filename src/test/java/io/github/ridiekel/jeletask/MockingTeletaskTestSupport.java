@@ -1,5 +1,8 @@
 package io.github.ridiekel.jeletask;
 
+import com.codeborne.selenide.CollectionCondition;
+import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Selectors;
 import io.github.ridiekel.jeletask.client.FailureConsumer;
 import io.github.ridiekel.jeletask.client.SuccessConsumer;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
@@ -11,6 +14,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.*;
 import io.github.ridiekel.jeletask.mockserver.TeletaskMockServer;
 import io.github.ridiekel.jeletask.mqtt.container.mqtt.MqttContainer;
+import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+
+import static com.codeborne.selenide.Selenide.$$;
 
 @SpringBootTest(classes = {Teletask2MqttTestApplication.class})
 @ActiveProfiles("test")
@@ -30,6 +36,9 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
 
     @Autowired
     private TeletaskTestClient teletask;
+
+    @Autowired
+    protected Teletask2MqttConfigurationProperties config;
 
     protected TeletaskTestClient teletask() {
         return teletask;
@@ -244,7 +253,16 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
     }
 
     @BeforeEach
-    void login(){
+    void login() {
         ha().login();
+        $$(Selectors.shadowDeepCss("hui-entities-card div.name")).shouldHave(CollectionCondition.size(6));
+        Assertions.assertThat($$(Selectors.shadowDeepCss("hui-entities-card div.name")).texts()).containsExactlyInAnyOrder(
+                "Binary sensor",
+                "Cover",
+                "Light",
+                "Switch",
+                "Scene",
+                "Sensor"
+        );
     }
 }

@@ -121,14 +121,26 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     }
 
     public void login() {
+        openBaseUrl();
         if (!started) {
-            String url = "http://" + this.getHost() + ":" + this.getPort();
-            open(url);
             waitForHaReady(Duration.ofSeconds(30));
             waitForPossibleReloadAndStability(Duration.ofSeconds(20), Duration.ofMillis(800));
             this.mqttContainer.startCapturing();
             started = true;
         }
+    }
+
+    public void openBaseUrl() {
+        String url = baseUrl();
+        open(url);
+    }
+
+    public void openMqttSettings() {
+        open(baseUrl() + "/config/integrations/integration/mqtt");
+    }
+
+    private @NotNull String baseUrl() {
+        return "http://" + this.getHost() + ":" + this.getPort();
     }
 
     @EventListener(classes = {ContextRefreshedEvent.class})

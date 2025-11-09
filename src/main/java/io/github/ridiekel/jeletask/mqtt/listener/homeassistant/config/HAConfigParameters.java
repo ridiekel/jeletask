@@ -22,7 +22,7 @@ public class HAConfigParameters {
     private final String availabilityTopic;
     private final String identifier;
 
-    public HAConfigParameters(Teletask2MqttConfigurationProperties config, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String identifier, HomeAssistentAutoConfig.HADeviceType deviceType, HASensorConfig viaDevice) {
+    public HAConfigParameters(Teletask2MqttConfigurationProperties config, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String configTopic, String identifier, HomeAssistentAutoConfig.HADeviceType deviceType, HASensorConfig viaDevice) {
         this.config = config;
         this.centralUnit = centralUnit;
         this.componentSpec = componentSpec;

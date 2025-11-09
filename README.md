@@ -328,6 +328,7 @@ networks:
 ```
 
 If you already have an MQTT server running somewhere, you can remove the mqtt service from the docker-compose.yml.
+Point the config to your mqtt instance.
 
 # Admin interface
 
@@ -360,7 +361,9 @@ Auto configuration should work with relays, dimmers, motors, sensors, timed func
 Other types are not yet supported, work in progress.
 Please log an issue when having trouble with auto configuration in HA.
 
-The bridge creates 1 device for each entry in your `config.json` and adds 1 entity with the following entity id pattern: ```light.teletask_<TELETASK_CENTRAL_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
+By default, the bridge creates 1 device for each entry in your `config.json` and adds 1 entity with the following entity id pattern: ```light.teletask_<TELETASK_CENTRAL_ID>_<FUNCTION_TYPE>_<COMPONENT_NUMBER>```, which should be unique for your installation.
+
+If you want to group everything under 1 device, set the `TELETASK_PUBLISH_ASONEDEVICE` environment variable to `true`. 
 
 ![View of MQTT integration in Home Assistant](src/main/resources/ha-entities.png "MQTT Entities in HA")
 
