@@ -50,15 +50,12 @@ public class LongPressInputCaptor {
     public void stopPress(ComponentSpec component) {
         Captor captor = getCaptor(component);
 
-        if (captor.getStartPressTime() == null) {
-            logConditional("IGNORED_STOP", component, captor);
-            return;
+        if (captor.getStartPressTime() != null) {
+            logConditional("STOPPED", component, captor);
+            captor.stopPress();
+            this.publishPressEvent(component, captor.createSnapshot());
+            this.publishResetState(component, captor);
         }
-
-        logConditional("STOPPED", component, captor);
-        captor.stopPress();
-        this.publishPressEvent(component, captor.createSnapshot());
-        this.publishResetState(component, captor);
     }
 
     private void publishPressEvent(ComponentSpec input, Captor captor) {

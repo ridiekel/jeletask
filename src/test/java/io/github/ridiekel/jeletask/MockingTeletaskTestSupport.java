@@ -123,7 +123,6 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
             }
 
             protected void set(State<?> state) {
-                testClient.mqttContainer.reset();
                 testClient.teletaskClient.set(function, number, state, onSuccess(), onFailSet());
             }
         }
