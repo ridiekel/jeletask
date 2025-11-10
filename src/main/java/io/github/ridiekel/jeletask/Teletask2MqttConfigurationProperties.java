@@ -50,6 +50,9 @@ public class Teletask2MqttConfigurationProperties {
         private boolean retained = false;
         @Getter
         private String discoveryPrefix;
+        @Getter
+        private boolean exitOnDisconnect = false;
+
 
         public String getHost() {
             return Optional.ofNullable(this.host).orElse("localhost");

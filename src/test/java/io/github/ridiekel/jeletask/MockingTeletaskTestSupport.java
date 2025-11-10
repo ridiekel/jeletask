@@ -47,11 +47,9 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
     @Service
     public static class TeletaskTestClient {
         private final TeletaskClient teletaskClient;
-        private final MqttContainer mqttContainer;
 
-        public TeletaskTestClient(TeletaskClient teletaskClient, MqttContainer mqttContainer) {
+        public TeletaskTestClient(TeletaskClient teletaskClient) {
             this.teletaskClient = teletaskClient;
-            this.mqttContainer = mqttContainer;
         }
 
         public FunctionSetBuilder function(Function function, int number) {

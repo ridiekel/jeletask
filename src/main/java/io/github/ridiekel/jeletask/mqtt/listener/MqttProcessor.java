@@ -63,7 +63,6 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private final CentralUnitSsePublisher centralUnitSsePublisher;
     private final HomeAssistentAutoConfig homeAssistentAutoConfig;
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
-    private final MessageSource messageSource;
 
     private PingMesage pingMesage;
     private MqttClient mqttClient;
@@ -81,7 +80,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                          TeletaskClient teletaskClient,
                          Teletask2MqttConfigurationProperties configuration,
                          MqttMessageTraceService traceService,
-                         CentralUnitSsePublisher centralUnitSsePublisher, MessageSource messageSource) {
+                         CentralUnitSsePublisher centralUnitSsePublisher) {
         this.centralUnit = centralUnit;
         this.teletaskClient = teletaskClient;
         this.traceService = traceService;
@@ -112,7 +111,6 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             this.teletaskClient.disconnect();
             this.checkAndPublishConnectedStatus();
         }));
-        this.messageSource = messageSource;
     }
 
     private void scheduleGroupGet(Teletask2MqttConfigurationProperties configuration) {
@@ -175,6 +173,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             @Override
             public void connectionLost(Throwable cause) {
                 log(LOG::warn, What.CONNECTION, "STATUS", "Connection lost!");
+                if (configuration.getMqtt().isExitOnDisconnect()) {
+                    System.exit(5);
+                }
             }
 
             @Override
