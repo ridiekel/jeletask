@@ -51,7 +51,7 @@ import static io.github.ridiekel.jeletask.mqtt.listener.MqttLogger.*;
 import static io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters.componentTopic;
 
 @Service
-public class MqttProcessor implements StateChangeListener {
+public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private static final Logger LOG = LogManager.getLogger();
 
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9_-]");
@@ -360,6 +360,7 @@ public class MqttProcessor implements StateChangeListener {
         });
     }
 
+    @Override
     public void publishState(ComponentSpec componentSpec, State<?> state) {
         String ttTopic = componentTopic(this.getBaseTopic(), componentSpec) + "/state";
         this.publish(MqttLogger.What.PUBLISH, getLoggingStringForComponent(componentSpec), ttTopic, state.toString(), LOG::info);

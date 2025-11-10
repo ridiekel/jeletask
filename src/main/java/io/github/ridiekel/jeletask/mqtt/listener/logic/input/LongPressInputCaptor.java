@@ -6,7 +6,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
-import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttPublisher;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -16,12 +16,15 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -29,9 +32,9 @@ public class LongPressInputCaptor {
     private static final Logger LOG = LogManager.getLogger();
 
     private final Map<ComponentSpec, Captor> pressedInputs = new ConcurrentHashMap<>();
-    private final MqttProcessor processor;
+    private final MqttPublisher processor;
 
-    public LongPressInputCaptor(MqttProcessor processor) {
+    public LongPressInputCaptor(MqttPublisher processor) {
         this.processor = processor;
     }
 
@@ -46,42 +49,39 @@ public class LongPressInputCaptor {
 
     public void stopPress(ComponentSpec component) {
         Captor captor = getCaptor(component);
-        logConditional("STOPPED", component, captor);
-        if (captor.getStartPressTime() != null) {
-            captor.stopPress();
-            this.publish(component, captor);
-        } else {
-            this.reset(component, captor);
+
+        if (captor.getStartPressTime() == null) {
+            logConditional("IGNORED_STOP", component, captor);
+            return;
         }
+
+        logConditional("STOPPED", component, captor);
+        captor.stopPress();
+        this.publishPressEvent(component, captor.createSnapshot());
+        this.publishResetState(component, captor);
     }
+
+    private void publishPressEvent(ComponentSpec input, Captor captor) {
+        logConditional("PRESS_EVENT", input, captor);
+        this.processor.publishState(input, captor);
+    }
+
+    private void publishResetState(ComponentSpec input, Captor captor) {
+        Captor.EXECUTOR_SERVICE.schedule(() -> {
+            Captor resetState = new Captor(captor.getLongPressConfigInMillis());
+
+            logConditional("STATE_RESET", input, resetState);
+            this.processor.publishState(input, resetState);
+
+            captor.reset();
+        }, 50, TimeUnit.MILLISECONDS);
+    }
+
 
     public void startPress(ComponentSpec component) {
         Captor captor = this.getCaptor(component);
-        captor.startPress();
-        captor.scheduler.schedule(() -> {
-            if (captor.running) {
-                this.stopPress(component);
-            }
-        }, component.getLong_press_duration_millis(), TimeUnit.MILLISECONDS);
+        captor.startPress(() -> this.stopPress(component));
         logConditional("STARTED", component, captor);
-    }
-
-    private void publish(ComponentSpec input, Captor captor) {
-        logConditional("PUBLISH", input, captor);
-        this.processor.publishState(input, captor);
-        this.reset(input, captor);
-    }
-
-    private void reset(ComponentSpec input, Captor captor) {
-//        try {
-//            Thread.sleep(500);
-//        } catch (Exception e) {
-//            LOG.trace(e.getMessage(), e);
-//            Thread.currentThread().interrupt();
-//        }
-        captor.reset();
-        logConditional("PUBLISH", input, captor);
-        this.processor.publishState(input, captor);
     }
 
     private void logConditional(String action, ComponentSpec input, Captor captor) {
@@ -106,14 +106,21 @@ public class LongPressInputCaptor {
         return this.pressedInputs.computeIfAbsent(component, c -> new Captor(component.getLong_press_duration_millis()));
     }
 
-    private static class Captor extends InputState {
+    static class Captor extends InputState {
         @Getter
         private Long stopPressTime;
         @Getter
         private Long startPressTime;
+        private static final AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
+        private static final ScheduledExecutorService EXECUTOR_SERVICE =
+                Executors.newScheduledThreadPool(4, r -> {
+                    Thread t = new Thread(r);
+                    t.setName("button-press-" + THREAD_COUNTER.incrementAndGet());
+                    t.setDaemon(true);
+                    return t;
+                });
         @JsonIgnore
-        private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        private boolean running = false;
+        private List<RunningTimer> timers = new ArrayList<>();
 
         private final long longPressConfigInMillis;
 
@@ -123,12 +130,23 @@ public class LongPressInputCaptor {
 
         public void stopPress() {
             this.stopPressTime = System.currentTimeMillis();
-            this.running = false;
+            this.timers.forEach(RunningTimer::stop);
+            this.timers.clear();
         }
 
-        public void startPress() {
-            this.running = true;
+        public void startPress(Runnable onTimeout) {
             this.startPressTime = System.currentTimeMillis();
+            RunningTimer runningTimer = new RunningTimer(onTimeout);
+            EXECUTOR_SERVICE.schedule(runningTimer, longPressConfigInMillis, TimeUnit.MILLISECONDS);
+            this.timers.add(runningTimer);
+        }
+
+        public Captor createSnapshot() {
+            Captor snapshot = new Captor(this.longPressConfigInMillis);
+            snapshot.startPressTime = this.startPressTime;
+            snapshot.stopPressTime = this.stopPressTime;
+            // Timers list is intentionally NOT copied (not needed for publication)
+            return snapshot;
         }
 
         public Long getLongPressConfigInMillis() {
@@ -167,7 +185,9 @@ public class LongPressInputCaptor {
         }
 
         public void reset() {
+            this.startPressTime = null;
             this.stopPressTime = null;
+            this.timers.clear();
         }
 
         @Override
@@ -186,4 +206,26 @@ public class LongPressInputCaptor {
             return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(stopPressTime).append(startPressTime).append(longPressConfigInMillis).toHashCode();
         }
     }
+
+    private static class RunningTimer implements Runnable {
+        private final Runnable onTimeout;
+        private boolean running;
+
+        public RunningTimer(Runnable onTimeout) {
+            this.onTimeout = onTimeout;
+            this.running = true;
+        }
+
+        public void stop() {
+            this.running = false;
+        }
+
+        @Override
+        public void run() {
+            if (this.running) {
+                this.onTimeout.run();
+            }
+        }
+    }
 }
+
