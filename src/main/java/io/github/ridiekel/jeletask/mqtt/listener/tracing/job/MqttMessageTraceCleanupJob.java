@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.mqtt.listener.tracing.job;
 
 import io.github.ridiekel.jeletask.mqtt.listener.tracing.config.MqttMessageTraceProperties;
 import io.github.ridiekel.jeletask.mqtt.listener.tracing.repository.MqttMessageTraceRepository;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -20,21 +21,33 @@ public class MqttMessageTraceCleanupJob {
 
     private final MqttMessageTraceRepository repository;
     private final MqttMessageTraceProperties properties;
+    private final EntityManager entityManager;
 
-    public MqttMessageTraceCleanupJob(MqttMessageTraceRepository repository, MqttMessageTraceProperties properties) {
+    public MqttMessageTraceCleanupJob(MqttMessageTraceRepository repository, MqttMessageTraceProperties properties, EntityManager entityManager) {
         this.repository = repository;
         this.properties = properties;
+        this.entityManager = entityManager;
     }
 
     @Scheduled(fixedDelayString = "#{@mqttTraceProperties.cleanup.interval.toMillis()}")
     @Transactional
     public void cleanup() {
         Instant cutoff = Instant.now().minus(properties.getRetention());
-        Integer deleted = repository.deleteOlderThan(cutoff);
-        if (deleted != null && deleted > 0) {
-            log.info("MQTT trace cleanup: {} records removed older than {}", deleted, cutoff);
+        int batchSize = 100;  // pas aan op basis van je geheugen
+        int totalDeleted = 0;
+        int deleted;
+
+        do {
+            deleted = repository.deleteOlderThanBatch(cutoff, batchSize);
+            totalDeleted += deleted;
+            entityManager.flush();
+            entityManager.clear();
+        } while (deleted > 0);
+
+        if (totalDeleted > 0) {
+            log.info("MQTT trace cleanup: {} records verwijderd ouder dan {}", totalDeleted, cutoff);
         } else {
-            log.debug("MQTT trace cleanup: no records older than {}", cutoff);
+            log.debug("MQTT trace cleanup: geen records ouder dan {}", cutoff);
         }
     }
 }

@@ -64,7 +64,7 @@ class MqttMessageTraceRepositoryTest {
         entityManager.clear();
 
         // act
-        int deleted = repository.deleteOlderThan(cutoff);
+        int deleted = repository.deleteOlderThanBatch(cutoff, 100);
 
         // assert
         assertThat(deleted).isEqualTo(1);

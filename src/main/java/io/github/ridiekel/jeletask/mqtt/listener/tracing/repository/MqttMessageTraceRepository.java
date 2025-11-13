@@ -11,6 +11,8 @@ import java.util.UUID;
 
 public interface MqttMessageTraceRepository extends JpaRepository<MqttMessageTrace, UUID> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("delete from MqttMessageTrace m where m.createdAt < :cutoff")
-    int deleteOlderThan(@Param("cutoff") Instant cutoff);
+    @Query(value = "delete from mqtt_message_trace where id in " +
+            "(select id from mqtt_message_trace where created_at < :cutoff limit :batchSize)",
+            nativeQuery = true)
+    int deleteOlderThanBatch(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
 }
