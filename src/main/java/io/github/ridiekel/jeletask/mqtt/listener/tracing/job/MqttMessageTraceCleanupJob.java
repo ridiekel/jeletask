@@ -30,7 +30,7 @@ public class MqttMessageTraceCleanupJob {
     @Transactional
     public void cleanup() {
         Instant cutoff = Instant.now().minus(properties.getRetention());
-        Long deleted = repository.deleteByCreatedAtBefore(cutoff);
+        Integer deleted = repository.deleteOlderThan(cutoff);
         if (deleted != null && deleted > 0) {
             log.info("MQTT trace cleanup: {} records removed older than {}", deleted, cutoff);
         } else {
