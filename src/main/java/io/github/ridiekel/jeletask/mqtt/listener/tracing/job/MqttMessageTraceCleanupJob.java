@@ -33,7 +33,7 @@ public class MqttMessageTraceCleanupJob {
     @Transactional
     public void cleanup() {
         Instant cutoff = Instant.now().minus(properties.getRetention());
-        int batchSize = 100;  // pas aan op basis van je geheugen
+        int batchSize = 10;
         int totalDeleted = 0;
         int deleted;
 
