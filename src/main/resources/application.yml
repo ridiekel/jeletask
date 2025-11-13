@@ -15,7 +15,7 @@ teletask:
     prefix: "teletask2mqtt"
     discovery_prefix: "homeassistant"
   trace:
-    retention: P30D
+    retention: P10D
     cleanup:
       enabled: true
       interval: P1D
