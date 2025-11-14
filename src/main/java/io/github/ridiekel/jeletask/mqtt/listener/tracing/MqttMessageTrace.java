@@ -29,8 +29,7 @@ public class MqttMessageTrace {
     @Column(nullable = false, length = 512)
     private String topic;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10000)
     private String payload;
 
     @Enumerated(EnumType.STRING)
@@ -46,4 +45,12 @@ public class MqttMessageTrace {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    public void setPayload(String payload) {
+        if (payload != null && payload.length() > 10000) {
+            this.payload = payload.substring(0, 9997) + "...";
+        } else {
+            this.payload = payload;
+        }
+    }
 }

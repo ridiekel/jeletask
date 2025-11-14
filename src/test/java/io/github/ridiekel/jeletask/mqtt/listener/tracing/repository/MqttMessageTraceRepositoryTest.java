@@ -1,6 +1,15 @@
 package io.github.ridiekel.jeletask.mqtt.listener.tracing.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.github.ridiekel.jeletask.Teletask2MqttApplication;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MessageDirection;
+import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttMessageTrace;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -8,17 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.ridiekel.jeletask.Teletask2MqttApplication;
-import io.github.ridiekel.jeletask.mqtt.listener.tracing.MessageDirection;
-import io.github.ridiekel.jeletask.mqtt.listener.tracing.MqttMessageTrace;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ContextConfiguration;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ContextConfiguration(classes = Teletask2MqttApplication.class)
@@ -38,7 +37,6 @@ class MqttMessageTraceRepositoryTest {
 
     @Test
     void deleteOlderThanBatchRemovesRecordsInMultipleBatches() {
-        // arrange: create 5 old and 3 recent records
         int oldRecordCount = 5;
         int recentRecordCount = 3;
         int batchSize = 2;
@@ -46,13 +44,11 @@ class MqttMessageTraceRepositoryTest {
         List<UUID> oldIds = new ArrayList<>();
         List<UUID> recentIds = new ArrayList<>();
 
-        // Create old records
         for (int i = 0; i < oldRecordCount; i++) {
             MqttMessageTrace old = repository.save(buildTrace("old/topic/" + i));
             oldIds.add(old.getId());
         }
 
-        // Create recent records
         for (int i = 0; i < recentRecordCount; i++) {
             MqttMessageTrace recent = repository.save(buildTrace("recent/topic/" + i));
             recentIds.add(recent.getId());
@@ -62,7 +58,6 @@ class MqttMessageTraceRepositoryTest {
 
         Instant cutoff = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 
-        // Make the "old" records older than the cutoff
         for (UUID oldId : oldIds) {
             entityManager.createNativeQuery("""
                     update mqtt_message_trace
@@ -77,7 +72,6 @@ class MqttMessageTraceRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        // act: execute batch delete until nothing left to delete
         int totalDeleted = 0;
         int deleted;
         int iterations = 0;
@@ -90,7 +84,6 @@ class MqttMessageTraceRepositoryTest {
             iterations++;
         } while (deleted > 0);
 
-        // assert
         assertThat(totalDeleted)
                 .as("All old records should be deleted")
                 .isEqualTo(oldRecordCount);
@@ -100,14 +93,12 @@ class MqttMessageTraceRepositoryTest {
                         batchSize, oldRecordCount, (oldRecordCount + batchSize - 1) / batchSize)
                 .isGreaterThanOrEqualTo((oldRecordCount + batchSize - 1) / batchSize);
 
-        // Verify that old records are gone
         for (UUID oldId : oldIds) {
             assertThat(repository.existsById(oldId))
                     .as("Old record %s should be deleted", oldId)
                     .isFalse();
         }
 
-        // Verify that recent records still exist
         for (UUID recentId : recentIds) {
             assertThat(repository.existsById(recentId))
                     .as("Recent record %s should be retained", recentId)
@@ -121,23 +112,19 @@ class MqttMessageTraceRepositoryTest {
 
     @Test
     void deleteOlderThanBatchReturnsZeroWhenNoOldRecords() {
-        // arrange
         MqttMessageTrace recent = repository.save(buildTrace("recent/topic"));
         entityManager.flush();
 
         Instant cutoff = Instant.now().minus(1, ChronoUnit.HOURS);
 
-        // act
         int deleted = repository.deleteOlderThanBatch(cutoff, 10);
 
-        // assert
         assertThat(deleted).isZero();
         assertThat(repository.existsById(recent.getId())).isTrue();
     }
 
     @Test
     void deleteOlderThanBatchRespectsExactCutoffBoundary() {
-        // arrange
         MqttMessageTrace beforeCutoff = repository.save(buildTrace("before"));
         MqttMessageTrace atCutoff = repository.save(buildTrace("at"));
         MqttMessageTrace afterCutoff = repository.save(buildTrace("after"));
@@ -166,10 +153,8 @@ class MqttMessageTraceRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        // act
         int deleted = repository.deleteOlderThanBatch(cutoff, 10);
 
-        // assert
         assertThat(deleted).isEqualTo(1);
         assertThat(repository.existsById(beforeCutoff.getId())).isFalse();
         assertThat(repository.existsById(atCutoff.getId())).isTrue();

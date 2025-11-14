@@ -29,6 +29,8 @@ spring:
       - org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration
       - org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.metrics.jdbc.DataSourcePoolMetricsAutoConfiguration
+  flyway:
+    enabled: false
 
 management:
   simple:

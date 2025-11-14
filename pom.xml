@@ -73,6 +73,10 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>de.codecentric</groupId>
             <artifactId>spring-boot-admin-starter-client</artifactId>
             <version>3.5.6</version>
@@ -174,6 +178,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>application*.yml</include>
+                    <include>**/*.sql</include>
                 </includes>
             </resource>
         </resources>

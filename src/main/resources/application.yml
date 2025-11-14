@@ -65,7 +65,7 @@ spring:
       idle-timeout: 0
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
@@ -74,7 +74,12 @@ spring:
           time_zone: UTC
   thymeleaf:
     check-template-location: false
-
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+    validate-on-migrate: true
 
 management:
   endpoints:
@@ -108,3 +113,4 @@ logging:
     de.codecentric.boot.admin: WARN
 #    io.github.ridiekel.jeletask: DEBUG
 #    io.github.ridiekel.jeletask: TRACE
+    org.flywaydb: INFO
