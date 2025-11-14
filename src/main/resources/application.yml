@@ -114,3 +114,4 @@ logging:
 #    io.github.ridiekel.jeletask: DEBUG
 #    io.github.ridiekel.jeletask: TRACE
     org.flywaydb: INFO
+    db.migration: INFO
