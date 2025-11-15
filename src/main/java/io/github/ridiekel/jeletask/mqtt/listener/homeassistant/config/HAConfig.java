@@ -47,7 +47,7 @@ public class HAConfig<T extends HAConfig<T>> {
     }
 
     private void configureDevice(HAConfigParameters parameters) {
-        if (parameters.getConfig().getPublish().isAsOneDevice()) {
+        if (parameters.getConfig().getPublish().isAsOneDevice() && !parameters.getComponentSpec().equals(parameters.getCentralUnit().getBridge())) {
             this.name(parameters.getComponentSpec().getDescription())
                     .deviceIdentifier(parameters.getCentralUnit().getBridge().getHaPublishedConfig().getDeviceIdentifier())
                     .deviceName(parameters.getCentralUnit().getBridge().getHaPublishedConfig().getDeviceName());

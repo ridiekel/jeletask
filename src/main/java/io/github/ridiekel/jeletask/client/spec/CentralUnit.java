@@ -41,6 +41,7 @@ public class CentralUnit {
     private Map<Function, List<ComponentSpec>> componentsTypes = new LinkedHashMap<>();
     private List<ComponentSpec> allComponents;
     private CentralUnitType type;
+    private ComponentSpec bridge;
 
     @JsonCreator(mode = JsonCreator.Mode.DISABLED)
     public Map<Function, List<ComponentSpec>> getComponentsTypes() {
@@ -83,7 +84,7 @@ public class CentralUnit {
         if (this.allComponents == null) {
             this.allComponents = new ArrayList<>();
 
-            this.getComponentSpecs(Function.SENSOR).add(createBridgeComponent());
+            this.getComponentSpecs(Function.SENSOR).add(getBridgeComponent());
 
             for (Map.Entry<Function, List<ComponentSpec>> components : componentsTypes.entrySet()) {
                 this.allComponents.addAll(components.getValue().stream().peek(v -> v.setFunction(components.getKey())).toList());
@@ -92,16 +93,17 @@ public class CentralUnit {
         return this.allComponents;
     }
 
-    private ComponentSpec createBridgeComponent() {
-        ComponentSpec componentSpec = new ComponentSpec();
-
-        componentSpec.setState(new State<>(this.getVersion()) {
-        });
-        componentSpec.setFunction(Function.SENSOR);
-        componentSpec.setNumber(BRIDGE_NUMBER);
-        componentSpec.setType(SensorType.STRING.toString());
-        componentSpec.setDescription("Teletask2MQTT Bridge");
-        return componentSpec;
+    private ComponentSpec getBridgeComponent() {
+        if (this.bridge == null) {
+            this.bridge = new ComponentSpec();
+            this.bridge.setState(new State<>(this.getVersion()) {
+            });
+            this.bridge.setFunction(Function.SENSOR);
+            this.bridge.setNumber(BRIDGE_NUMBER);
+            this.bridge.setType(SensorType.STRING.toString());
+            this.bridge.setDescription("Teletask2MQTT Bridge");
+        }
+        return this.bridge;
     }
 
     @JsonIgnore
