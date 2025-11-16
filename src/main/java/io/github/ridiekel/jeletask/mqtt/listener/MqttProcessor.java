@@ -28,7 +28,6 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
-import org.springframework.context.MessageSource;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
@@ -201,18 +200,20 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                 new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message);
             });
         });
-        this.subscribe(getPingTopic(), (topic, message) -> {
-            this.pingMesage.setReceived(Instant.now());
+        this.subscribe(getPingTopic(), (_, _) -> {
+            if (this.pingMesage != null) {
+                this.pingMesage.setReceived(Instant.now());
+            }
         });
-        this.subscribe(getRemoteStopTopic(), (topic, message) -> {
+        this.subscribe(getRemoteStopTopic(), (_, message) -> {
             LOG.debug(() -> String.format("Stopping the service: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
             System.exit(0);
         });
-        this.subscribe(getRemoteRefreshTopic(), (topic, message) -> {
+        this.subscribe(getRemoteRefreshTopic(), (_, message) -> {
             LOG.debug(() -> String.format("Refreshing states: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
             EXECUTOR.execute(this.teletaskClient::groupGet);
         });
-        this.subscribe("homeassistant/status", (topic, message) -> {
+        this.subscribe("homeassistant/status", (_, message) -> {
             LOG.debug(() -> String.format("Home assistent 'birth'/'last will' message: %s", message));
             if (message != null && Objects.equals(message.toString(), "online")) {
                 long seconds = ThreadLocalRandom.current().nextInt(2, 6);
@@ -368,16 +369,20 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     private void publish(MqttLogger.What what, Supplier<String> logString, String topic, String message, Consumer<String> level) {
+        String logStringValue = logString.get();
         try {
-            MqttMessage mqttMessage = new MqttMessage(message.getBytes());
-            mqttMessage.setQos(0);
-            mqttMessage.setRetained(this.getConfiguration().getMqtt().isRetained());
+            if (this.mqttClient.isConnected()) {
+                MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+                mqttMessage.setQos(0);
+                mqttMessage.setRetained(this.getConfiguration().getMqtt().isRetained());
 
-            String logStringValue = logString.get();
 
-            level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message)));
-            this.mqttClient.publish(topic, mqttMessage);
-            this.traceService.publish(topic, message, mqttMessage.getQos(), mqttMessage.isRetained());
+                level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message)));
+                this.mqttClient.publish(topic, mqttMessage);
+                this.traceService.publish(topic, message, mqttMessage.getQos(), mqttMessage.isRetained());
+            } else {
+                LOG.warn(() -> String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message) + AnsiOutput.toString(AnsiColor.RED, " : MQTT Client disconnected", AnsiColor.DEFAULT)));
+            }
         } catch (Exception e) {
             LOG.warn("Could not publish to MQTT: " + e.getMessage());
         }
