@@ -20,6 +20,7 @@ class End2EndMqttAddonConfigTest extends MockingTeletaskTestSupport {
                 "Dimmer 1",
                 "Flags",
                 "GAS Sensors",
+                "General Scenery 1",
                 "Humidity Sensor",
                 "Input 1",
                 "Input 2",
@@ -37,7 +38,7 @@ class End2EndMqttAddonConfigTest extends MockingTeletaskTestSupport {
                 "Temperature Sensor",
                 "Toggle Relay 1"
         };
-        devices().shouldHave(CollectionCondition.size(expectedDevices.length)); //Needs to be here to wait for the list to be populated in FE
+        devices().shouldHave(CollectionCondition.sizeGreaterThan(5)); //Needs to be here to wait for the list to be populated in FE
         Assertions.assertThat(devices().texts()).containsExactlyInAnyOrder(expectedDevices);
 
         this.mqtt().processor().removeConfig();
