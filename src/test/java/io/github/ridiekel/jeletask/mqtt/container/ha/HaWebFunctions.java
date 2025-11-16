@@ -211,7 +211,7 @@ public class HaWebFunctions {
         }
 
         protected SelenideElement closeButtonElement() {
-            return $$(Selectors.shadowDeepCss("ha-icon-button[dialogaction='cancel']")).get(index);
+            return $$(Selectors.shadowDeepCss("ha-icon-button[dialogaction='cancel']")).get(0);
         }
 
         public void openDetails() {

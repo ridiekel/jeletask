@@ -92,14 +92,14 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockSensorGroupGet(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(s -> s.getNumber() >= 0).toList();
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(s -> s.getNumber() >= 0).toList();
         e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
                 components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
         );
     }
 
     private void mockLightSensor(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("light")).toList();
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("light")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
 
@@ -109,7 +109,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockTemperatureSensor(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("temperature")).toList();
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("temperature")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
 
@@ -165,7 +165,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockTemperatureControlSensor(ExpectationBuilder e) {
-        final List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream()
+        final List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR)
                 .filter(c -> "temperaturecontrol".equalsIgnoreCase(c.getType()))
                 .toList();
 
@@ -212,7 +212,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
 
 
     private void mockHumiditySensor(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("humidity")).toList();
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("humidity")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
 
@@ -224,7 +224,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockGasSensor(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).stream().filter(c -> c.getType().equalsIgnoreCase("gas")).toList();
+        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("gas")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("54")));
 
@@ -233,12 +233,11 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockDisplayMessage(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.DISPLAYMESSAGE);
-        components.forEach(c -> {
+        this.centralUnit.getComponents(Function.DISPLAYMESSAGE).forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
         });
-        e.when(groupGet(Function.DISPLAYMESSAGE, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+        e.when(groupGet(Function.DISPLAYMESSAGE, this.centralUnit.getComponents(Function.DISPLAYMESSAGE).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                this.centralUnit.getComponents(Function.DISPLAYMESSAGE).map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
         );
     }
 
@@ -251,8 +250,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockDimmer(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.DIMMER);
-        components.forEach(c -> {
+        this.centralUnit.getComponents(Function.DIMMER).forEach(c -> {
             DimmerState state = new DimmerState(DimmerStateCalculator.ValidDimmerState.ON);
             state.setBrightness(0);
             c.setState(state);
@@ -263,8 +261,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             });
             e.with(c.getFunction(), c.getNumber()).when(set(new DimmerState(DimmerStateCalculator.ValidDimmerState.OFF))).thenRespond(new DimmerState(0));
         });
-        e.when(groupGet(Function.DIMMER, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.DIMMER, component.getNumber(), component.getState())).collect(Collectors.toList())
+        e.when(groupGet(Function.DIMMER, this.centralUnit.getComponents(Function.DIMMER).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                this.centralUnit.getComponents(Function.DIMMER).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DIMMER, component.getNumber(), component.getState())).collect(Collectors.toList())
         );
     }
 
@@ -285,8 +283,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockMotor(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.MOTOR);
-        components.forEach(c -> {
+        this.centralUnit.getComponents(Function.MOTOR).forEach(c -> {
             MotorState initial = new MotorState(MotorStateCalculator.ValidMotorDirectionState.STOP);
             initial.setCurrentPosition(0);
             initial.setRequestedPosition(0);
@@ -316,8 +313,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                 e.with(c.getFunction(), c.getNumber()).when(set(state)).thenRespondFunctional(() -> responseMotorState(c, state));
             });
         });
-        e.when(groupGet(Function.MOTOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.MOTOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+        e.when(groupGet(Function.MOTOR, this.centralUnit.getComponents(Function.MOTOR).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                this.centralUnit.getComponents(Function.MOTOR).map(component -> ExpectationBuilder.WhenBuilder.state(Function.MOTOR, component.getNumber(), component.getState())).collect(Collectors.toList())
         );
     }
 
@@ -329,27 +326,25 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                 Function.COND,
                 Function.FLAG,
                 Function.TIMEDMOOD).forEach(function -> {
-            List<? extends ComponentSpec> components = this.centralUnit.getComponents(function);
-            components.forEach(c -> {
+            this.centralUnit.getComponents(function).forEach(c -> {
                 c.setState(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
                 e.with(c.getFunction(), c.getNumber()).when(set(OnOffToggleStateCalculator.ValidOnOffToggle.OFF)).thenRespond(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
                 e.with(c.getFunction(), c.getNumber()).when(set(OnOffToggleStateCalculator.ValidOnOffToggle.ON)).thenRespond(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
             });
-            e.when(groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                    components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(function, component.getNumber(), component.getState())).collect(Collectors.toList())
+            e.when(groupGet(function, this.centralUnit.getComponents(function).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                    this.centralUnit.getComponents(function).map(component -> ExpectationBuilder.WhenBuilder.state(function, component.getNumber(), component.getState())).collect(Collectors.toList())
             );
         });
     }
 
     private void mockInput(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.INPUT);
-        components.forEach(c -> {
+        this.centralUnit.getComponents(Function.INPUT).forEach(c -> {
             c.setState(new InputState(InputStateCalculator.ValidInputState.OPEN));
             e.with(c.getFunction(), c.getNumber()).when(set(InputStateCalculator.ValidInputState.OPEN)).thenRespond(new InputState(InputStateCalculator.ValidInputState.OPEN));
             e.with(c.getFunction(), c.getNumber()).when(set(InputStateCalculator.ValidInputState.CLOSED)).thenRespond(new InputState(InputStateCalculator.ValidInputState.CLOSED));
         });
-        e.when(groupGet(Function.INPUT, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.INPUT, component.getNumber(), component.getState())).collect(Collectors.toList())
+        e.when(groupGet(Function.INPUT, this.centralUnit.getComponents(Function.INPUT).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                this.centralUnit.getComponents(Function.INPUT).map(component -> ExpectationBuilder.WhenBuilder.state(Function.INPUT, component.getNumber(), component.getState())).collect(Collectors.toList())
         );
     }
 

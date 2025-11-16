@@ -20,10 +20,46 @@
     "SENSOR": [
       { "number": 30, "description": "Shining Sensor", "type": "LIGHT" },
       { "number": 31, "description": "Temperature Sensor", "type": "TEMPERATURE", "ha_unit_of_measurement": "°C" },
-      { "number": 321, "description": "GAS - 4-20ma", "type": "GAS", "gas_type": "4-20ma", "gas_min": 0, "gas_max": 200, "decimals": 2 },
-      { "number": 322, "description": "GAS - 0-20ma", "type": "GAS", "gas_type": "0-20ma", "gas_min": 0, "gas_max": 200, "decimals": 2 },
-      { "number": 323, "description": "GAS - 5-10v", "type": "GAS", "gas_type": "5-10v", "gas_min": 0, "gas_max": 200, "decimals": 2 },
-      { "number": 324, "description": "GAS - 0-10v", "type": "GAS", "gas_type": "0-10v", "gas_min": 0, "gas_max": 200, "decimals": 2 },
+      {
+        "number": 321,
+        "description": "GAS - 4-20ma",
+        "type": "GAS",
+        "gas_type": "4-20ma",
+        "gas_min": 0,
+        "gas_max": 200,
+        "decimals": 2,
+        "device": "GAS Sensors"
+      },
+      {
+        "number": 322,
+        "description": "GAS - 0-20ma",
+        "type": "GAS",
+        "gas_type": "0-20ma",
+        "gas_min": 0,
+        "gas_max": 200,
+        "decimals": 2,
+        "device": "GAS Sensors"
+      },
+      {
+        "number": 323,
+        "description": "GAS - 5-10v",
+        "type": "GAS",
+        "gas_type": "5-10v",
+        "gas_min": 0,
+        "gas_max": 200,
+        "decimals": 2,
+        "device": "GAS Sensors"
+      },
+      {
+        "number": 324,
+        "description": "GAS - 0-10v",
+        "type": "GAS",
+        "gas_type": "0-10v",
+        "gas_min": 0,
+        "gas_max": 200,
+        "decimals": 2,
+        "device": "GAS Sensors"
+      },
       {
         "number": 33,
         "description": "Temperature Control",
@@ -37,12 +73,14 @@
     "FLAG": [
       {
         "number": 50,
-        "description": "Flag 1"
+        "description": "Flag 1",
+        "device": "Flags"
       },
       {
         "number": 51,
         "description": "Shining Flag 1",
-        "type": "light"
+        "type": "light",
+        "device": "Flags"
       },
       {
         "number": 52,
@@ -53,12 +91,14 @@
     "GENMOOD": [
       {
         "number": 60,
-        "description": "General Mood 1"
+        "description": "General Mood 1",
+        "device": "Moods"
       },
       {
         "number": 61,
         "description": "General Shining 1",
-        "type": "light"
+        "type": "light",
+        "device": "Moods"
       },
       {
         "number": 62,

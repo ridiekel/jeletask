@@ -7,8 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
@@ -19,6 +17,8 @@ public class ComponentSpec {
     private String description;
     private Function function;
     private int number;
+    private String device;
+
     private State<?> state;
 
     //type is the type as it is known to teletask
@@ -103,5 +103,17 @@ public class ComponentSpec {
         int result = function.hashCode();
         result = 31 * result + number;
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "ComponentSpec{" +
+                "function=" + function +
+                ", number=" + number +
+                ", description='" + description + '\'' +
+                ", device='" + device + '\'' +
+                ", type='" + type + '\'' +
+                ", state=" + state +
+                '}';
     }
 }

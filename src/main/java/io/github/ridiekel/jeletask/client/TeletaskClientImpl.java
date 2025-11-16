@@ -267,7 +267,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     public void groupGet(Function function) {
-        List<? extends ComponentSpec> components = this.getCentralUnit().getComponents(function).stream().filter(c -> c.getNumber() >= 0).toList();
+        List<? extends ComponentSpec> components = this.getCentralUnit().getComponents(function).filter(c -> c.getNumber() >= 0).toList();
         if (!components.isEmpty()) {
             this.groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray());
         }

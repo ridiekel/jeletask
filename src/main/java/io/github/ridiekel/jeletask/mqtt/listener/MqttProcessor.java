@@ -268,7 +268,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             }
         });
         checkAndPublishConnectedStatus();
-        this.publishState(centralUnit.getBridge(), centralUnit.getBridge().getState());
+        this.centralUnit.getAllComponents().stream().filter(c -> c.getNumber() < 0).sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> {
+            this.publishState(component, component.getState());
+        });
     }
 
     public void refreshStates() {

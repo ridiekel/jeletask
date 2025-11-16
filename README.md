@@ -15,6 +15,14 @@ The program supports the MICROS+ (maybe also NANOS/PICOS, but untested), but you
 
 You can find the latest docker images at: https://hub.docker.com/r/ridiekel/jeletask2mqtt
 
+# Upgrading from previous version
+
+The 5.x branch does contain some changes that might be breaking, depending on your local setup.
+So when upgrading from a previous version, please make sure to take this into account:
+
+1. When updating your container, please remove it and recreate it when using portainer (https://github.com/ridiekel/jeletask/issues/32#issuecomment-3536714894).
+2. You will have to remove your teletask device in HA before upgrading.
+
 # Configuring
 
 ## Teletask2MQTT
@@ -23,7 +31,11 @@ Create a configuration json file following this example.
 At this time I can only test with MICROS_PLUS. Please log an issue when you are having trouble with the other types of central unit.
 If teletask has not changed their binary API, it should be compatible.
 
-The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
+`type` can be either `PICOS`, `NANOS`, `MICROS_PLUS`
+
+`device` can be used to group devices in the MQTT addons page.
+This is just a description, repeating it (like in the example) will group everything with the same description.
+`TELETASK_PUBLISH_ASONEDEVICE` needs to be set to `false` for this to work.
 
 <details>
   <summary>Example config (click me)</summary>
@@ -53,7 +65,8 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
       {
         "number": 1,
         "description": "Light Sensor",
-        "type": "LIGHT"
+        "type": "LIGHT",
+        "device": "Sensors"
       },
       {
         "number": 2,
@@ -62,13 +75,15 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
         "gas_type": "4-20ma",
         "gas_min": 0,
         "gas_max": 14,
-        "decimals": 2
+        "decimals": 2,
+        "device": "Sensors"
       },
       {
         "number": 3,
         "description": "Temperature Sensor",
         "type": "TEMPERATURE",
-        "ha_unit_of_measurement": "°C"
+        "ha_unit_of_measurement": "°C",
+        "device": "Sensors"
       },
       {
         "number": 4,
@@ -101,12 +116,14 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
     "GENMOOD": [
       {
         "number": 1,
-        "description": "All off"
+        "description": "All off",
+        "device": "Moods"
       },
       {
         "number": 2,
         "description": "Downstairs off",
-        "type": "scene"
+        "type": "scene",
+        "device": "Moods"
       }
     ],
     "MOTOR": [
@@ -118,7 +135,8 @@ The ```type``` Can be either ```PICOS```, ```NANOS```, ```MICROS_PLUS```
     "LOCMOOD": [
       {
         "number": 1,
-        "description": "Watch TV"
+        "description": "Watch TV",
+        "device": "Moods"
       },
       {
         "number": 2,

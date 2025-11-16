@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -52,9 +53,16 @@ public class HAConfig<T extends HAConfig<T>> {
                     .deviceIdentifier(parameters.getCentralUnit().getBridge().getHaPublishedConfig().getDeviceIdentifier())
                     .deviceName(parameters.getCentralUnit().getBridge().getHaPublishedConfig().getDeviceName());
         } else {
-            this.name(null) // HA shows this name concatenated with the device name. In our case this would mean a double description. If you don't set this, HA generates a name. If you set this to null, HA just uses the device name
-                    .deviceIdentifier(id(parameters))
-                    .deviceName(parameters.getComponentSpec().getDescription());
+            if (parameters.getComponentSpec().getDevice() != null) {
+                ComponentSpec dev = parameters.getCentralUnit().getDevice(parameters.getComponentSpec().getDevice());
+                this.name(parameters.getComponentSpec().getDescription())
+                        .deviceIdentifier(dev.getHaPublishedConfig().getDeviceIdentifier())
+                        .deviceName(dev.getHaPublishedConfig().getDeviceName());
+            } else {
+                this.name(null) // HA shows this name concatenated with the device name. In our case this would mean a double description. If you don't set this, HA generates a name. If you set this to null, HA just uses the device name
+                        .deviceIdentifier(id(parameters))
+                        .deviceName(parameters.getComponentSpec().getDescription());
+            }
         }
     }
 
