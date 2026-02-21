@@ -146,6 +146,12 @@
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>
+                <configuration>
+                    <buildArgs>
+                        <buildArg>--initialize-at-run-time=com.codeborne.selenide</buildArg>
+                        <buildArg>--initialize-at-run-time=org.openqa.selenium</buildArg>
+                    </buildArgs>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
