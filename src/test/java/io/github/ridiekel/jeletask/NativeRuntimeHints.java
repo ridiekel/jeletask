@@ -1,8 +1,12 @@
 package io.github.ridiekel.jeletask;
 
+import io.github.classgraph.ClassGraph;
 import io.github.ridiekel.jeletask.client.spec.*;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.*;
+import io.github.ridiekel.jeletask.mqtt.container.ha.Config;
+import io.github.ridiekel.jeletask.mqtt.container.ha.Entity;
+import io.github.ridiekel.jeletask.mqtt.container.ha.HAObject;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.Progress;
@@ -45,5 +49,21 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(RoomSpec.class, MemberCategory.values());
 
         hints.reflection().registerType(MqttProcessor.ConnectedStatus.class, MemberCategory.values());
+
+        hints.reflection().registerType(Config.class, MemberCategory.values());
+        hints.reflection().registerType(Entity.class, MemberCategory.values());
+        hints.reflection().registerType(HAObject.class, MemberCategory.values());
+        hints.reflection().registerType(Entity.Attributes.class, MemberCategory.values());
+
+        //Needed for now because otherwise test containers does not create a network alias for mqtt
+        hints.resources().registerPattern("org/testcontainers/**");
+        try (var result = new ClassGraph().acceptPackages("org.testcontainers", "com.codeborne", "org.openqa.selenium").enableClassInfo().scan()) {
+            result.getAllClasses().forEach(classInfo -> {
+                try {
+                    hints.reflection().registerType(classInfo.loadClass(), MemberCategory.values());
+                } catch (Exception _) {
+                }
+            });
+        }
     }
 }

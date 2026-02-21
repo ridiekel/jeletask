@@ -33,6 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import java.nio.file.Paths;
@@ -71,8 +72,9 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         this.centralUnit = centralUnit;
 
         this.withExposedPorts(8123)
+                .withImagePullPolicy(PullPolicy.alwaysPull())
                 .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
-                .withNetwork(MqttContainer.NETWORK);
+                .withNetwork(mqttContainer.getNetwork());
     }
 
     private static boolean started = false;
@@ -146,7 +148,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(300)
     public void start() {
-        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting Home Assistant on network '" + MqttContainer.NETWORK.getId() + "'", AnsiColor.DEFAULT));
+        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting Home Assistant", AnsiColor.DEFAULT));
 
         AtomicBoolean haOnline = new AtomicBoolean(false);
         String topicFilter = "homeassistant/status";
@@ -156,12 +158,6 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 haOnline.set(true);
             }
         });
-
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
 
         super.start();
 
