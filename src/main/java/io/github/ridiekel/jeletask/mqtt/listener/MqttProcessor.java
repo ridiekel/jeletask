@@ -384,7 +384,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 //        }
     }
 
-    private static class ConnectedStatus {
+    public static class ConnectedStatus {
         @Getter
         private boolean connected;
         @Getter
