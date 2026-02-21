@@ -33,7 +33,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.images.PullPolicy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import java.nio.file.Paths;
@@ -72,7 +71,6 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
         this.centralUnit = centralUnit;
 
         this.withExposedPorts(8123)
-                .withImagePullPolicy(PullPolicy.alwaysPull())
                 .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
                 .withNetwork(mqttContainer.getNetwork());
     }
