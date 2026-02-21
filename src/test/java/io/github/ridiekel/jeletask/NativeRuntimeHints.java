@@ -13,7 +13,6 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 public class NativeRuntimeHints implements RuntimeHintsRegistrar {
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-        hints.resources().registerPattern("docker-test.yml");
         hints.resources().registerPattern("test-config.json");
         hints.resources().registerPattern("haconfig/*");
 

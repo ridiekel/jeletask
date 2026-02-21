@@ -72,7 +72,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
         this.withExposedPorts(8123)
                 .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
-                .withNetwork(mqttContainer.getNetwork());
+                .withNetwork(MqttContainer.NETWORK);
     }
 
     private static boolean started = false;
@@ -146,7 +146,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(300)
     public void start() {
-        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting Home Assistant", AnsiColor.DEFAULT));
+        LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting Home Assistant on network '" + MqttContainer.NETWORK.getId() + "'", AnsiColor.DEFAULT));
 
         AtomicBoolean haOnline = new AtomicBoolean(false);
         String topicFilter = "homeassistant/status";
@@ -156,6 +156,12 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 haOnline.set(true);
             }
         });
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         super.start();
 

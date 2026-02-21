@@ -50,6 +50,8 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
 
     private final List<MqttCapture> captures = new ArrayList<>();
 
+    public static final Network NETWORK = Network.newNetwork();
+
     public MqttContainer(Teletask2MqttConfigurationProperties properties, MqttProcessor mqttProcessor, CentralUnit centralUnit) {
         super(DockerImageName.parse("eclipse-mosquitto:latest"));
         this.properties = properties;
@@ -59,13 +61,13 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
                 .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
                 .withNetworkAliases("mqtt")
                 .withCommand("mosquitto -c /mosquitto-no-auth.conf")
-                .withNetwork(Network.newNetwork());
+                .withNetwork(NETWORK);
     }
 
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(100)
     public void start() {
-        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting MQTT", AnsiColor.DEFAULT));
+        LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting MQTT on network '" + NETWORK.getId() + "'", AnsiColor.DEFAULT));
 
         super.start();
 
