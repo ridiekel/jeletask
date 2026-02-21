@@ -14,9 +14,6 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor;
-import io.github.ridiekel.jeletask.mqtt.listener.tracing.service.MqttMessageTraceService;
-import io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.centralunit.CentralUnitSsePublisher;
-import io.github.ridiekel.jeletask.mqtt.listener.tracing.sse.centralunit.CentralUnitUpdate;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,7 +31,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -57,9 +53,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private final CentralUnit centralUnit;
     private final TeletaskClient teletaskClient;
-    private final MqttMessageTraceService traceService;
     private static final ConnectedStatus CONNECTED_STATUS = new ConnectedStatus();
-    private final CentralUnitSsePublisher centralUnitSsePublisher;
     private final HomeAssistentAutoConfig homeAssistentAutoConfig;
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
@@ -77,13 +71,10 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     public MqttProcessor(CentralUnit centralUnit,
                          TeletaskClient teletaskClient,
-                         Teletask2MqttConfigurationProperties configuration,
-                         MqttMessageTraceService traceService,
-                         CentralUnitSsePublisher centralUnitSsePublisher) {
+                         Teletask2MqttConfigurationProperties configuration
+    ) {
         this.centralUnit = centralUnit;
         this.teletaskClient = teletaskClient;
-        this.traceService = traceService;
-        this.centralUnitSsePublisher = centralUnitSsePublisher;
         this.teletaskClient.registerStateChangeListener(this);
         this.configuration = configuration;
         this.motorProgressor = new MotorProgressor(configuration.getPublish().getMotorPositionInterval(), this::publishState);
@@ -229,18 +220,11 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private void subscribe(String topic, IMqttMessageListener target) throws MqttException {
         log(LOG::info, What.CONFIG, "SUBSCRIBE", topic);
-        this.mqttClient.subscribe(topic, 0, toTracingListener(target));
+        this.mqttClient.subscribe(topic, 0, target);
     }
 
     private String getPingTopic() {
         return this.getBaseTopic() + "/ping";
-    }
-
-    private IMqttMessageListener toTracingListener(IMqttMessageListener target) {
-        return (topic, message) -> {
-            this.traceService.receive(topic, new String(message.getPayload(), StandardCharsets.UTF_8), message.getQos(), message.isRetained());
-            target.messageArrived(topic, message);
-        };
     }
 
     private String getRemoteStopTopic() {
@@ -359,8 +343,6 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             } else {
                 publishState(c, c.getState());
             }
-
-            this.centralUnitSsePublisher.publish(new CentralUnitUpdate(c.getFunction(), c.getNumber(), c.getState()));
         });
     }
 
@@ -381,7 +363,6 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
                 level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message)));
                 this.mqttClient.publish(topic, mqttMessage);
-                this.traceService.publish(topic, message, mqttMessage.getQos(), mqttMessage.isRetained());
             } else {
                 LOG.warn(() -> String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message) + AnsiOutput.toString(AnsiColor.RED, " : MQTT Client disconnected", AnsiColor.DEFAULT)));
             }

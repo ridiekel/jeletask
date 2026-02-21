@@ -29,7 +29,7 @@ public class Teletask2MqttApplication {
         }
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         handleDeprecations();
 
         ApplicationContext context = SpringApplication.run(Teletask2MqttApplication.class, args);

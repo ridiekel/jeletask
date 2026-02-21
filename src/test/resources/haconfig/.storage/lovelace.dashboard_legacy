@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.dashboard_legacy",
+  "data": {
+    "config": {
+      "strategy": {
+        "type": "original-states"
+      }
+    }
+  }
+}
