@@ -4,6 +4,8 @@ variables:
   TELETASK_TEST_TEMPDIR: "/cache/jeletask"
   DOCKERHUB_IMAGE: "ridiekel/jeletask2mqtt"
   TERM: xterm-256color
+  GRAALVM_VERSION: "25-graalce"
+  MAVEN_VERSION: "3.9.12"
 
 stages:
   - test
@@ -44,8 +46,6 @@ test-job-arm64:
   script:
     - |
       MAVEN_OPTS=""
-      GRAALVM_VERSION="25-graalce"
-      MAVEN_VERSION="3.9.12"
       echo "Installing graalvm if not yet present"
       sdk install java ${GRAALVM_VERSION}
       sdk use java ${GRAALVM_VERSION}
@@ -53,7 +53,7 @@ test-job-arm64:
       sdk install maven ${MAVEN_VERSION}
       sdk use maven ${MAVEN_VERSION}
       echo "Running native arm64 tests..."
-      ./mvnw $MAVEN_CLI_OPTS  -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
+      ./mvnw $MAVEN_CLI_OPTS -PnativeTest verify
   rules:
     - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: always
@@ -232,8 +232,44 @@ docker-build-and-push:
       echo "TAG=$TAG VERSION=$VERSION"
       IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
       echo "IMAGE=$IMAGE"
-      docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:alpha"  -t "$IMAGE:$VERSION-alpha" --push .
+      docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:latest" -t "$IMAGE:$VERSION" --push .
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
       allow_failure: false
+
+docker-build-and-push-arm64:
+  stage: release
+  tags:
+    - arm64
+  needs:
+    - job: create-release
+      artifacts: true
+  script:
+    - |
+      set -euo pipefail
+      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
+      test -n "$TAG" || { echo "Geen tag gevonden (scm_tag/CI_COMMIT_TAG)"; exit 1; }
+      VERSION="${TAG#${CI_PROJECT_NAME}-}"
+      echo "TAG=$TAG VERSION=$VERSION"
+      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
+      MAVEN_OPTS=""
+      echo "Installing graalvm if not yet present"
+      sdk install java ${GRAALVM_VERSION}
+      sdk use java ${GRAALVM_VERSION}
+      echo "Installing maven if not yet present"
+      sdk install maven ${MAVEN_VERSION}
+      sdk use maven ${MAVEN_VERSION}
+      echo "Running native arm64 tests..."
+      IMAGE_VERSIONED="${IMAGE_REPO}:${VERSION}-native-arm64"
+      IMAGE_LATEST="${IMAGE_REPO}:latest-native-arm64"
+      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      ./mvnw $MAVEN_CLI_OPTS -Pnative spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      echo "Tag latest"
+      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      echo "Push both tags"
+      docker push "${IMAGE_VERSIONED}"
+      docker push "${IMAGE_LATEST}"
+  rules:
+    - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: always
