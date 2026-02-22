@@ -315,7 +315,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     @Getter
     @Setter
-    private static final class PingMesage {
+    public static final class PingMesage {
         private Instant sent;
         private Instant received;
 
