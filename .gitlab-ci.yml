@@ -243,7 +243,7 @@ docker-build-and-push-arm64:
   tags:
     - arm64
   needs:
-    - job: create-release
+    - job: test-job-arm64
       artifacts: true
   script:
     - |
