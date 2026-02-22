@@ -17,9 +17,11 @@ cache:
 test-job:
   stage: test 
   image: ridiekel/base-test:latest
+  tags:
+    - amd64
   script:
     - |
-      echo "Running unit tests..."
+      echo "Running native amd64 tests..."
       ./mvnw $MAVEN_CLI_OPTS -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
       cat target/site/jacoco/index.html | grep -o 'Total[^%]*%' | sed 's/<.*>/ /; s/Total/Jacoco Coverage Total:/'
   coverage: '/Total.*?([0-9]{1,3})%/'
@@ -35,10 +37,25 @@ test-job:
     - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: always
 
+test-job-arm64:
+  stage: test
+  tags:
+    - arm64
+  script:
+    - |
+      echo "Running native arm64 tests..."
+      ./mvnw $MAVEN_CLI_OPTS -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
+      cat target/site/jacoco/index.html | grep -o 'Total[^%]*%' | sed 's/<.*>/ /; s/Total/Jacoco Coverage Total:/'
+  coverage: '/Total.*?([0-9]{1,3})%/'
+  rules:
+    - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: always
 
 sonarqube-analysis:
   image: ridiekel/base-test:latest
   stage: visualize
+  tags:
+    - amd64
   variables:
     SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
     GIT_DEPTH: "0"
@@ -57,7 +74,9 @@ sonarqube-analysis:
 code-coverage-report-conversion:
   stage: visualize
   image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.11
-  script:    
+  tags:
+    - amd64
+  script:
     - python /opt/cover2cover.py target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/src/main/java/ > target/site/cobertura.xml
   needs: ["test-job"]
   artifacts:
@@ -72,6 +91,8 @@ code-coverage-report-conversion:
 create-release:
   stage: release
   image: ridiekel/base-test:latest
+  tags:
+    - amd64
   before_script:
     - |
       echo "Configuring..."
@@ -110,6 +131,8 @@ create-release:
 create-gitlab-release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
+  tags:
+    - amd64
   script:
     - |
       echo 'running release_job'
@@ -131,6 +154,8 @@ create-gitlab-release:
 release-upload:
   stage: release
   image: alpine:latest
+  tags:
+    - amd64
   needs:
     - job: create-release
       artifacts: true
@@ -173,6 +198,8 @@ release-upload:
 docker-build-and-push:
   stage: release
   image: docker:latest
+  tags:
+    - amd64
   services:
     - name: docker:dind
       command: ["--experimental"]
@@ -199,7 +226,6 @@ docker-build-and-push:
       IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
       echo "IMAGE=$IMAGE"
       docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:alpha"  -t "$IMAGE:$VERSION-alpha" --push .
-
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
