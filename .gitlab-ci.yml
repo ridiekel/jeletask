@@ -53,7 +53,7 @@ test-job-arm64:
       sdk install maven ${MAVEN_VERSION}
       sdk use maven ${MAVEN_VERSION}
       echo "Running native arm64 tests..."
-      ./mvnw -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
+      ./mvnw $MAVEN_CLI_OPTS  -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
   rules:
     - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: always
