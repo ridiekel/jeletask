@@ -43,10 +43,16 @@ test-job-arm64:
     - arm64
   script:
     - |
+      GRAALVM_VERSION="25-graalce"
+      MAVEN_VERSION="3.9.12"
+      echo "Installing graalvm if not yet present"
+      sdk install java ${GRAALVM_VERSION}
+      sdk use java ${GRAALVM_VERSION}
+      echo "Installing maven if not yet present"
+      sdk install maven ${MAVEN_VERSION}
+      sdk use maven ${MAVEN_VERSION}
       echo "Running native arm64 tests..."
-      ./mvnw $MAVEN_CLI_OPTS -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
-      cat target/site/jacoco/index.html | grep -o 'Total[^%]*%' | sed 's/<.*>/ /; s/Total/Jacoco Coverage Total:/'
-  coverage: '/Total.*?([0-9]{1,3})%/'
+      ./mvnw -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
   rules:
     - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: always
