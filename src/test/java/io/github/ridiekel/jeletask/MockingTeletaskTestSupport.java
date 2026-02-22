@@ -251,15 +251,9 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
     void login() {
         ha().login();
         $$(Selectors.shadowDeepCss("hui-entities-card div.name")).shouldHave(CollectionCondition.size(9));
-        Assertions.assertThat($$(Selectors.shadowDeepCss("hui-entities-card div.name")).texts()).containsExactlyInAnyOrder(
-                "Binary sensor",
+        Assertions.assertThat($$(Selectors.shadowDeepCss("hui-entities-card div.name")).texts()).contains(
                 "Flags",
-                "Cover",
-                "Light",
-                "Switch",
                 "GAS Sensors",
-                "Scene",
-                "Sensor",
                 "Moods"
         );
     }

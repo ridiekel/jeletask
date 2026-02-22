@@ -12,6 +12,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -25,10 +26,7 @@ import static com.codeborne.selenide.Selenide.open;
 @EnableConfigurationProperties(Teletask2MqttConfigurationProperties.class)
 @EnableScheduling
 @RequiredArgsConstructor
-//@TestPropertySource(properties = {
-//        "spring.boot.admin.client.enabled=true"
-//})
-//@EnableAdminServer
+@ImportRuntimeHints({NativeTestRuntimeHints.class, NativeRuntimeHints.class})
 public class Teletask2MqttTestApplication {
     private final HomeAssistantContainer homeAssistantContainer;
     private final Teletask2MqttConfigurationProperties config;

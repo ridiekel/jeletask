@@ -131,7 +131,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     }
 
     public void openBaseUrl() {
-        String url = baseUrl();
+        String url = baseUrl() + "/dashboard-legacy";
         open(url);
     }
 

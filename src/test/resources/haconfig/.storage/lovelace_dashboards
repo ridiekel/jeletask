@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace_dashboards",
+  "data": {
+    "items": [
+      {
+        "id": "dashboard_legacy",
+        "show_in_sidebar": true,
+        "title": "Legacy",
+        "require_admin": false,
+        "mode": "storage",
+        "url_path": "dashboard-legacy"
+      }
+    ]
+  }
+}
