@@ -98,8 +98,6 @@ code-coverage-report-conversion:
 create-release:
   stage: release
   image: ridiekel/base-test:latest
-  tags:
-    - amd64
   before_script:
     - |
       echo "Configuring..."
@@ -243,7 +241,7 @@ docker-build-and-push-arm64:
   tags:
     - arm64
   needs:
-    - job: test-job-arm64
+    - job: create-release
       artifacts: true
   script:
     - |
