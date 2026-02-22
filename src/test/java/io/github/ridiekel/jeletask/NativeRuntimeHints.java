@@ -1,6 +1,8 @@
 package io.github.ridiekel.jeletask;
 
+import com.codeborne.selenide.SelenideElement;
 import io.github.classgraph.ClassGraph;
+import io.github.classgraph.Resource;
 import io.github.ridiekel.jeletask.client.spec.*;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.*;
@@ -17,6 +19,12 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 public class NativeRuntimeHints implements RuntimeHintsRegistrar {
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+        registerJeletaskHints(hints);
+        registerTestcontainersHints(hints);
+        registerSelenideHints(hints);
+    }
+
+    private static void registerJeletaskHints(RuntimeHints hints) {
         hints.resources().registerPattern("test-config.json");
         hints.resources().registerPattern("haconfig/*");
 
@@ -54,14 +62,44 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(Entity.class, MemberCategory.values());
         hints.reflection().registerType(HAObject.class, MemberCategory.values());
         hints.reflection().registerType(Entity.Attributes.class, MemberCategory.values());
+    }
 
-        //Needed for now because otherwise test containers does not create a network alias for mqtt
+    private static void registerSelenideHints(RuntimeHints hints) {
+        hints.resources().registerPattern("com/codeborne/**");
+        hints.resources().registerPattern("org/openqa/selenium/**");
+        hints.resources().registerPattern("META-INF/defaultservices/.*");
+
+        hints.proxies().registerJdkProxy(SelenideElement.class);
+        try (
+                var classes = new ClassGraph().acceptPackages("com.codeborne", "org.openqa.selenium").enableClassInfo().scan();
+                var resources = new ClassGraph().scan()
+        ) {
+            for (Resource r : resources.getResourcesWithExtension("js")) {
+                hints.resources().registerPattern(r.getPath());
+            }
+            for (Resource r : resources.getResourcesWithExtension("properties")) {
+                hints.resources().registerPattern(r.getPath());
+            }
+            classes.getAllClasses().forEach(classInfo -> {
+                try {
+                    hints.reflection().registerType(classInfo.loadClass(), MemberCategory.values());
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
+            });
+        }
+    }
+
+    //Needed for now because otherwise the test containers library does not create a network alias for mqtt
+    private static void registerTestcontainersHints(RuntimeHints hints) {
         hints.resources().registerPattern("org/testcontainers/**");
-        try (var result = new ClassGraph().acceptPackages("org.testcontainers", "com.codeborne", "org.openqa.selenium").enableClassInfo().scan()) {
+
+        try (var result = new ClassGraph().acceptPackages("org.testcontainers").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
                     hints.reflection().registerType(classInfo.loadClass(), MemberCategory.values());
-                } catch (Exception _) {
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
                 }
             });
         }
