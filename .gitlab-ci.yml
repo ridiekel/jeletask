@@ -43,6 +43,7 @@ test-job-arm64:
     - arm64
   script:
     - |
+      MAVEN_OPTS=""
       GRAALVM_VERSION="25-graalce"
       MAVEN_VERSION="3.9.12"
       echo "Installing graalvm if not yet present"
