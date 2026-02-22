@@ -6,11 +6,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableConfigurationProperties({Teletask2MqttConfigurationProperties.class})
 @EnableScheduling
+@ImportRuntimeHints(NativeRuntimeHints.class)
 public class Teletask2MqttApplication {
     private static final Logger LOG = LogManager.getLogger();
 

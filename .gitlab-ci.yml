@@ -264,7 +264,7 @@ docker-build-and-push-arm64:
       IMAGE_VERSIONED="${IMAGE_REPO}:${VERSION}-native-arm64"
       IMAGE_LATEST="${IMAGE_REPO}:latest-native-arm64"
       echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      ./mvnw $MAVEN_CLI_OPTS -Pnative spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       echo "Push both tags"

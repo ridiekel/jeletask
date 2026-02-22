@@ -26,7 +26,7 @@ import static com.codeborne.selenide.Selenide.open;
 @EnableConfigurationProperties(Teletask2MqttConfigurationProperties.class)
 @EnableScheduling
 @RequiredArgsConstructor
-@ImportRuntimeHints(NativeRuntimeHints.class)
+@ImportRuntimeHints({NativeTestRuntimeHints.class, NativeRuntimeHints.class})
 public class Teletask2MqttTestApplication {
     private final HomeAssistantContainer homeAssistantContainer;
     private final Teletask2MqttConfigurationProperties config;
