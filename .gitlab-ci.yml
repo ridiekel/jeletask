@@ -277,7 +277,7 @@ docker-build-and-push-native-arm64:
       when: on_success
       allow_failure: false
 
-docker-build-and-push-native-amd64:
+docker-build-and-push-native-amd64-v1:
   stage: release
   image: ridiekel/base-test:latest
   tags:
@@ -287,19 +287,29 @@ docker-build-and-push-native-amd64:
       artifacts: true
   script:
     - |
+      BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64"
+      VERSION_SUFFIX="-v1"      
+
       echo "TAG=$TAG VERSION=$VERSION"
+
       IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
       TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
       test -n "$TAG" || { echo "Geen tag gevonden (scm_tag/CI_COMMIT_TAG)"; exit 1; }
-      VERSION="${TAG#${CI_PROJECT_NAME}-}"
+
+      VERSION="${TAG#${CI_PROJECT_NAME}-}"      
       echo "Version is: ${VERSION}"
-      IMAGE_VERSIONED="${DOCKERHUB_IMAGE}:${VERSION}-native-amd64"
-      IMAGE_LATEST="${DOCKERHUB_IMAGE}:latest-native-amd64"
+      
+      IMAGE_VERSIONED="${DOCKERHUB_IMAGE}:${VERSION}-native-amd64${VERSION_SUFFIX}"
+      IMAGE_LATEST="${DOCKERHUB_IMAGE}:latest-native-amd64${VERSION_SUFFIX}"
       echo "Versioned image name is: ${IMAGE_VERSIONED}"
       echo "Latest image name is: ${IMAGE_LATEST}"
+      
       echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      
       echo "Running native amd64 build..."
+      echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       echo "Push both tags"
@@ -309,3 +319,138 @@ docker-build-and-push-native-amd64:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
       allow_failure: false
+
+docker-build-and-push-native-amd64-v2:
+  stage: release
+  image: ridiekel/base-test:latest
+  tags:
+    - amd64
+  needs:
+    - job: create-release
+      artifacts: true
+  script:
+    - |
+      VERSION_SUFFIX="-v2"      
+      BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-v2"
+
+      echo "TAG=$TAG VERSION=$VERSION"
+
+      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
+      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
+      test -n "$TAG" || { echo "Geen tag gevonden (scm_tag/CI_COMMIT_TAG)"; exit 1; }
+
+      VERSION="${TAG#${CI_PROJECT_NAME}-}"      
+      echo "Version is: ${VERSION}"
+      
+      IMAGE_VERSIONED="${DOCKERHUB_IMAGE}:${VERSION}-native-amd64${VERSION_SUFFIX}"
+      IMAGE_LATEST="${DOCKERHUB_IMAGE}:latest-native-amd64${VERSION_SUFFIX}"
+      echo "Versioned image name is: ${IMAGE_VERSIONED}"
+      echo "Latest image name is: ${IMAGE_LATEST}"
+      
+      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      
+      echo "Running native amd64 build..."
+      echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      
+      echo "Tag latest"
+      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      echo "Push both tags"
+      docker push "${IMAGE_VERSIONED}"
+      docker push "${IMAGE_LATEST}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: on_success
+      allow_failure: false
+
+docker-build-and-push-native-amd64-v3:
+  stage: release
+  image: ridiekel/base-test:latest
+  tags:
+    - amd64
+  needs:
+    - job: create-release
+      artifacts: true
+  script:
+    - |
+      BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-v3"
+      VERSION_SUFFIX="-v3"      
+
+      echo "TAG=$TAG VERSION=$VERSION"
+
+      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
+      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
+      test -n "$TAG" || { echo "Geen tag gevonden (scm_tag/CI_COMMIT_TAG)"; exit 1; }
+
+      VERSION="${TAG#${CI_PROJECT_NAME}-}"      
+      echo "Version is: ${VERSION}"
+      
+      IMAGE_VERSIONED="${DOCKERHUB_IMAGE}:${VERSION}-native-amd64${VERSION_SUFFIX}"
+      IMAGE_LATEST="${DOCKERHUB_IMAGE}:latest-native-amd64${VERSION_SUFFIX}"
+      echo "Versioned image name is: ${IMAGE_VERSIONED}"
+      echo "Latest image name is: ${IMAGE_LATEST}"
+      
+      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      
+      echo "Running native amd64 build..."
+      echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      
+      echo "Tag latest"
+      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      echo "Push both tags"
+      docker push "${IMAGE_VERSIONED}"
+      docker push "${IMAGE_LATEST}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: on_success
+      allow_failure: false
+
+docker-build-and-push-native-amd64-v4:
+  stage: release
+  image: ridiekel/base-test:latest
+  tags:
+    - amd64
+  needs:
+    - job: create-release
+      artifacts: true
+  script:
+    - |
+      BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-v4"
+      VERSION_SUFFIX="-v4"      
+
+      echo "TAG=$TAG VERSION=$VERSION"
+
+      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
+      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
+      test -n "$TAG" || { echo "Geen tag gevonden (scm_tag/CI_COMMIT_TAG)"; exit 1; }
+
+      VERSION="${TAG#${CI_PROJECT_NAME}-}"      
+      echo "Version is: ${VERSION}"
+      
+      IMAGE_VERSIONED="${DOCKERHUB_IMAGE}:${VERSION}-native-amd64${VERSION_SUFFIX}"
+      IMAGE_LATEST="${DOCKERHUB_IMAGE}:latest-native-amd64${VERSION_SUFFIX}"
+      IMAGE_LATEST_AMD="${DOCKERHUB_IMAGE}:latest-native-amd64"
+      
+      echo "Versioned image name is: ${IMAGE_VERSIONED}"
+      echo "Latest image name is: ${IMAGE_LATEST}"
+      echo "Latest amd64 image name is: ${IMAGE_LATEST_AMD}"
+      
+      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      
+      echo "Running native amd64 build..."
+      echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      
+      echo "Tag latest"
+      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST_AMD}"
+      echo "Push both tags"
+      docker push "${IMAGE_VERSIONED}"
+      docker push "${IMAGE_LATEST}"
+      docker push "${IMAGE_LATEST_AMD}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: on_success
+      allow_failure: false
+
