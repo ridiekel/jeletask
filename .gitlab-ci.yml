@@ -413,6 +413,10 @@ docker-build-and-push-native-amd64-v3:
       echo "Push both tags"
       docker push "${IMAGE_VERSIONED}"
       docker push "${IMAGE_LATEST}"
+
+      IMAGE_LATEST_NATIVE="${DOCKERHUB_IMAGE}:latest-native-amd64"
+      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST_NATIVE}"
+      docker push "${IMAGE_LATEST_NATIVE}"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
