@@ -332,6 +332,7 @@ docker-build-and-push-native-amd64-v2:
     - |
       VERSION_SUFFIX="-v2"      
       BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-v2"
+      BP_LOG_LEVEL=DEBUG
 
       echo "TAG=$TAG VERSION=$VERSION"
 
