@@ -291,7 +291,6 @@ docker-build-and-push-native-amd64-v2:
       set -x
       VERSION_SUFFIX="-v2"      
       export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-v2"
-      export BP_LOG_LEVEL=DEBUG
 
       echo "TAG=$TAG VERSION=$VERSION"
 
@@ -315,7 +314,6 @@ docker-build-and-push-native-amd64-v2:
         -DskipTests \
         spring-boot:build-image \
         -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
-        -Dspring-boot.build-image.environment.BP_LOG_LEVEL=DEBUG \
         -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       #echo "Tag latest"
       #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"

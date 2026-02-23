@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.0.3</version>
-        <relativePath /> <!-- lookup parent from repository -->
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <groupId>io.github.ridiekel</groupId>
@@ -25,6 +25,7 @@
         <sonar.projectKey>jeletask</sonar.projectKey>
         <sonar.projectName>jeletask</sonar.projectName>
         <sonar.coverage.exclusions>io/github/ridiekel/jeletask/Teletask2MqttApplication.java</sonar.coverage.exclusions>
+        <spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>-march=native</spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>
     </properties>
 
     <dependencies>
@@ -146,15 +147,17 @@
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>
-                <configuration>
-                    <buildArgs>
-                        <buildArg>-march=x86-64-v2</buildArg>
-                    </buildArgs>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <image>
+                        <env>
+                            <BP_NATIVE_IMAGE_BUILD_ARGUMENTS>${spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS}</BP_NATIVE_IMAGE_BUILD_ARGUMENTS>
+                        </env>
+                    </image>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
