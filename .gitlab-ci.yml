@@ -289,7 +289,7 @@ docker-build-and-push-native-amd64-v1:
     - |
       set -x
       VERSION_SUFFIX="-v1"      
-      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-${VERSION_SUFFIX}"
+      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64${VERSION_SUFFIX}"
 
       echo "TAG=$TAG VERSION=$VERSION"
 
@@ -336,7 +336,7 @@ docker-build-and-push-native-amd64-v2:
     - |
       set -x
       VERSION_SUFFIX="-v2"      
-      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-${VERSION_SUFFIX}"
+      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64${VERSION_SUFFIX}"
 
       echo "TAG=$TAG VERSION=$VERSION"
 
@@ -383,7 +383,7 @@ docker-build-and-push-native-amd64-v3:
     - |
       set -x
       VERSION_SUFFIX="-v3"      
-      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-${VERSION_SUFFIX}"
+      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64${VERSION_SUFFIX}"
 
       echo "TAG=$TAG VERSION=$VERSION"
 
@@ -430,7 +430,7 @@ docker-build-and-push-native-amd64-v4:
     - |
       set -x
       VERSION_SUFFIX="-v4"      
-      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64-${VERSION_SUFFIX}"
+      export BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=x86-64${VERSION_SUFFIX}"
 
       echo "TAG=$TAG VERSION=$VERSION"
 
