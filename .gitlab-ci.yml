@@ -308,7 +308,7 @@ docker-build-and-push-native-amd64-v1:
       
       echo "Running native amd64 build..."
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
-      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
@@ -351,7 +351,7 @@ docker-build-and-push-native-amd64-v2:
       
       echo "Running native amd64 build..."
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
-      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
@@ -394,7 +394,7 @@ docker-build-and-push-native-amd64-v3:
       
       echo "Running native amd64 build..."
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
-      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
@@ -440,7 +440,7 @@ docker-build-and-push-native-amd64-v4:
       
       echo "Running native amd64 build..."
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
-      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
