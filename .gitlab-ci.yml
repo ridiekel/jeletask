@@ -25,7 +25,7 @@ test-job-amd64:
     - |
       echo "Running native amd64 tests..."
       ./mvnw $MAVEN_CLI_OPTS org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
-#      ./mvnw $MAVEN_CLI_OPTS -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
+      #      ./mvnw $MAVEN_CLI_OPTS -PnativeTest org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report
       cat target/site/jacoco/index.html | grep -o 'Total[^%]*%' | sed 's/<.*>/ /; s/Total/Jacoco Coverage Total:/'
   coverage: '/Total.*?([0-9]{1,3})%/'
   artifacts:
@@ -54,7 +54,7 @@ test-job-arm64:
       sdk install maven ${MAVEN_VERSION}
       sdk use maven ${MAVEN_VERSION}
       echo "Running native arm64 tests..."
-#      ./mvnw $MAVEN_CLI_OPTS -PnativeTest verify
+      #      ./mvnw $MAVEN_CLI_OPTS -PnativeTest verify
   rules:
     - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: always
@@ -231,7 +231,7 @@ docker-build-and-push:
       echo "TAG=$TAG VERSION=$VERSION"
       IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
       echo "IMAGE=$IMAGE"
-#      docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:latest" -t "$IMAGE:$VERSION" --push .
+      #      docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:latest" -t "$IMAGE:$VERSION" --push .
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
@@ -311,7 +311,7 @@ docker-build-and-push-native-amd64-v1:
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
-#      echo "Tag latest"
+      #      echo "Tag latest"
       #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       #echo "Push both tags"
       #docker push "${IMAGE_VERSIONED}"
@@ -362,7 +362,7 @@ docker-build-and-push-native-amd64-v2:
         -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
   
 
-  #      echo "Tag latest"
+      #      echo "Tag latest"
       #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       #echo "Push both tags"
       #docker push "${IMAGE_VERSIONED}"
@@ -405,7 +405,7 @@ docker-build-and-push-native-amd64-v3:
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
-#      echo "Tag latest"
+      #      echo "Tag latest"
       #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       #echo "Push both tags"
       #docker push "${IMAGE_VERSIONED}"
@@ -451,7 +451,7 @@ docker-build-and-push-native-amd64-v4:
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
-#      echo "Tag latest"
+      #      echo "Tag latest"
       #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST_AMD}"
       #echo "Push both tags"
