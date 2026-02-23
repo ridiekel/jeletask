@@ -267,11 +267,11 @@ docker-build-and-push-native-arm64:
       echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
       echo "Running native arm64 build..."
       ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
-      echo "Tag latest"
-      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
-      echo "Push both tags"
-      docker push "${IMAGE_VERSIONED}"
-      docker push "${IMAGE_LATEST}"
+#      echo "Tag latest"
+      #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      #echo "Push both tags"
+      #docker push "${IMAGE_VERSIONED}"
+      #docker push "${IMAGE_LATEST}"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
@@ -310,11 +310,11 @@ docker-build-and-push-native-amd64-v1:
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
-      echo "Tag latest"
-      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
-      echo "Push both tags"
-      docker push "${IMAGE_VERSIONED}"
-      docker push "${IMAGE_LATEST}"
+#      echo "Tag latest"
+      #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      #echo "Push both tags"
+      #docker push "${IMAGE_VERSIONED}"
+      #docker push "${IMAGE_LATEST}"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
@@ -354,11 +354,11 @@ docker-build-and-push-native-amd64-v2:
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
-      echo "Tag latest"
-      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
-      echo "Push both tags"
-      docker push "${IMAGE_VERSIONED}"
-      docker push "${IMAGE_LATEST}"
+#      echo "Tag latest"
+      #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      #echo "Push both tags"
+      #docker push "${IMAGE_VERSIONED}"
+      #docker push "${IMAGE_LATEST}"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
@@ -397,11 +397,11 @@ docker-build-and-push-native-amd64-v3:
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
-      echo "Tag latest"
-      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
-      echo "Push both tags"
-      docker push "${IMAGE_VERSIONED}"
-      docker push "${IMAGE_LATEST}"
+#      echo "Tag latest"
+      #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      #echo "Push both tags"
+      #docker push "${IMAGE_VERSIONED}"
+      #docker push "${IMAGE_LATEST}"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
@@ -443,13 +443,13 @@ docker-build-and-push-native-amd64-v4:
       echo "Architecture: ${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
       ./mvnw $MAVEN_CLI_OPTS -Pnative -Dnative-image.args="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
       
-      echo "Tag latest"
-      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
-      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST_AMD}"
-      echo "Push both tags"
-      docker push "${IMAGE_VERSIONED}"
-      docker push "${IMAGE_LATEST}"
-      docker push "${IMAGE_LATEST_AMD}"
+#      echo "Tag latest"
+      #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
+      #docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST_AMD}"
+      #echo "Push both tags"
+      #docker push "${IMAGE_VERSIONED}"
+      #docker push "${IMAGE_LATEST}"
+      #docker push "${IMAGE_LATEST_AMD}"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
