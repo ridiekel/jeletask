@@ -10,6 +10,7 @@ variables:
 stages:
   - test
   - visualize
+  - prerelease
   - release
 
 cache:
@@ -17,7 +18,7 @@ cache:
     - ./.m2/repository
 
 test-job-amd64:
-  stage: test 
+  stage: test
   image: ridiekel/base-test:latest
   tags:
     - amd64
@@ -40,7 +41,7 @@ test-job-amd64:
       when: always
 
 test-job-arm64:
-  stage: test
+  stage: prerelease
   tags:
     - arm64
   script:
@@ -55,8 +56,9 @@ test-job-arm64:
       echo "Running native arm64 tests..."
       ./mvnw $MAVEN_CLI_OPTS -PnativeTest verify
   rules:
-    - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
-      when: always
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\]prepare release.*/
+      when: manual
+      allow_failure: true
 
 sonarqube-analysis:
   image: ridiekel/base-test:latest
@@ -130,7 +132,7 @@ create-release:
       dotenv: variables.env
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\]prepare release.*/
-      when: manual
+      when: on_success
       allow_failure: true
 
 create-gitlab-release:
