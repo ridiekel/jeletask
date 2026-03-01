@@ -3,6 +3,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DimmerState;
+import org.jspecify.annotations.NonNull;
 
 /**
  * For dimmers the setting parameter needs to be 0-100 indicating the level to which you want to set the dimmer.
@@ -31,15 +32,24 @@ public class DimmerStateCalculator extends StateCalculatorSupport<DimmerState> {
 
     @Override
     public byte[] toCommand(ComponentSpec component, DimmerState state) {
-        byte[] bytes = null;
-        if (state != null) {
-            if (state.getBrightness() != null) {
-                // Brightness attribute always has priority
-                bytes = NumberConverter.UNSIGNED_BYTE.convert(state.getBrightness());
-            }
+        Integer brightness = determineTargetBrightness(component, state);
+
+        return NumberConverter.UNSIGNED_BYTE.convert(brightness);
+    }
+
+    public static @NonNull Integer determineTargetBrightness(ComponentSpec component, DimmerState state) {
+        Integer brightness = null;
+
+        if (state.getState() == ValidDimmerState.OFF) {
+            brightness = 0;
+        } else {
+            brightness = state.getBrightness();
         }
 
-        return bytes;
+        if (brightness == null) {
+            brightness = 103;
+        }
+        return brightness;
     }
 
     @Override
@@ -53,9 +63,9 @@ public class DimmerStateCalculator extends StateCalculatorSupport<DimmerState> {
 
     @Override
     public boolean isValidWriteState(DimmerState state) {
-        boolean isValid = false;
+        boolean isValid = super.isValidWriteState(state);
 
-        if (super.isValidWriteState(state)) {
+        if (isValid) {
             if (state.getBrightness() != null) {
                 int brightness = state.getBrightness().intValue();
                 isValid = (brightness >= 0 && brightness <= 100);

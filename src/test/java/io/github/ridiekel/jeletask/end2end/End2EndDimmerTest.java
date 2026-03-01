@@ -56,6 +56,17 @@ class End2EndDimmerTest extends MockingTeletaskTestSupport {
         mqtt().expect().dimmer(9).lastStateMessage().toHave().state().dimmerOn();
         mqtt().expect().dimmer(9).lastStateMessage().toHave().state().brightness(45);
 
+        //Test to see if we get previous state when turning on after the dimmer has a previous state
+        teletask().dimmer(9).turnOff();
+        ha().web().dimmer(9)
+                .shouldHaveSliderState("0")
+                .shouldHaveHeaderStateText("Off");
+
+        teletask().dimmer(9).turnOn();
+        ha().web().dimmer(9)
+                .shouldHaveSliderState("45")
+                .shouldHaveHeaderStateText("45%");
+
         ha().web().dimmer(9).closeDetails();
     }
 }
