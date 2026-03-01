@@ -255,11 +255,18 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             state.setBrightness(0);
             c.setState(state);
             IntStream.range(0, 101).forEach(i -> {
-                DimmerState brightness = new DimmerState(DimmerStateCalculator.ValidDimmerState.ON);
-                brightness.setBrightness(i);
-                e.with(c.getFunction(), c.getNumber()).when(set(brightness)).thenRespond(brightness);
+                DimmerState brightnessOn = new DimmerState(DimmerStateCalculator.ValidDimmerState.ON);
+                brightnessOn.setBrightness(i);
+                e.with(c.getFunction(), c.getNumber()).when(set(brightnessOn)).thenRespond(brightnessOn);
+                DimmerState brightnessOff = new DimmerState(DimmerStateCalculator.ValidDimmerState.OFF);
+                brightnessOff.setBrightness(i);
+                e.with(c.getFunction(), c.getNumber()).when(set(brightnessOff)).thenRespond(brightnessOff);
             });
             e.with(c.getFunction(), c.getNumber()).when(set(new DimmerState(DimmerStateCalculator.ValidDimmerState.OFF))).thenRespond(new DimmerState(0));
+            e.with(c.getFunction(), c.getNumber()).when(set(new DimmerState(DimmerStateCalculator.ValidDimmerState.ON, 103))).thenRespondFunctional(() -> {
+                Integer previous = PREVIOUS_DIMMER_STATES.get(c.getNumber());
+                return new DimmerState(DimmerStateCalculator.ValidDimmerState.ON, previous == null ? 100 : previous);
+            });
         });
         e.when(groupGet(Function.DIMMER, this.centralUnit.getComponents(Function.DIMMER).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
                 this.centralUnit.getComponents(Function.DIMMER).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DIMMER, component.getNumber(), component.getState())).collect(Collectors.toList())
@@ -348,6 +355,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         );
     }
 
+    private static final Map<Integer, Integer> PREVIOUS_DIMMER_STATES = new HashMap<>();
+
     @Override
     public void run() {
         try {
@@ -380,6 +389,17 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                                     try {
                                         LOG.trace(() -> "Creating event message");
                                         EventMessage eventMessage = response.get().create(centralUnit, message);
+
+                                        Optional.ofNullable(eventMessage)
+                                                .map(EventMessage::getState)
+                                                .filter(s-> s instanceof DimmerState)
+                                                .map(s -> (DimmerState) s)
+                                                .map(DimmerState::getBrightness)
+                                                .filter(b -> b > 0)
+                                                .ifPresent(b -> {
+                                                    PREVIOUS_DIMMER_STATES.put(eventMessage.getNumber(), b);
+                                                });
+
                                         LOG.trace(() -> String.format("Created event message %s: ", eventMessage));
                                         RESPONSE_EXECUTOR.execute(() -> {
                                             try {

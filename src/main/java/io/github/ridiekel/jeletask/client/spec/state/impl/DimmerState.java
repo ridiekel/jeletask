@@ -20,14 +20,12 @@ public class DimmerState extends State<DimmerStateCalculator.ValidDimmerState> {
         this.setBrightness(brightness);
     }
 
+    public DimmerState(DimmerStateCalculator.ValidDimmerState state, int i) {
+        super(state);
+        this.setBrightness(i);
+    }
+
     public Integer getBrightness() {
-        if (brightness == null) {
-            if (DimmerStateCalculator.ValidDimmerState.ON.equals(this.getState())) {
-                brightness = 100;
-            } else {
-                brightness = 0;
-            }
-        }
         return brightness;
     }
 
