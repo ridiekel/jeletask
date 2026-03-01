@@ -361,30 +361,9 @@ networks:
 If you already have an MQTT server running somewhere, you can remove the mqtt service from the docker-compose.yml.
 Point the config to your mqtt instance.
 
-# Admin interface
+# Health check
 
-You can login to the admin interface using the credentials provided in the environment variables.
-If you did not provide credential information, credentials are randomly generated on every boot.
-
-Both views support searching for strings in the records.
-
-## MQTT Messages
-
-![View of MQTT messages](src/main/resources/mqtt-messages.png "MQTT Messages")
-
-Messages should appear in the interface as they are sent and received.
-
-## Central Unit
-
-![View of Central Unit config](src/main/resources/centralunit.png "Central Unit Config")
-
-The state of components should be updated as it changes.
-
-## Health check
-
-You can do a health check at `http://<server>:<exposed_port>/actuator/health`.
-
-The service now also sends an `online` message every minute.
+The service now sends an `online` message every minute.
 
 # HomeAssistant
 
@@ -414,6 +393,23 @@ After that, you overview in HA should look something like this:
 For more information on setting and getting state using MQTT (if you want to do this manually), please see the [MESSAGES.md](MESSAGES.md) file.
 
 ## Additional HA config
+
+### Suggested Area
+
+You can suggest an area where the devices are located.
+Example:
+
+```json
+{
+  "RELAY": [
+    {
+      "number": 1,
+      "description": "Power outlet",
+      "suggested_area": "Living room"
+    }
+  ]
+}
+```
 
 ### Types
 

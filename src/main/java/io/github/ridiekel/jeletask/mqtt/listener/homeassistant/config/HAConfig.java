@@ -64,6 +64,9 @@ public class HAConfig<T extends HAConfig<T>> {
                         .deviceName(parameters.getComponentSpec().getDescription());
             }
         }
+        if (parameters.getComponentSpec().getSuggested_area() != null) {
+            this.deviceSuggestedArea(parameters.getComponentSpec().getSuggested_area());
+        }
     }
 
     @JsonIgnore
@@ -77,6 +80,10 @@ public class HAConfig<T extends HAConfig<T>> {
 
     public T deviceIdentifier(String identifier) {
         return this.put(this.deviceIdentifiers, identifier);
+    }
+
+    public T deviceSuggestedArea(String suggested_area) {
+        return this.putDeviceProperty("suggested_area", suggested_area);
     }
 
     public T viaDevice(String identifier) {

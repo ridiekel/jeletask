@@ -15,6 +15,11 @@
         "number": 12,
         "description": "Scenery Relay 1",
         "type": "scene"
+      },
+      {
+        "number": 99,
+        "description": "Light in living room",
+        "suggested_area": "Living Room Area"
       }
     ],
     "SENSOR": [
