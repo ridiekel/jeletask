@@ -73,7 +73,9 @@ sonarqube-analysis:
     paths:
       - .sonar/cache
   needs: ["test-job-amd64"]
-  script: 
+  before_script:
+    - source "${SDKMAN_DIR}/bin/sdkman-init.sh"
+  script:
     - mvn $MAVEN_CLI_OPTS sonar:sonar -Dmaven.test.failure.ignore=true
   allow_failure: true
   rules:
