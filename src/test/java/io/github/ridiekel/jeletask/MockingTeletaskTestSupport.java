@@ -250,7 +250,7 @@ public class MockingTeletaskTestSupport extends TeletaskTestSupport {
     @BeforeEach
     void login() {
         ha().login();
-        $$(Selectors.shadowDeepCss("hui-entities-card div.name")).shouldHave(CollectionCondition.size(9));
+        $$(Selectors.shadowDeepCss("hui-entities-card div.name")).shouldHave(CollectionCondition.size(10));
         Assertions.assertThat($$(Selectors.shadowDeepCss("hui-entities-card div.name")).texts()).contains(
                 "Flags",
                 "GAS Sensors",

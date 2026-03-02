@@ -29,6 +29,7 @@ public class ComponentSpec {
 
     //haType is the type as it is known to Home Assistant
     private String haType;
+    private String suggested_area;
     private String HA_unit_of_measurement;
     private double HA_temperature_step = 0.5;
     private String HA_modes = "auto,off,cool,heat,dry,fan_only";

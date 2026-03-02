@@ -24,6 +24,7 @@ class End2EndMqttAddonConfigTest extends MockingTeletaskTestSupport {
                 "Humidity Sensor",
                 "Input 1",
                 "Input 2",
+                "Light in living room",
                 "Local Mood 1",
                 "Local Scenery 1",
                 "Local Shining 1",
