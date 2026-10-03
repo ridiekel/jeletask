@@ -220,9 +220,16 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     @Override
     public void disconnect() {
         this.started.set(false);
-        this.keepAliveTimer.cancel();
-        this.eventListenerTimer.cancel();
-        this.getIoService().shutdown();
+        // Parts are null when the client never connected, e.g. when the application stops during startup
+        if (this.keepAliveTimer != null) {
+            this.keepAliveTimer.cancel();
+        }
+        if (this.eventListenerTimer != null) {
+            this.eventListenerTimer.cancel();
+        }
+        if (this.ioService != null) {
+            this.ioService.shutdown();
+        }
         this.closeInputStream();
         this.closeOutputStream();
         this.closeSocket();
@@ -465,6 +472,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private void stopIoService() {
+        if (this.ioService == null) {
+            return;
+        }
         try {
             this.getIoService().shutdown();
             this.getIoService().awaitTermination(5, TimeUnit.SECONDS);
@@ -480,18 +490,27 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private void stopKeepAliveService() {
+        if (this.keepAliveTimer == null) {
+            return;
+        }
         this.keepAliveTimer.cancel();
         this.keepAliveTimer.purge();
         this.keepAliveTimer = null;
     }
 
     private void stopEventListener() {
+        if (this.eventListenerTimer == null) {
+            return;
+        }
         this.eventListenerTimer.cancel();
         this.eventListenerTimer.purge();
         this.eventListenerTimer = null;
     }
 
     private void closeSocket() {
+        if (this.socket == null) {
+            return;
+        }
         try {
             this.socket.close();
         } catch (IOException e) {
@@ -502,6 +521,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private void closeOutputStream() {
+        if (this.outputStream == null) {
+            return;
+        }
         try {
             this.getOutputStream().flush();
             this.getOutputStream().close();
@@ -513,6 +535,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private void closeInputStream() {
+        if (this.inputStream == null) {
+            return;
+        }
         try {
             this.getInputStream().close();
         } catch (IOException e) {
