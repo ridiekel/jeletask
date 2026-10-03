@@ -16,6 +16,7 @@ import java.util.Properties;
  * The running application periodically writes its connection status to a file. Running the
  * application with {@code --healthcheck} reads that file without starting Spring and exits with
  * 0 when healthy, 1 otherwise. This works in images without a shell or HTTP client (native).
+ * The JVM image checks the same file with a shell command in its Dockerfile: keep both in sync.
  */
 public final class HealthCheck {
     public static final String ARGUMENT = "--healthcheck";
