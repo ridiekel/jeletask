@@ -281,20 +281,13 @@ Different versions (tags) are provided.
 The image is now built using multiarch setup (since 5.x.x).
 Docker will automatically use the correct image for your architecture.
 
-I advise using the `latest` tag for your target architecture.
+For a native image (faster startup, less memory) use the following. It is built for both Intel/AMD (64bit) and ARM64 (raspberry pi, mac, ...) and runs on any CPU of those architectures:
 
-For Intel/AMD cpu architecture (64bit) try one of the following. See whichever works. v1 is for older CPU's, v2 for somewhat more recent CPUs and v3 is for recent CPUs. This will be trial and error, but start from v3.
+    ridiekel/jeletask2mqtt:latest-native
 
-    ridiekel/jeletask2mqtt:latest-native-amd64-v3
-    ridiekel/jeletask2mqtt:latest-native-amd64-v2
-    ridiekel/jeletask2mqtt:latest-native-amd64-v1
-    ridiekel/jeletask2mqtt:latest-native-amd64 (same as latest-native-amd64-v3)
+The older tags `latest-native-amd64`, `latest-native-amd64-v1`, `latest-native-amd64-v2`, `latest-native-amd64-v3` and `latest-native-arm64` still receive updates for now, but will be removed. Please switch to `latest-native`.
 
-For ARM64 (raspberry pi, mac, ...) use the following. This uses arm64v8 (v7 I cannot build and will probably not work anyways)
-
-    ridiekel/jeletask2mqtt:latest-native-arm64
-
-If above images fail, use the vollowing (but slower and more resource hungry):
+If the native image fails, use the following (but slower and more resource hungry):
 
     ridiekel/jeletask2mqtt:latest
 
