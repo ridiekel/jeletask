@@ -215,6 +215,7 @@ release-upload:
       allow_failure: false
 
 docker-build-and-push:
+  resource_group: docker-image-build
   stage: release
   image: docker:latest
   tags:
@@ -251,6 +252,7 @@ docker-build-and-push:
       allow_failure: false
 
 docker-build-and-push-native-arm64:
+  resource_group: docker-image-build
   stage: release
   image: ridiekel/base-test:latest
   tags:
@@ -292,6 +294,7 @@ docker-build-and-push-native-arm64:
       allow_failure: false
 
 docker-build-and-push-native-amd64:
+  resource_group: docker-image-build
   stage: release
   image: ridiekel/base-test:latest
   tags:
