@@ -25,7 +25,7 @@
         <sonar.projectKey>jeletask</sonar.projectKey>
         <sonar.projectName>jeletask</sonar.projectName>
         <sonar.coverage.exclusions>io/github/ridiekel/jeletask/Teletask2MqttApplication.java</sonar.coverage.exclusions>
-        <spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>-march=native</spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>
+        <spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>-march=compatibility</spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>
         <!-- Fixed buildpack cache volumes, so the cache survives version bumps; override per target architecture -->
         <build-image.cache-name>${project.artifactId}-build-image</build-image.cache-name>
     </properties>
@@ -158,6 +158,11 @@
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>
+                <configuration>
+                    <buildArgs>
+                        <buildArg>-march=compatibility</buildArg>
+                    </buildArgs>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
