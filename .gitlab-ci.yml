@@ -22,7 +22,7 @@ test-job-amd64:
   stage: test
   image: ridiekel/base-test:latest
   tags:
-    - amd64
+    - docker-host
   script:
     - |
       echo "Running native amd64 tests..."
@@ -45,7 +45,7 @@ test-job-arm64:
   stage: prerelease
   image: ridiekel/base-test:latest
   tags:
-    - amd64
+    - docker-host
   timeout: 3h
   script:
     - |
@@ -78,8 +78,6 @@ test-job-arm64:
 sonarqube-analysis:
   image: ridiekel/base-test:latest
   stage: visualize
-  tags:
-    - amd64
   variables:
     SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
     GIT_DEPTH: "0"
@@ -100,8 +98,6 @@ sonarqube-analysis:
 code-coverage-report-conversion:
   stage: visualize
   image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.11
-  tags:
-    - amd64
   script:
     - python /opt/cover2cover.py target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/src/main/java/ > target/site/cobertura.xml
   needs: ["test-job-amd64"]
@@ -158,8 +154,6 @@ create-release:
 create-gitlab-release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
-  tags:
-    - amd64
   script:
     - |
       echo 'running release_job'
@@ -181,8 +175,6 @@ create-gitlab-release:
 release-upload:
   stage: release
   image: alpine:latest
-  tags:
-    - amd64
   needs:
     - job: create-release
       artifacts: true
@@ -226,7 +218,7 @@ docker-build-and-push:
   stage: release
   image: docker:latest
   tags:
-    - amd64
+    - docker-host
   services:
     - name: docker:dind
       command: ["--experimental"]
@@ -262,7 +254,7 @@ docker-build-and-push-native-arm64:
   stage: release
   image: ridiekel/base-test:latest
   tags:
-    - amd64
+    - docker-host
   timeout: 3h
   needs:
     - job: create-release
@@ -302,7 +294,7 @@ docker-build-and-push-native-arm64:
   stage: release
   image: ridiekel/base-test:latest
   tags:
-    - amd64
+    - docker-host
   needs:
     - job: create-release
       artifacts: true
