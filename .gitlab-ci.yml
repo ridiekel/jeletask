@@ -8,26 +8,17 @@ variables:
   TERM: xterm-256color
   # arm64 images are built on the amd64 runner under QEMU emulation (no arm64 runner needed)
   BINFMT_IMAGE: "tonistiigi/binfmt:qemu-v10.2.3"
-  # GitLab has no runner preference: a job goes to whichever matching runner asks first.
-  # So the release jobs ask for one runner by tag: ridiekel (default, much faster) or
-  # docker-host (obiwan). When ridiekel is off, they wait; run the pipeline manually
-  # with BUILD_RUNNER=docker-host to send them to obiwan instead. The JVM tests and
-  # reports run on ridiekel or obiwan, whichever is free, so branch pipelines
-  # (renovate) do not wait for ridiekel. The JVM tests need Docker (Testcontainers),
-  # so they ask for the 'docker' tag, which both ridiekel and obiwan's docker-host
-  # runner have.
   BUILD_RUNNER:
     value: "ridiekel"
     options:
       - "ridiekel"
       - "docker-host"
-    description: "Runner tag for the release jobs: ridiekel (fast) or docker-host (obiwan)."
+    description: "Runner tag for the release jobs: ridiekel (fast) or docker-host (slow)."
 
 default:
   tags:
     - $BUILD_RUNNER
 
-# Jobs that run on ridiekel or obiwan, whichever asks first: they do not inherit the $BUILD_RUNNER tag
 .any-runner:
   inherit:
     default: false
@@ -239,8 +230,6 @@ release-upload:
       when: on_success
       allow_failure: false
 
-# Every image variant is built and smoke tested in the local Docker daemon of ridiekel
-# or obiwan ($BUILD_RUNNER). Nothing is pushed until all variants passed (publish-images).
 .build-image:
   stage: images
   resource_group: docker-image-build
