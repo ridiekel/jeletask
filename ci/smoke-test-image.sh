@@ -24,6 +24,8 @@ show_logs() {
   docker inspect -f '{{range .State.Health.Log}}{{.Start}} exit={{.ExitCode}} {{.Output}}{{end}}' "${NAME}-app"
   echo "----- application log -----"
   docker logs "${NAME}-app" 2>&1 | tail -n 200
+  echo "----- stand-in central unit ($(docker inspect -f '{{.State.Status}}' "${NAME}-central")) -----"
+  docker logs "${NAME}-central" 2>&1 | tail -n 50
 }
 
 echo "Smoke testing ${IMAGE} (${PLATFORM})..."
@@ -33,9 +35,10 @@ docker run -d --name "${NAME}-mqtt" --network "${NAME}" --network-alias mqtt \
   "${MOSQUITTO_IMAGE}" mosquitto -c /mosquitto-no-auth.conf > /dev/null
 
 # The stand-in central unit sends an acknowledge byte (0x0A) every 0.2s, which
-# acknowledges every message, so the application considers itself connected
+# acknowledges every message, so the application considers itself connected.
+# The command must not contain ':' or ',', socat splits the address on those.
 docker run -d --name "${NAME}-central" --network "${NAME}" --network-alias central \
-  "${SOCAT_IMAGE}" TCP-LISTEN:1234,fork,reuseaddr SYSTEM:'while :; do echo; sleep 0.2; done' > /dev/null
+  "${SOCAT_IMAGE}" TCP-LISTEN:1234,fork,reuseaddr SYSTEM:'while true; do echo; sleep 0.2; done' > /dev/null
 
 docker create --name "${NAME}-app" --platform "${PLATFORM}" --network "${NAME}" \
   -e TELETASK_CONFIGFILE=file:/tmp/config.json \
