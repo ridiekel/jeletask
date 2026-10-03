@@ -22,17 +22,14 @@ teletask:
   log:
     topic-enabled: true
     haconfig-enabled: true
-  db:
-    dir: ./.data
 
 spring:
   output:
     ansi:
       enabled: ALWAYS
-  boot:
-    admin:
-      client:
-        enabled: true
+  http:
+    reactiveclient:
+      connector: jdk
 
 logging:
   level:

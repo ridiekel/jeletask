@@ -230,10 +230,6 @@ Maybe this was a bug in one of their versions.
 | TELETASK_MQTT_RETAINED                           | Optional | false         | Indicates whether or not the messages should be retained by the broker                                                                                                      |
 | TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                                    |
 | TELETASK_MQTT_EXIT_ON_DISCONNECT                 | Optional | false         | Stop the container (return code 5) when the mqtt connection is lost. Make sure your restart config is set (always or unless-stopped).                                       |
-| TELETASK_DB_DIR                                  | Optional | /data         | The location for the database where all mqtt traffic is logged                                                                                                              |
-| TELETASK_TRACE_RETENTION                         | Optional | P30D          | Period to keep trace of published and received messages. ([Formatting](#duration-and-period-notation))                                                                      |
-| TELETASK_TRACE_CLEANUP_ENABLED                   | Optional | true          | Do a periodic cleanup of old messages.                                                                                                                                      |
-| TELETASK_TRACE_CLEANUP_INTERVAL                  | Optional | P1D           | When to check for old messages. ([Formatting](#duration-and-period-notation))                                                                                               |
 | TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                           |
 | TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL         | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds).                                                                                       |
 | TELETASK_PUBLISH_STATES_INTERVAL                 | Optional | 300           | How frequently the states are force refreshed (in seconds). A negative value disables the force refresh of states.                                                          |
@@ -242,37 +238,9 @@ Maybe this was a bug in one of their versions.
 | TELETASK_LOG_TOPIC_ENABLED                       | Optional | false         | (Advanced) Add the topic name to the log message                                                                                                                            |
 | LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_MQTT   | Optional | INFO          | (Advanced) log level of messages going from/to teletask central unit. <br/>Can be `ERROR` (least log messages), `WARN`, `INFO`, `DEBUG` or `TRACE` (extensive log messages) |
 | LOGGING_LEVEL_IO_GITHUB_RIDIEKEL_JELETASK_CLIENT | Optional | INFO          | (Advanced) log level of messages going from/to mqtt. <br/>Can be `ERROR` (least log messages), `WARN`, `INFO`, `DEBUG` or `TRACE` (extensive log messages)                  |
-| SPRING_SECURITY_USER_NAME                        | Optional | Random UUID   | The username with which you can login to the admin console.                                                                                                                 |
-| SPRING_SECURITY_USER_PASSWORD                    | Optional | Random UUID   | The password with which you can login to the admin console.                                                                                                                 |
 | SPRING_OUTPUT_ANSI_ENABLED                       | Optional | Always        | To disable log coloring, set this value to `Detect` or `Never`                                                                                                              |
 
-### Duration and Period notation
-
-|     Duration Type      |   ISO 8601 Format    |            Description             |
-|------------------------|----------------------|-------------------------------------|
-| 1 Day                  | P1D                  | Represents 1 day.                  |
-| 2 Weeks                | P2W                  | Represents 2 weeks (14 days).      |
-| 3 Months               | P3M                  | Represents 3 months.               |
-| 1 Year                 | P1Y                  | Represents 1 year.                 |
-| 1 Year and 2 Months    | P1Y2M                | Represents 1 year and 2 months.    |
-| 1 Day and 12 Hours     | P1DT12H              | Represents 1 day and 12 hours.     |
-| 5 Hours and 30 Minutes | PT5H30M              | Represents 5 hours and 30 minutes. |
-| 45 Minutes             | PT45M                | Represents 45 minutes.             |
-| 30 Seconds             | PT30S                | Represents 30 seconds.             |
-| 2 Days, 4 Hours,       | P2DT4H20M            | Represents 2 days, 4 hours, and    |
-| and 20 Minutes         |                      | 20 minutes.                        |
-
-See also: https://medium.com/@tbwin/mastering-iso-8601-durations-a-handy-cheat-sheet-for-developers-f40d79fd330c
-
 ## Docker run
-
-After starting the container, you should be able to login to the web admin console via:
-
-http://localhost:8080/
-
-I do advise adding a reverse proxy that provides https capabilities to expose the admin interface securely.
-
-More info about the admin interface can be found [here](#admin-interface)
 
 ### Versions
 
@@ -302,7 +270,6 @@ docker run --name jeletask2mqtt \
   -e TELETASK_CENTRAL_PORT="<teletask_central_port>" \
   -e TELETASK_CENTRAL_ID="<teletask_central_id>" \
   -e TELETASK_MQTT_HOST="<mqtt_host>" \
-  -p "8080:8080" \
   ridiekel/jeletask2mqtt:latest
 ```
 
@@ -331,21 +298,15 @@ services:
     restart: unless-stopped
     volumes:
       - $HOME/.jeletask/teletask2mqtt/config.json:/teletask2mqtt/config.json
-      - db_data:/data
     environment:
       TELETASK_CENTRAL_HOST: 192.168.0.123
       TELETASK_CENTRAL_PORT: 55957
       TELETASK_CENTRAL_ID: my_teletask
       TELETASK_MQTT_HOST: mqtt
-    ports:
-      - "8080:8080"
     depends_on:
       - mqtt
     networks:
       - jeletask
-
-volumes:
-  db_data:
 
 networks:
   jeletask:

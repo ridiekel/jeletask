@@ -29,7 +29,6 @@ import static com.codeborne.selenide.Selenide.$$;
 public class MockingTeletaskTestSupport extends TeletaskTestSupport {
     static {
         System.setProperty("teletask.test.startbrowser", "false");
-        System.setProperty("spring.boot.admin.client.enabled", "false");
     }
 
     @Autowired

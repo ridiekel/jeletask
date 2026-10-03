@@ -36,7 +36,6 @@ docker run -d --name "${NAME}-central" --network "${NAME}" --network-alias centr
 
 docker create --name "${NAME}-app" --platform "${PLATFORM}" --network "${NAME}" \
   -e TELETASK_CONFIGFILE=file:/tmp/config.json \
-  -e TELETASK_DB_DIR=/tmp/data \
   -e TELETASK_CENTRAL_HOST=central \
   -e TELETASK_CENTRAL_PORT=1234 \
   -e TELETASK_MQTT_HOST=mqtt \

@@ -14,104 +14,20 @@ teletask:
     clientId: "teletask2mqtt"
     prefix: "teletask2mqtt"
     discovery_prefix: "homeassistant"
-  trace:
-    retention: P10D
-    cleanup:
-      enabled: true
-      interval: P1D
-  db:
-    dir: /data
   log:
     haconfig-enabled: true
 
-sba:
-  server:
-    enabled: true
-
 spring:
-  http:
-    reactiveclient:
-      connector: jdk
   main:
     banner-mode: off
     lazy-initialization: true
   application:
     name: Teletask2MQTT
-  boot:
-    admin:
-      client:
-        url: http://localhost:8080/
-        username: ${spring.security.user.name}
-        password: ${spring.security.user.password}
-        instance:
-          name: ${spring.application.name}
-          metadata:
-            instanceId: ${spring.application.name}
-            user:
-              name: ${spring.security.user.name}
-              password: ${spring.security.user.password}
-      context-path: "/"
-  security:
-    user:
-      name: client
-      password: client
-  datasource:
-    url: jdbc:h2:file:${teletask.db.dir}/store;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-    hikari:
-      minimum-idle: 1
-      idle-timeout: 0
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
-        jdbc:
-          time_zone: UTC
-  thymeleaf:
-    check-template-location: false
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    baseline-version: 1
-    locations: classpath:db/migration
-    validate-on-migrate: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: '*'
-        exclude: 'caches'
-  endpoint:
-    health:
-      show-details: when_authorized
-      show-components: when_authorized
-    env:
-      show-values: when_authorized
-    configprops:
-      show-values: when_authorized
-    quartz:
-      show-values: when_authorized
-
-server:
-  tomcat:
-    threads:
-      max: 10
-  forward-headers-strategy: framework
 
 logging:
   pattern:
     console: "%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSS}){faint} %clr(%5p) %clr(---){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
   level:
-    org.hibernate.SQL: WARN
     io.github.ridiekel.jeletask: INFO
-    de.codecentric.boot.admin: WARN
 #    io.github.ridiekel.jeletask: DEBUG
 #    io.github.ridiekel.jeletask: TRACE
-    org.flywaydb: INFO
-    db.migration: INFO
