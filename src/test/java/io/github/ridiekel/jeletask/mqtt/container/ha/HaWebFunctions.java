@@ -211,7 +211,7 @@ public class HaWebFunctions {
         }
 
         protected SelenideElement closeButtonElement() {
-            return $$(Selectors.shadowDeepCss("ha-icon-button[dialogaction='cancel']")).get(0);
+            return $(Selectors.shadowDeepCss("ha-more-info-dialog ha-icon-button[slot='headerNavigationIcon']"));
         }
 
         public void openDetails() {
@@ -272,12 +272,17 @@ public class HaWebFunctions {
             return $$(Selectors.shadowDeepCss(baseCss + "input")).get(index);
         }
 
+        // The checkbox input of ha-switch is covered by its own control/thumb parts, so click the switch itself
+        protected SelenideElement switchElement() {
+            return $$(Selectors.shadowDeepCss(baseCss + "ha-switch")).get(index);
+        }
+
         protected SelenideElement textElement() {
             return $$(Selectors.shadowDeepCss(baseCss)).get(index);
         }
 
         public void toggle() {
-            this.controlElement().click();
+            this.switchElement().click();
         }
 
         public F shouldBeChecked() {
