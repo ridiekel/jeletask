@@ -27,6 +27,11 @@ case "${KIND}" in
       -Dspring-boot.build-image.imageName="${LOCAL_IMAGE}" \
       -Dspring-boot.build-image.imagePlatform="linux/${ARCH}" \
       -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-${ARCH}"
+    # Buildpacks cannot set a HEALTHCHECK, so it is added as metadata on top
+    docker build --platform "linux/${ARCH}" -t "${LOCAL_IMAGE}" - <<EOF
+FROM ${LOCAL_IMAGE}
+HEALTHCHECK --interval=30s --timeout=10s --start-period=2m --retries=3 CMD ["/cnb/process/web","--healthcheck"]
+EOF
     ;;
   *)
     echo "Unknown image kind: ${KIND}"

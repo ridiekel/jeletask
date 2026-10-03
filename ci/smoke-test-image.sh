@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Starts a built image next to an MQTT broker and a stand-in central unit, and
-# waits until the application reports that it has started.
+# waits until the image's HEALTHCHECK reports the container as healthy.
 #
 # Usage: ci/smoke-test-image.sh <image> <platform> [timeout-seconds]
 set -euo pipefail
@@ -20,6 +20,8 @@ cleanup() {
 trap cleanup EXIT
 
 show_logs() {
+  echo "----- health checks -----"
+  docker inspect -f '{{range .State.Health.Log}}{{.Start}} exit={{.ExitCode}} {{.Output}}{{end}}' "${NAME}-app"
   echo "----- application log -----"
   docker logs "${NAME}-app" 2>&1 | tail -n 200
 }
@@ -30,9 +32,10 @@ docker network create "${NAME}" > /dev/null
 docker run -d --name "${NAME}-mqtt" --network "${NAME}" --network-alias mqtt \
   "${MOSQUITTO_IMAGE}" mosquitto -c /mosquitto-no-auth.conf > /dev/null
 
-# The application only needs the central unit to accept TCP connections to start
+# The stand-in central unit sends an acknowledge byte (0x0A) every 0.2s, which
+# acknowledges every message, so the application considers itself connected
 docker run -d --name "${NAME}-central" --network "${NAME}" --network-alias central \
-  "${SOCAT_IMAGE}" -u TCP-LISTEN:1234,fork,reuseaddr /dev/null > /dev/null
+  "${SOCAT_IMAGE}" TCP-LISTEN:1234,fork,reuseaddr SYSTEM:'while :; do echo; sleep 0.2; done' > /dev/null
 
 docker create --name "${NAME}-app" --platform "${PLATFORM}" --network "${NAME}" \
   -e TELETASK_CONFIGFILE=file:/tmp/config.json \
@@ -44,10 +47,18 @@ docker cp src/test/resources/test-config.json "${NAME}-app:/tmp/config.json"
 docker start "${NAME}-app" > /dev/null
 
 for ((waited = 0; waited < TIMEOUT; waited += 5)); do
-  if docker logs "${NAME}-app" 2>&1 | grep -q "Teletask2Mqtt .* started!"; then
-    echo "Smoke test passed after ~${waited}s"
-    exit 0
-  fi
+  health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${NAME}-app")"
+  case "${health}" in
+    healthy)
+      echo "Smoke test passed: healthy after ~${waited}s"
+      exit 0
+      ;;
+    unhealthy | none)
+      echo "Smoke test failed: health status is ${health}"
+      show_logs
+      exit 1
+      ;;
+  esac
   if [ "$(docker inspect -f '{{.State.Running}}' "${NAME}-app")" != "true" ]; then
     echo "Smoke test failed: container stopped"
     show_logs
@@ -56,6 +67,6 @@ for ((waited = 0; waited < TIMEOUT; waited += 5)); do
   sleep 5
 done
 
-echo "Smoke test failed: not started within ${TIMEOUT}s"
+echo "Smoke test failed: not healthy within ${TIMEOUT}s"
 show_logs
 exit 1

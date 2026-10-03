@@ -9,6 +9,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.util.Arrays;
+
 @SpringBootApplication
 @EnableConfigurationProperties({Teletask2MqttConfigurationProperties.class})
 @EnableScheduling
@@ -17,6 +19,10 @@ public class Teletask2MqttApplication {
     private static final Logger LOG = LogManager.getLogger();
 
     static void main(String[] args) {
+        if (Arrays.asList(args).contains(HealthCheck.ARGUMENT)) {
+            System.exit(HealthCheck.getDefault().check(System.out));
+        }
+
         handleDeprecations();
 
         ApplicationContext context = SpringApplication.run(Teletask2MqttApplication.class, args);

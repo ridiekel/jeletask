@@ -1,6 +1,7 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.github.ridiekel.jeletask.HealthCheck;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
@@ -31,6 +32,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -58,6 +60,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private PingMesage pingMesage;
+    private volatile boolean lastPingSucceeded = true;
     private MqttClient mqttClient;
     @Getter
     private final String prefix;
@@ -291,6 +294,16 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             CONNECTED_STATUS.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
             publishConnectionStatus();
         }
+        writeHealth();
+    }
+
+    private void writeHealth() {
+        boolean mqttConnected = this.mqttClient != null && this.mqttClient.isConnected() && this.lastPingSucceeded;
+        try {
+            HealthCheck.getDefault().write(CONNECTED_STATUS.connected, mqttConnected);
+        } catch (IOException e) {
+            LOG.warn(() -> "Could not write health status: " + e.getMessage());
+        }
     }
 
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelayString = "15S")
@@ -300,7 +313,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             this.publish(What.PING, () -> padded("SEND"), getPingTopic(), StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage), LOG::debug);
             Awaitility.await("Waiting for ping response").atMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> Objects.nonNull(this.pingMesage.getReceived()));
             log(LOG::debug, What.PING, "CHECK", AnsiOutput.toString(AnsiColor.BLUE, this.pingMesage.received.toEpochMilli() - this.pingMesage.sent.toEpochMilli() + "ms  - ", AnsiColor.DEFAULT, StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage)));
+            this.lastPingSucceeded = true;
         } catch (Exception e) {
+            this.lastPingSucceeded = false;
             LOG.error(() -> "MQTT ping failed: " + e.getMessage());
         }
     }

@@ -317,7 +317,22 @@ Point the config to your mqtt instance.
 
 # Health check
 
-The service now sends an `online` message every minute.
+The service sends an `online` message every minute.
+
+Both images (`latest` and `latest-native`) have a Docker `HEALTHCHECK`, so `docker ps` shows the container as `healthy` or `unhealthy`.
+The container is healthy when:
+
+- it is connected to the central unit,
+- it is connected to the MQTT broker and the last MQTT ping (sent every minute) came back.
+
+The check starts after a grace period of 2 minutes and runs every 30 seconds; after 3 failed checks in a row the container is marked `unhealthy`.
+To see why, run:
+
+```shell
+docker inspect --format '{{json .State.Health}}' jeletask2mqtt
+```
+
+Docker itself does not restart an unhealthy container. Use an orchestrator or a tool such as [autoheal](https://github.com/willfarrell/docker-autoheal) if you want that.
 
 # HomeAssistant
 
