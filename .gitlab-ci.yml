@@ -280,7 +280,8 @@ docker-build-and-push-native-arm64:
       ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image \
         -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
         -Dspring-boot.build-image.imagePlatform=linux/arm64 \
-        -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=compatibility"
+        -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=compatibility" \
+        -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-arm64"
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       echo "Push both tags"
@@ -334,7 +335,8 @@ docker-build-and-push-native-arm64:
         -DskipTests \
         spring-boot:build-image \
         -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
-        -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}"
+        -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS="${BP_NATIVE_IMAGE_BUILD_ARGUMENTS}" \
+        -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-amd64${VERSION_SUFFIX}"
 
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       docker push "${IMAGE_VERSIONED}"
