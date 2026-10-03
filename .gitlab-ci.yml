@@ -13,6 +13,8 @@ stages:
   - test
   - visualize
   - release
+  - images
+  - publish
 
 test-job-amd64:
   stage: test
@@ -173,146 +175,67 @@ release-upload:
       when: on_success
       allow_failure: false
 
-docker-build-and-push:
-  resource_group: docker-image-build
-  stage: release
-  image: docker:latest
+# Every image variant is built and smoke tested in the local Docker daemon of the
+# docker-host runner. Nothing is pushed until all variants passed (publish-images).
+.build-image:
+  stage: images
   tags:
     - docker-host
-  services:
-    - name: docker:dind
-      command: ["--experimental"]
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
+  resource_group: docker-image-build
   needs:
     - job: create-release
       artifacts: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
+      when: on_success
+      allow_failure: false
+
+.build-image-jvm:
+  extends: .build-image
+  image: docker:latest
   before_script:
-    - |
-      apk add --no-cache bash curl jq
-      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      docker run --privileged --rm tonistiigi/binfmt --install all
-      docker buildx create --use --name multiarch
-      docker buildx inspect --bootstrap
-  script:
-    - |
-      set -euo pipefail
-      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
-      test -n "$TAG" || { echo "Could not find tag (scm_tag/CI_COMMIT_TAG)"; exit 1; }
-      VERSION="${TAG#${CI_PROJECT_NAME}-}"
-      echo "TAG=$TAG VERSION=$VERSION"
-      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
-      echo "IMAGE=$IMAGE"
-      docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE:latest" -t "$IMAGE:$VERSION" --push .
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
-      when: on_success
-      allow_failure: false
+    - apk add --no-cache bash
 
-docker-build-and-push-native-arm64:
-  resource_group: docker-image-build
-  stage: release
+.build-image-native:
+  extends: .build-image
   image: ridiekel/base-test:latest
-  tags:
-    - docker-host
-  timeout: 3h
-  needs:
-    - job: create-release
-      artifacts: true
-  script:
-    - |
-      set -euo pipefail
-      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
-      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
-      test -n "$TAG" || { echo "Could not find tag (scm_tag/CI_COMMIT_TAG)"; exit 1; }
-      VERSION="${TAG#${CI_PROJECT_NAME}-}"
-      echo "Version is: ${VERSION}"
-      IMAGE_VERSIONED="${IMAGE}:${VERSION}-native-arm64"
-      IMAGE_LATEST="${IMAGE}:latest-native-arm64"
-      echo "Versioned image name is: ${IMAGE_VERSIONED}"
-      echo "Latest image name is: ${IMAGE_LATEST}"
-      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      echo "Registering QEMU emulation for arm64..."
-      docker run --privileged --rm "${BINFMT_IMAGE}" --install arm64
-      echo "Running native arm64 build under emulation..."
-      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image \
-        -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
-        -Dspring-boot.build-image.imagePlatform=linux/arm64 \
-        -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-arm64"
-      ci/smoke-test-image.sh "${IMAGE_VERSIONED}" linux/arm64
-      echo "Tag latest"
-      docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
-      echo "Push both tags"
-      docker push "${IMAGE_VERSIONED}"
-      docker push "${IMAGE_LATEST}"
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
-      when: on_success
-      allow_failure: false
 
-docker-build-and-push-native-amd64:
-  resource_group: docker-image-build
-  stage: release
-  image: ridiekel/base-test:latest
-  tags:
-    - docker-host
-  needs:
-    - job: create-release
-      artifacts: true
+build-image-jvm-amd64:
+  extends: .build-image-jvm
   script:
-    - |
-      set -euo pipefail
-      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
-      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
-      test -n "$TAG" || { echo "Could not find tag (scm_tag/CI_COMMIT_TAG)"; exit 1; }
-      VERSION="${TAG#${CI_PROJECT_NAME}-}"
-      echo "Version is: ${VERSION}"
-      IMAGE_VERSIONED="${IMAGE}:${VERSION}-native-amd64"
-      echo "Versioned image name is: ${IMAGE_VERSIONED}"
-      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      echo "Running native amd64 build..."
-      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image \
-        -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
-        -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-amd64"
-      ci/smoke-test-image.sh "${IMAGE_VERSIONED}" linux/amd64
-      docker push "${IMAGE_VERSIONED}"
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
-      when: on_success
-      allow_failure: false
+    - ci/build-image.sh jvm amd64
 
-docker-publish-native-manifest:
-  stage: release
+build-image-jvm-arm64:
+  extends: .build-image-jvm
+  script:
+    - ci/build-image.sh jvm arm64
+
+build-image-native-amd64:
+  extends: .build-image-native
+  script:
+    - ci/build-image.sh native amd64
+
+build-image-native-arm64:
+  extends: .build-image-native
+  script:
+    - ci/build-image.sh native arm64
+
+publish-images:
+  stage: publish
   image: docker:latest
   tags:
     - docker-host
+  resource_group: docker-image-build
   needs:
     - job: create-release
       artifacts: true
-    - job: docker-build-and-push-native-amd64
-    - job: docker-build-and-push-native-arm64
+    - job: build-image-jvm-amd64
+    - job: build-image-jvm-arm64
+    - job: build-image-native-amd64
+    - job: build-image-native-arm64
   script:
-    - |
-      set -euo pipefail
-      IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
-      TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
-      test -n "$TAG" || { echo "Could not find tag (scm_tag/CI_COMMIT_TAG)"; exit 1; }
-      VERSION="${TAG#${CI_PROJECT_NAME}-}"
-      echo "Version is: ${VERSION}"
-      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      # One multi-arch native image; Docker picks amd64 or arm64 itself.
-      # The amd64 legacy tags (v1/v2/v3) are kept as aliases until users have moved to latest-native.
-      docker buildx imagetools create \
-        -t "${IMAGE}:${VERSION}-native" \
-        -t "${IMAGE}:latest-native" \
-        -t "${IMAGE}:latest-native-amd64" \
-        -t "${IMAGE}:latest-native-amd64-v1" \
-        -t "${IMAGE}:latest-native-amd64-v2" \
-        -t "${IMAGE}:latest-native-amd64-v3" \
-        "${IMAGE}:${VERSION}-native-amd64" \
-        "${IMAGE}:${VERSION}-native-arm64"
-      docker buildx imagetools inspect "${IMAGE}:${VERSION}-native"
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - ci/publish-images.sh
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
