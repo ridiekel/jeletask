@@ -44,7 +44,7 @@ stages:
 test-jvm:
   stage: test
   tags:
-    - docker
+    - docker-host
   image: ridiekel/base-test:latest
   script:
     - |
