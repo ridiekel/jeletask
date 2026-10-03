@@ -8,16 +8,10 @@ variables:
   TERM: xterm-256color
   # arm64 images are built on the amd64 runner under QEMU emulation (no arm64 runner needed)
   BINFMT_IMAGE: "tonistiigi/binfmt:qemu-v10.2.3"
-  BUILD_RUNNER:
-    value: "ridiekel"
-    options:
-      - "ridiekel"
-      - "docker-host"
-    description: "Runner tag for the release jobs: ridiekel (fast) or docker-host (slow)."
 
 default:
   tags:
-    - $BUILD_RUNNER
+    - ridiekel
 
 .any-runner:
   inherit:
@@ -194,7 +188,6 @@ release-upload:
   needs:
     - job: create-release
       artifacts: true
-    # The jar is linked to the release, so the release must exist first
     - job: create-gitlab-release
       artifacts: false
   before_script:
@@ -239,6 +232,10 @@ release-upload:
   needs:
     - job: create-release
       artifacts: true
+    - job: create-gitlab-release
+      artifacts: false
+    - job: release-upload
+      artifacts: false
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: on_success
