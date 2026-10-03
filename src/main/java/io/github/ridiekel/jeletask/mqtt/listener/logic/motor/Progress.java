@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 public class Progress {
@@ -20,9 +21,15 @@ public class Progress {
     private BigDecimal startMillisToFinish;
     private final MotorState state;
     private final BigDecimal millisPerStep;
+    private final LongSupplier clock;
     private Long startTimeMillis;
 
     public Progress(Integer intervalMilliseconds, MotorState state) {
+        this(intervalMilliseconds, state, System::currentTimeMillis);
+    }
+
+    Progress(Integer intervalMilliseconds, MotorState state, LongSupplier clock) {
+        this.clock = clock;
         this.intervalMillis = BigDecimal.valueOf(intervalMilliseconds.longValue());
         this.state = state;
         this.startPosition = BigDecimal.valueOf(state.getCurrentPosition());
@@ -37,7 +44,7 @@ public class Progress {
                     ? Direction.UP : Direction.DOWN;
             this.startMillisToFinish = state.getSecondsToFinish().multiply(THOUSAND);
         }
-        this.startTimeMillis = System.currentTimeMillis();
+        this.startTimeMillis = clock.getAsLong();
     }
 
     private final BigDecimal startPosition;
@@ -50,7 +57,7 @@ public class Progress {
             this.state.setSecondsToFinish(BigDecimal.ZERO.setScale(3, RoundingMode.UNNECESSARY));
             return;
         }
-        long nowMillis = System.currentTimeMillis();
+        long nowMillis = this.clock.getAsLong();
         try {
             BigDecimal elapsedMillis = BigDecimal.valueOf(nowMillis - this.startTimeMillis);
             BigDecimal estimatedStepsMoved = elapsedMillis

@@ -26,11 +26,12 @@ class End2EndDimmerTest extends MockingTeletaskTestSupport {
 
 
         ha().web().dimmer(9).openDetails();
+        // HA clamps the brightness slider to its minimum (1) when the light is off
         teletask().dimmer(9).turnOn();
         teletask().dimmer(9).turnOff();
 
         ha().web().dimmer(9)
-                .shouldHaveSliderState("0")
+                .shouldHaveSliderState("1")
                 .shouldHaveValidSliderRange()
                 .shouldHaveHeaderStateText("Off");
 
@@ -41,7 +42,7 @@ class End2EndDimmerTest extends MockingTeletaskTestSupport {
 
         teletask().dimmer(9).turnOff();
         ha().web().dimmer(9)
-                .shouldHaveSliderState("0")
+                .shouldHaveSliderState("1")
                 .shouldHaveHeaderStateText("Off");
 
         teletask().dimmer(9).brightness(66);
@@ -59,7 +60,7 @@ class End2EndDimmerTest extends MockingTeletaskTestSupport {
         //Test to see if we get previous state when turning on after the dimmer has a previous state
         teletask().dimmer(9).turnOff();
         ha().web().dimmer(9)
-                .shouldHaveSliderState("0")
+                .shouldHaveSliderState("1")
                 .shouldHaveHeaderStateText("Off");
 
         teletask().dimmer(9).turnOn();
