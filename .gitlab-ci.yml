@@ -55,6 +55,7 @@ test-job-arm64:
       CID=$(docker create --platform linux/arm64 \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v jeletask-m2-arm64:/m2 \
+        -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
         -w /src --entrypoint bash "${GRAALVM_ARM64_IMAGE}" \
         -c "microdnf install -y unzip findutils > /dev/null && ./mvnw $MAVEN_CLI_OPTS -Dmaven.repo.local=/m2/repository -PnativeTest verify")
       docker cp "${CI_PROJECT_DIR}/." "${CID}:/src"
