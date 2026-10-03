@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +41,7 @@ import java.util.function.Consumer;
 @Service
 public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClient {
     private static final Logger LOG = LogManager.getLogger();
+    private static final int CONNECT_TIMEOUT_MILLIS = 5000;
 
     private Socket socket;
     @Getter
@@ -58,6 +60,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicBoolean starting = new AtomicBoolean(false);
+    private final AtomicBoolean stopping = new AtomicBoolean(false);
 
     @Autowired
     public TeletaskClientImpl(CentralUnit centralUnit) {
@@ -191,7 +194,11 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
                 .pollInSameThread()
                 .pollInterval(1, TimeUnit.SECONDS)
                 .atMost(10, TimeUnit.MINUTES)
-                .until(() -> this.connect(host, port));
+                .until(() -> this.stopping.get() || this.connect(host, port));
+
+        if (this.stopping.get()) {
+            throw new IllegalStateException("Stopped while connecting to the central unit");
+        }
     }
 
     public void restart() {
@@ -219,6 +226,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     @Override
     public void disconnect() {
+        this.stopping.set(true);
         this.started.set(false);
         // Parts are null when the client never connected, e.g. when the application stops during startup
         if (this.keepAliveTimer != null) {
@@ -360,7 +368,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private Socket createSocket(String host, int port) throws IOException {
-        return new Socket(host, port);
+        Socket newSocket = new Socket();
+        newSocket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MILLIS);
+        return newSocket;
     }
 
     private void startKeepAlive() {
