@@ -76,7 +76,7 @@ sonarqube-analysis:
   before_script:
     - source "${SDKMAN_DIR}/bin/sdkman-init.sh"
   script:
-    - mvn $MAVEN_CLI_OPTS sonar:sonar -Dmaven.test.failure.ignore=true
+    - ./mvnw $MAVEN_CLI_OPTS sonar:sonar -Dmaven.test.failure.ignore=true
   allow_failure: true
   rules:
     - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
