@@ -5,10 +5,13 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.function.LongSupplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProgressTest {
+    private static final long NOW = 1_000_000L;
+    private static final LongSupplier CLOCK = () -> NOW;
 
     @Test
     void update_doesNothingWhenDirectionStop() {
@@ -17,7 +20,7 @@ class ProgressTest {
         motorState.setRequestedPosition(25);
         motorState.setSecondsToFinish(new BigDecimal("5.0"));
 
-        Progress progress = new Progress(500, motorState);
+        Progress progress = new Progress(500, motorState, CLOCK);
 
         progress.update();
 
@@ -34,8 +37,8 @@ class ProgressTest {
         motorState.setRequestedPosition(20);
         motorState.setSecondsToFinish(new BigDecimal("10.0"));
 
-        Progress progress = new Progress(500, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 3000L);
+        Progress progress = new Progress(500, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 3000L);
 
         progress.update();
 
@@ -52,8 +55,8 @@ class ProgressTest {
         motorState.setRequestedPosition(80);
         motorState.setSecondsToFinish(new BigDecimal("5.0"));
 
-        Progress progress = new Progress(200, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 2000L);
+        Progress progress = new Progress(200, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 2000L);
 
         progress.update();
 
@@ -70,8 +73,8 @@ class ProgressTest {
         motorState.setRequestedPosition(50);
         motorState.setSecondsToFinish(new BigDecimal("6.0"));
 
-        Progress progress = new Progress(250, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 9000L);
+        Progress progress = new Progress(250, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 9000L);
 
         progress.update();
 
@@ -85,8 +88,8 @@ class ProgressTest {
         motorState.setRequestedPosition(11);
         motorState.setSecondsToFinish(new BigDecimal("1.0"));
 
-        Progress progress = new Progress(200, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 850L);
+        Progress progress = new Progress(200, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 850L);
 
         progress.update();
 
@@ -101,8 +104,8 @@ class ProgressTest {
         motorState.setRequestedPosition(120);
         motorState.setSecondsToFinish(new BigDecimal("1.0"));
 
-        Progress progress = new Progress(500, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 5000L);
+        Progress progress = new Progress(500, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 5000L);
 
         progress.update();
 
@@ -118,8 +121,8 @@ class ProgressTest {
         motorState.setRequestedPosition(-10);
         motorState.setSecondsToFinish(new BigDecimal("1.0"));
 
-        Progress progress = new Progress(400, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 4000L);
+        Progress progress = new Progress(400, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 4000L);
 
         progress.update();
 
@@ -135,7 +138,7 @@ class ProgressTest {
         motorState.setRequestedPosition(10);
         motorState.setSecondsToFinish(BigDecimal.ZERO);
 
-        Progress progress = new Progress(250, motorState);
+        Progress progress = new Progress(250, motorState, CLOCK);
 
         progress.update();
 
@@ -150,9 +153,9 @@ class ProgressTest {
         motorState.setRequestedPosition(70);
         motorState.setSecondsToFinish(new BigDecimal("20.0"));
 
-        Progress progress = new Progress(1000, motorState);
+        Progress progress = new Progress(1000, motorState, CLOCK);
         progress.setLastPosition(60);
-        progress.setStartTimeMillis(System.currentTimeMillis());
+        progress.setStartTimeMillis(NOW);
 
         progress.update();
 
@@ -167,8 +170,8 @@ class ProgressTest {
         motorState.setRequestedPosition(100);
         motorState.setSecondsToFinish(new BigDecimal("5.0"));
 
-        Progress progress = new Progress(100, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 10000L);
+        Progress progress = new Progress(100, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 10000L);
 
         progress.update();
 
@@ -184,8 +187,8 @@ class ProgressTest {
         motorState.setRequestedPosition(0);
         motorState.setSecondsToFinish(new BigDecimal("5.0"));
 
-        Progress progress = new Progress(100, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 10000L);
+        Progress progress = new Progress(100, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 10000L);
 
         progress.update();
 
@@ -201,7 +204,7 @@ class ProgressTest {
         motorState.setRequestedPosition(100);
         motorState.setSecondsToFinish(new BigDecimal("12.5"));
 
-        Progress progress = new Progress(333, motorState);
+        Progress progress = new Progress(333, motorState, CLOCK);
 
         assertEquals(0, new BigDecimal("333").compareTo(progress.getIntervalMillis()));
         assertEquals(0, new BigDecimal("12500").compareTo(progress.getStartMillisToFinish()));
@@ -217,7 +220,7 @@ class ProgressTest {
         motorState.setRequestedPosition(0);
         motorState.setSecondsToFinish(BigDecimal.ZERO);
 
-        Progress progress = new Progress(100, motorState);
+        Progress progress = new Progress(100, motorState, CLOCK);
 
         String json = progress.toString();
 
@@ -232,7 +235,7 @@ class ProgressTest {
         motorState.setRequestedPosition(0);
         motorState.setSecondsToFinish(BigDecimal.ZERO);
 
-        Progress progress = new Progress(100, motorState);
+        Progress progress = new Progress(100, motorState, CLOCK);
 
         String pretty = progress.prettyString();
 
@@ -246,7 +249,7 @@ class ProgressTest {
         motorState.setRequestedPosition(25);
         motorState.setSecondsToFinish(new BigDecimal("5.0"));
 
-        Progress progress = new Progress(500, motorState);
+        Progress progress = new Progress(500, motorState, CLOCK);
 
         progress.update();
 
@@ -261,8 +264,8 @@ class ProgressTest {
         motorState.setRequestedPosition(20);
         motorState.setSecondsToFinish(new BigDecimal("10.0"));
 
-        Progress progress = new Progress(500, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 3000L);
+        Progress progress = new Progress(500, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 3000L);
 
         progress.update();
 
@@ -277,8 +280,8 @@ class ProgressTest {
         motorState.setRequestedPosition(30);
         motorState.setSecondsToFinish(new BigDecimal("5.0"));
 
-        Progress progress = new Progress(500, motorState);
-        progress.setStartTimeMillis(System.currentTimeMillis() - 7000L);
+        Progress progress = new Progress(500, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - 7000L);
 
         progress.update();
 
@@ -292,7 +295,7 @@ class ProgressTest {
         motorState.setRequestedPosition(100);
         motorState.setSecondsToFinish(new BigDecimal("12.5"));
 
-        Progress progress = new Progress(333, motorState);
+        Progress progress = new Progress(333, motorState, CLOCK);
 
         assertEquals(0, new BigDecimal("333").compareTo(progress.getIntervalMillis()));
         assertEquals(0, new BigDecimal("125").compareTo(progress.getMillisPerStep()));
