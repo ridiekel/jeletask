@@ -13,7 +13,9 @@ variables:
   # docker-host (obiwan). When ridiekel is off, they wait; run the pipeline manually
   # with BUILD_RUNNER=docker-host to send them to obiwan instead. The JVM tests and
   # reports run on ridiekel or obiwan, whichever is free, so branch pipelines
-  # (renovate) do not wait for ridiekel.
+  # (renovate) do not wait for ridiekel. The JVM tests need Docker (Testcontainers),
+  # so they ask for the 'docker' tag, which both ridiekel and obiwan's docker-host
+  # runner have.
   BUILD_RUNNER:
     value: "ridiekel"
     options:
@@ -40,8 +42,9 @@ stages:
   - publish
 
 test-jvm:
-  extends: .any-runner
   stage: test
+  tags:
+    - docker
   image: ridiekel/base-test:latest
   script:
     - |
