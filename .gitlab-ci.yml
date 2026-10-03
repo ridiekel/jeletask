@@ -4,8 +4,9 @@ variables:
   TELETASK_TEST_TEMPDIR: "/cache/jeletask"
   DOCKERHUB_IMAGE: "ridiekel/jeletask2mqtt"
   TERM: xterm-256color
-  GRAALVM_VERSION: "25-graalce"
-  MAVEN_VERSION: "3.9.12"
+  # arm64 builds run on the amd64 runner under QEMU emulation (no arm64 runner needed)
+  GRAALVM_ARM64_IMAGE: "ghcr.io/graalvm/native-image-community:25i4-25.0.4.1.1"
+  BINFMT_IMAGE: "tonistiigi/binfmt:qemu-v10.2.3"
 
 stages:
   - test
@@ -42,19 +43,33 @@ test-job-amd64:
 
 test-job-arm64:
   stage: prerelease
+  image: ridiekel/base-test:latest
   tags:
-    - arm64
+    - amd64
+  timeout: 3h
   script:
     - |
-      MAVEN_OPTS=""
-      echo "Installing graalvm if not yet present"
-      sdk install java ${GRAALVM_VERSION}
-      sdk use java ${GRAALVM_VERSION}
-      echo "Installing maven if not yet present"
-      sdk install maven ${MAVEN_VERSION}
-      sdk use maven ${MAVEN_VERSION}
-      echo "Running native arm64 tests..."
-      ./mvnw $MAVEN_CLI_OPTS -PnativeTest verify
+      echo "Registering QEMU emulation for arm64..."
+      docker run --privileged --rm "${BINFMT_IMAGE}" --install arm64
+      echo "Running native arm64 tests under emulation..."
+      CID=$(docker create --platform linux/arm64 \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v jeletask-m2-arm64:/m2 \
+        -w /src --entrypoint bash "${GRAALVM_ARM64_IMAGE}" \
+        -c "microdnf install -y unzip findutils > /dev/null && ./mvnw $MAVEN_CLI_OPTS -Dmaven.repo.local=/m2/repository -PnativeTest verify")
+      docker cp "${CI_PROJECT_DIR}/." "${CID}:/src"
+      EXIT_CODE=0
+      docker start -a "${CID}" || EXIT_CODE=$?
+      mkdir -p target
+      docker cp "${CID}:/src/target/." target/ || true
+      docker rm -f "${CID}"
+      exit ${EXIT_CODE}
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+        - target/failsafe-reports/TEST-*.xml
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\]prepare release.*/
       when: manual
@@ -245,8 +260,10 @@ docker-build-and-push:
 
 docker-build-and-push-native-arm64:
   stage: release
+  image: ridiekel/base-test:latest
   tags:
-    - arm64
+    - amd64
+  timeout: 3h
   needs:
     - job: create-release
       artifacts: true
@@ -254,26 +271,23 @@ docker-build-and-push-native-arm64:
       artifacts: true
   script:
     - |
-      echo "TAG=$TAG VERSION=$VERSION"
+      set -euo pipefail
       IMAGE="${DOCKERHUB_IMAGE:-${DOCKERHUB_USERNAME}/${CI_PROJECT_NAME}}"
-      MAVEN_OPTS=""
-      echo "Installing graalvm if not yet present"
-      sdk install java ${GRAALVM_VERSION}
-      sdk use java ${GRAALVM_VERSION}
-      echo "Installing maven if not yet present"
-      sdk install maven ${MAVEN_VERSION}
-      sdk use maven ${MAVEN_VERSION}
       TAG="${scm_tag:-${CI_COMMIT_TAG:-}}"
       test -n "$TAG" || { echo "Could not find tag (scm_tag/CI_COMMIT_TAG)"; exit 1; }
       VERSION="${TAG#${CI_PROJECT_NAME}-}"
       echo "Version is: ${VERSION}"
-      IMAGE_VERSIONED="${DOCKERHUB_IMAGE}:${VERSION}-native-arm64"
-      IMAGE_LATEST="${DOCKERHUB_IMAGE}:latest-native-arm64"
+      IMAGE_VERSIONED="${IMAGE}:${VERSION}-native-arm64"
+      IMAGE_LATEST="${IMAGE}:latest-native-arm64"
       echo "Versioned image name is: ${IMAGE_VERSIONED}"
       echo "Latest image name is: ${IMAGE_LATEST}"
       echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      echo "Running native arm64 build..."
-      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}"
+      echo "Registering QEMU emulation for arm64..."
+      docker run --privileged --rm "${BINFMT_IMAGE}" --install arm64
+      echo "Running native arm64 build under emulation..."
+      ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image \
+        -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
+        -Dspring-boot.build-image.imagePlatform=linux/arm64
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       echo "Push both tags"
