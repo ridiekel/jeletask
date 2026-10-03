@@ -174,6 +174,17 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 log(LOG::info, What.CONNECTION, "STATUS", String.format("Connected to MQTT (reconnect=%s, brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", reconnect, brokerUrl, clientId, username, password != null));
+                if (reconnect) {
+                    // A restarted broker may have lost our session. Subscribing again is harmless when it did not.
+                    // Not in this callback thread: blocking client calls from a callback can deadlock.
+                    EXECUTOR.execute(() -> {
+                        try {
+                            subscribe();
+                        } catch (MqttException e) {
+                            log(LOG::error, What.CONNECTION, "STATUS", "Could not subscribe again after reconnect: " + e.getMessage());
+                        }
+                    });
+                }
             }
 
             @Override
