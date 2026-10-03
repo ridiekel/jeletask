@@ -1,4 +1,6 @@
 variables:
+  # Maven repository and wrapper distribution live on the runner's persistent /cache volume
+  MAVEN_USER_HOME: "/cache/.m2"
   MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=/cache/.m2/repository -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
   MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Dstyle.color=always"
   TELETASK_TEST_TEMPDIR: "/cache/jeletask"
@@ -13,10 +15,6 @@ stages:
   - visualize
   - prerelease
   - release
-
-cache:
-  paths:
-    - ./.m2/repository
 
 test-job-amd64:
   stage: test
@@ -55,7 +53,7 @@ test-job-arm64:
       CID=$(docker create --platform linux/arm64 \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v jeletask-m2-arm64:/m2 \
-        -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
+        -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -e MAVEN_USER_HOME=/m2 \
         --network host -e TESTCONTAINERS_HOST_OVERRIDE=localhost \
         -w /src --entrypoint bash "${GRAALVM_ARM64_IMAGE}" \
         -c "microdnf install -y unzip findutils > /dev/null && ./mvnw $MAVEN_CLI_OPTS -Dmaven.repo.local=/m2/repository -PnativeTest verify")
@@ -281,7 +279,8 @@ docker-build-and-push-native-arm64:
       echo "Running native arm64 build under emulation..."
       ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image \
         -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
-        -Dspring-boot.build-image.imagePlatform=linux/arm64
+        -Dspring-boot.build-image.imagePlatform=linux/arm64 \
+        -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS="-march=compatibility"
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       echo "Push both tags"
