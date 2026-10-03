@@ -332,8 +332,6 @@ To see why, run:
 docker inspect --format '{{json .State.Health}}' jeletask2mqtt
 ```
 
-Docker itself does not restart an unhealthy container. Use an orchestrator or a tool such as [autoheal](https://github.com/willfarrell/docker-autoheal) if you want that.
-
 # HomeAssistant
 
 Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions and digital inputs.
