@@ -44,7 +44,11 @@ public class HAConfig<T extends HAConfig<T>> {
 
         this.configureDevice(parameters);
 
-        this.viaDevice(parameters.getViaDevice().map(HAConfig::getDeviceIdentifier).orElse(this.getDeviceIdentifier()));
+        // HA (2026.9+) rejects a device that is its own via_device, e.g. the bridge itself or every component when publishing as one device
+        parameters.getViaDevice()
+                .map(HAConfig::getDeviceIdentifier)
+                .filter(via -> !via.equals(this.getDeviceIdentifier()))
+                .ifPresent(this::viaDevice);
     }
 
     private void configureDevice(HAConfigParameters parameters) {
