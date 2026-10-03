@@ -6,14 +6,12 @@ variables:
   TELETASK_TEST_TEMPDIR: "/cache/jeletask"
   DOCKERHUB_IMAGE: "ridiekel/jeletask2mqtt"
   TERM: xterm-256color
-  # arm64 builds run on the amd64 runner under QEMU emulation (no arm64 runner needed)
-  GRAALVM_ARM64_IMAGE: "ghcr.io/graalvm/native-image-community:25i4-25.0.4.1.1"
+  # arm64 images are built on the amd64 runner under QEMU emulation (no arm64 runner needed)
   BINFMT_IMAGE: "tonistiigi/binfmt:qemu-v10.2.3"
 
 stages:
   - test
   - visualize
-  - prerelease
   - release
 
 test-job-amd64:
@@ -38,42 +36,6 @@ test-job-amd64:
   rules:
     - if: $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
       when: always
-
-test-job-arm64:
-  stage: prerelease
-  image: ridiekel/base-test:latest
-  tags:
-    - docker-host
-  timeout: 3h
-  script:
-    - |
-      echo "Registering QEMU emulation for arm64..."
-      docker run --privileged --rm "${BINFMT_IMAGE}" --install arm64
-      echo "Running native arm64 tests under emulation..."
-      CID=$(docker create --platform linux/arm64 \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v jeletask-m2-arm64:/m2 \
-        -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -e MAVEN_USER_HOME=/m2 \
-        --network host -e TESTCONTAINERS_HOST_OVERRIDE=localhost \
-        -w /src --entrypoint bash "${GRAALVM_ARM64_IMAGE}" \
-        -c "microdnf install -y unzip findutils > /dev/null && ./mvnw $MAVEN_CLI_OPTS -Dmaven.repo.local=/m2/repository -PnativeTest verify")
-      docker cp "${CI_PROJECT_DIR}/." "${CID}:/src"
-      EXIT_CODE=0
-      docker start -a "${CID}" || EXIT_CODE=$?
-      mkdir -p target
-      docker cp "${CID}:/src/target/." target/ || true
-      docker rm -f "${CID}"
-      exit ${EXIT_CODE}
-  artifacts:
-    when: always
-    reports:
-      junit:
-        - target/surefire-reports/TEST-*.xml
-        - target/failsafe-reports/TEST-*.xml
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\]prepare release.*/
-      when: on_success
-      allow_failure: false
 
 sonarqube-analysis:
   image: ridiekel/base-test:latest
@@ -113,9 +75,6 @@ code-coverage-report-conversion:
 create-release:
   stage: release
   image: ridiekel/base-test:latest
-  needs:
-    - job: test-job-arm64
-      artifacts: true
   before_script:
     - |
       echo "Configuring..."
@@ -261,8 +220,6 @@ docker-build-and-push-native-arm64:
   needs:
     - job: create-release
       artifacts: true
-    - job: test-job-arm64
-      artifacts: true
   script:
     - |
       set -euo pipefail
@@ -283,6 +240,7 @@ docker-build-and-push-native-arm64:
         -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
         -Dspring-boot.build-image.imagePlatform=linux/arm64 \
         -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-arm64"
+      ci/smoke-test-image.sh "${IMAGE_VERSIONED}" linux/arm64
       echo "Tag latest"
       docker tag "${IMAGE_VERSIONED}" "${IMAGE_LATEST}"
       echo "Push both tags"
@@ -317,6 +275,7 @@ docker-build-and-push-native-amd64:
       ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests spring-boot:build-image \
         -Dspring-boot.build-image.imageName="${IMAGE_VERSIONED}" \
         -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-amd64"
+      ci/smoke-test-image.sh "${IMAGE_VERSIONED}" linux/amd64
       docker push "${IMAGE_VERSIONED}"
   rules:
     - if: $CI_COMMIT_BRANCH == 'master' && $CI_COMMIT_TITLE !~ /^\[maven-release-plugin\].*/
