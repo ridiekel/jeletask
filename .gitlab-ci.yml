@@ -8,6 +8,20 @@ variables:
   TERM: xterm-256color
   # arm64 images are built on the amd64 runner under QEMU emulation (no arm64 runner needed)
   BINFMT_IMAGE: "tonistiigi/binfmt:qemu-v10.2.3"
+  # GitLab has no runner preference: a job goes to whichever matching runner asks first.
+  # So the whole pipeline asks for one runner by tag. The default is the desktop PC
+  # (much faster); when it is off, jobs wait. Run the pipeline manually with
+  # docker-host to send it to obiwan instead.
+  BUILD_RUNNER:
+    value: "ridiekel"
+    options:
+      - "ridiekel"
+      - "docker-host"
+    description: "Runner tag for every job: ridiekel (desktop PC, fast) or docker-host (obiwan)."
+
+default:
+  tags:
+    - $BUILD_RUNNER
 
 stages:
   - test
@@ -19,8 +33,6 @@ stages:
 test-job-amd64:
   stage: test
   image: ridiekel/base-test:latest
-  tags:
-    - docker-host
   script:
     - |
       echo "Running native amd64 tests..."
@@ -176,11 +188,9 @@ release-upload:
       allow_failure: false
 
 # Every image variant is built and smoke tested in the local Docker daemon of the
-# docker-host runner. Nothing is pushed until all variants passed (publish-images).
+# runner ($BUILD_RUNNER). Nothing is pushed until all variants passed (publish-images).
 .build-image:
   stage: images
-  tags:
-    - docker-host
   resource_group: docker-image-build
   needs:
     - job: create-release
@@ -223,8 +233,6 @@ build-image-native-arm64:
 publish-images:
   stage: publish
   image: docker:latest
-  tags:
-    - docker-host
   resource_group: docker-image-build
   needs:
     - job: create-release
