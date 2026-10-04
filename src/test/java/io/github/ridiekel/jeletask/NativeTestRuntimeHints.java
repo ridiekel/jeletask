@@ -79,10 +79,11 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
     }
 
     //Needed for now because otherwise the test containers library does not create a network alias for mqtt
+    //docker-java's api classes are the Docker responses that the shaded jackson in test containers deserializes reflectively
     private static void registerTestContainersHints(RuntimeHints hints) {
         hints.resources().registerPattern("org/testcontainers/**");
 
-        try (var result = new ClassGraph().acceptPackages("org.testcontainers", "com.codeborne").enableClassInfo().scan()) {
+        try (var result = new ClassGraph().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
                     hints.reflection().registerType(classInfo.loadClass(), MemberCategory.values());
