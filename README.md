@@ -259,6 +259,9 @@ If the native image fails, use the following (but slower and more resource hungr
 
     ridiekel/jeletask2mqtt:latest
 
+Both images run as a non-root user (the JVM image since 6.1.1, as user `65532`), so the mounted `config.json` must be readable by other users (for example `chmod 644 config.json`).
+The JVM image is distroless: it contains no shell, so `docker exec -it jeletask2mqtt sh` does not work.
+
 ### Command line
 
 You should be able to run using following minimal command:
