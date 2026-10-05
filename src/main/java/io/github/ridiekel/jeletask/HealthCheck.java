@@ -16,7 +16,8 @@ import java.util.Properties;
  * The running application periodically writes its connection status to a file. Running the
  * application with {@code --healthcheck} reads that file without starting Spring and exits with
  * 0 when healthy, 1 otherwise. This works in images without a shell or HTTP client (native).
- * The JVM image checks the same file with a shell command in its Dockerfile: keep both in sync.
+ * The JVM image runs {@link #main} instead, from this class alone, so a check does not pay for
+ * opening the Spring Boot jar: keep this class free of dependencies outside the JDK.
  */
 public final class HealthCheck {
     public static final String ARGUMENT = "--healthcheck";
@@ -35,6 +36,10 @@ public final class HealthCheck {
 
     public static HealthCheck getDefault() {
         return DEFAULT;
+    }
+
+    static void main(String[] args) {
+        System.exit(DEFAULT.check(System.out));
     }
 
     public void write(boolean teletaskConnected, boolean mqttConnected) throws IOException {

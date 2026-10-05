@@ -12,6 +12,7 @@ ENV JAVA_HOME=/opt/java
 COPY --from=jre /jre ${JAVA_HOME}
 ENV JAVA_TOOL_OPTIONS="--enable-native-access=ALL-UNNAMED -Xms64m -Xmx64m -XX:+UseParallelGC"
 COPY --from=jre /build/app.jar /app.jar
-# No shell in distroless, so the check runs the application with --healthcheck (see HealthCheck.java)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=2m --retries=3 CMD ["/opt/java/bin/java","-jar","/app.jar","--healthcheck"]
+# No shell in distroless; the check class runs on its own, without opening the Spring Boot jar
+COPY --from=jre /build/BOOT-INF/classes/io/github/ridiekel/jeletask/HealthCheck.class /healthcheck/io/github/ridiekel/jeletask/
+HEALTHCHECK --interval=30s --timeout=10s --start-period=2m --retries=3 CMD ["/opt/java/bin/java","-cp","/healthcheck","io.github.ridiekel.jeletask.HealthCheck"]
 ENTRYPOINT ["/opt/java/bin/java","-jar","/app.jar"]
