@@ -50,12 +50,19 @@ public class LongPressInputCaptor {
     public void stopPress(ComponentSpec component) {
         Captor captor = getCaptor(component);
 
-        if (captor.getStartPressTime() != null) {
+        Captor snapshot;
+        // The long press timer and the release both end up here. Resetting right away makes sure only the first one publishes.
+        synchronized (captor) {
+            if (captor.getStartPressTime() == null) {
+                return;
+            }
             logConditional("STOPPED", component, captor);
             captor.stopPress();
-            this.publishPressEvent(component, captor.createSnapshot());
-            this.publishResetState(component, captor);
+            snapshot = captor.createSnapshot();
+            captor.reset();
         }
+        this.publishPressEvent(component, snapshot);
+        this.publishResetState(component, snapshot);
     }
 
     private void publishPressEvent(ComponentSpec input, Captor captor) {
@@ -69,16 +76,16 @@ public class LongPressInputCaptor {
 
             logConditional("STATE_RESET", input, resetState);
             this.processor.publishState(input, resetState);
-
-            captor.reset();
         }, 50, TimeUnit.MILLISECONDS);
     }
 
 
     public void startPress(ComponentSpec component) {
         Captor captor = this.getCaptor(component);
-        captor.startPress(() -> this.stopPress(component));
-        logConditional("STARTED", component, captor);
+        synchronized (captor) {
+            captor.startPress(() -> this.stopPress(component));
+            logConditional("STARTED", component, captor);
+        }
     }
 
     private void logConditional(String action, ComponentSpec input, Captor captor) {
@@ -206,7 +213,7 @@ public class LongPressInputCaptor {
 
     private static class RunningTimer implements Runnable {
         private final Runnable onTimeout;
-        private boolean running;
+        private volatile boolean running;
 
         public RunningTimer(Runnable onTimeout) {
             this.onTimeout = onTimeout;
