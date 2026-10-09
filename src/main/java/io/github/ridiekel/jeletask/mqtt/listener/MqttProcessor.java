@@ -204,7 +204,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     public MqttConnectOptions connectOptions(String username, char[] password) {
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName(username);
-        options.setPassword(password);
+        if (password != null) {
+            options.setPassword(password);
+        }
         options.setAutomaticReconnect(true);
         options.setCleanSession(false);
         options.setKeepAliveInterval(10);
