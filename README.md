@@ -227,7 +227,7 @@ Maybe this was a bug in one of their versions.
 | TELETASK_MQTT_PASSWORD                           | Optional | <empty>       | The MQTT broker password                                                                                                                                                    |
 | TELETASK_MQTT_CLIENTID                           | Optional | teletask2mqtt | The client id used for connecting to MQTT                                                                                                                                   |
 | TELETASK_MQTT_PREFIX                             | Optional | teletask2mqtt | The MQTT message topic prefix                                                                                                                                               |
-| TELETASK_MQTT_RETAINED                           | Optional | false         | Indicates whether or not the messages should be retained by the broker                                                                                                      |
+| TELETASK_MQTT_RETAINED                           | Optional | false         | Whether state messages are retained by the broker. Discovery config and availability are always retained, the ping never.                                                   |
 | TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                                    |
 | TELETASK_MQTT_EXIT_ON_DISCONNECT                 | Optional | false         | Stop the container (return code 5) when the mqtt connection is lost. Make sure your restart config is set (always or unless-stopped).                                       |
 | TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                           |
@@ -322,6 +322,7 @@ Point the config to your mqtt instance.
 
 The service sends an `online` message every minute.
 This availability message is always retained, regardless of `TELETASK_MQTT_RETAINED`.
+The Home Assistant discovery config is always retained as well, so Home Assistant finds the entities after a restart even when the bridge is reconnecting at that moment.
 When the service disappears without disconnecting (crash, kill, network or power loss), the broker publishes `offline` as the last will, so Home Assistant marks all entities unavailable.
 
 Both images (`latest` and `latest-native`) have a Docker `HEALTHCHECK`, so `docker ps` shows the container as `healthy` or `unhealthy`.

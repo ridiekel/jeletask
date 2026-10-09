@@ -274,6 +274,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                     getLoggingStringForComponent(component),
                     config.topic(),
                     config.message(),
+                    // Always retained, so Home Assistant finds the entities even when it misses our reaction to its birth message.
+                    true,
                     this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug
             );
             try {
@@ -300,6 +302,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                     getLoggingStringForComponent(component),
                     config.topic(),
                     "",
+                    // Retained, an empty retained message is what clears the retained config.
+                    true,
                     this.getConfiguration().getLog().isHaconfigEnabled() ? LOG::info : LOG::debug
             );
             try {
@@ -338,7 +342,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     public void pingMqtt() {
         try {
             this.pingMesage = new PingMesage(Instant.now());
-            this.publish(What.PING, () -> padded("SEND"), getPingTopic(), StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage), LOG::debug);
+            // Never retained, otherwise the old ping comes back on resubscribe and passes for an answer.
+            this.publish(What.PING, () -> padded("SEND"), getPingTopic(), StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage), false, LOG::debug);
             Awaitility.await("Waiting for ping response").atMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> Objects.nonNull(this.pingMesage.getReceived()));
             log(LOG::debug, What.PING, "CHECK", AnsiOutput.toString(AnsiColor.BLUE, this.pingMesage.received.toEpochMilli() - this.pingMesage.sent.toEpochMilli() + "ms  - ", AnsiColor.DEFAULT, StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage)));
             this.lastPingSucceeded = true;
