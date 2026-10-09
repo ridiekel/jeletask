@@ -51,6 +51,9 @@ import static io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAC
 public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private static final Logger LOG = LogManager.getLogger();
 
+    private static final String ONLINE = "online";
+    private static final String OFFLINE = "offline";
+
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9_-]");
 
     private final CentralUnit centralUnit;
@@ -153,14 +156,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
         this.mqttClient = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
 
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setUserName(username);
-        options.setPassword(password);
-        options.setAutomaticReconnect(true);
-        options.setCleanSession(false);
-        options.setKeepAliveInterval(10);
-        options.setConnectionTimeout(5);
-        options.setMaxReconnectDelay(10000);
+        MqttConnectOptions options = this.connectOptions(username, password);
 
         this.mqttClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -183,6 +179,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                         } catch (MqttException e) {
                             log(LOG::error, What.CONNECTION, "STATUS", "Could not subscribe again after reconnect: " + e.getMessage());
                         }
+                        // The broker published our last will when the connection dropped, so overwrite it right away.
+                        publishConnectionStatus();
                     });
                 }
             }
@@ -197,6 +195,23 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         });
 
         this.mqttClient.connect(options);
+    }
+
+    /**
+     * The last will marks every entity unavailable in Home Assistant when the bridge disappears without disconnecting
+     * (crash, kill, network or power loss). The broker sends it once the keep alive expires.
+     */
+    public MqttConnectOptions connectOptions(String username, char[] password) {
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setUserName(username);
+        options.setPassword(password);
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(false);
+        options.setKeepAliveInterval(10);
+        options.setConnectionTimeout(5);
+        options.setMaxReconnectDelay(10000);
+        options.setWill(this.getAvailabilityTopic(), OFFLINE.getBytes(), 1, true);
+        return options;
     }
 
     private void subscribe() throws MqttException {
@@ -353,7 +368,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     public void publishConnectionStatus() {
         try {
             LOG.debug("Publishing connection status: " + State.OBJECT_MAPPER.writeValueAsString(CONNECTED_STATUS));
-            this.publish(What.ONLINE, () -> padded("BRIDGE"), HAConfigParameters.availabilityTopic(this.getBaseTopic()), CONNECTED_STATUS.getState(), LOG::debug);
+            // Always retained, otherwise a retained last will keeps saying offline.
+            this.publish(What.ONLINE, () -> padded("BRIDGE"), this.getAvailabilityTopic(), CONNECTED_STATUS.getState(), true, LOG::debug);
         } catch (JsonProcessingException e) {
             LOG.error(e);
         }
@@ -379,12 +395,16 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     private void publish(MqttLogger.What what, Supplier<String> logString, String topic, String message, Consumer<String> level) {
+        this.publish(what, logString, topic, message, this.getConfiguration().getMqtt().isRetained(), level);
+    }
+
+    private void publish(MqttLogger.What what, Supplier<String> logString, String topic, String message, boolean retained, Consumer<String> level) {
         String logStringValue = logString.get();
         try {
             if (this.mqttClient.isConnected()) {
                 MqttMessage mqttMessage = new MqttMessage(message.getBytes());
                 mqttMessage.setQos(0);
-                mqttMessage.setRetained(this.getConfiguration().getMqtt().isRetained());
+                mqttMessage.setRetained(retained);
 
 
                 level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message)));
@@ -399,6 +419,10 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private String getBaseTopic() {
         return this.prefix + "/" + this.teletaskIdentifier;
+    }
+
+    public String getAvailabilityTopic() {
+        return HAConfigParameters.availabilityTopic(this.getBaseTopic());
     }
 
     @Override
@@ -419,7 +443,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
         @SuppressWarnings("unused")
         public String getState() {
-            return isConnected() ? "online" : "offline";
+            return isConnected() ? ONLINE : OFFLINE;
         }
     }
 

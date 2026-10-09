@@ -321,6 +321,8 @@ Point the config to your mqtt instance.
 # Health check
 
 The service sends an `online` message every minute.
+This availability message is always retained, regardless of `TELETASK_MQTT_RETAINED`.
+When the service disappears without disconnecting (crash, kill, network or power loss), the broker publishes `offline` as the last will, so Home Assistant marks all entities unavailable.
 
 Both images (`latest` and `latest-native`) have a Docker `HEALTHCHECK`, so `docker ps` shows the container as `healthy` or `unhealthy`.
 The container is healthy when:
