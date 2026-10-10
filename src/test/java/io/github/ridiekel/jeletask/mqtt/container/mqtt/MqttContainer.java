@@ -96,9 +96,20 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             return connected;
         });
 
+        try {
+            // Left behind by an earlier run, the bridge should clear it when it starts
+            mqttClient.publish(staleConfigTopicBeforeStartup(), "{}".getBytes(), 1, true);
+        } catch (MqttException e) {
+            throw new RuntimeException(e);
+        }
+
         this.followOutput(new RedirectingSlf4jLogConsumer(this.getClass(), AnsiColor.BLUE, "mqtt-container-log"));
 
         LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "MQTT started and test client connected", AnsiColor.DEFAULT));
+    }
+
+    public String staleConfigTopicBeforeStartup() {
+        return "homeassistant/switch/" + this.mqttProcessor.getTeletaskIdentifier() + "/relay_998/config";
     }
 
     public MqttProcessor processor() {

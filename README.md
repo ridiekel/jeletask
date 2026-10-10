@@ -323,6 +323,9 @@ Point the config to your mqtt instance.
 The service sends an `online` message every minute.
 This availability message is always retained, regardless of `TELETASK_MQTT_RETAINED`.
 The Home Assistant discovery config is always retained as well, so Home Assistant finds the entities after a restart even when the bridge is reconnecting at that moment.
+On startup the service clears the retained config of components that are no longer in its configuration, so Home Assistant removes those entities instead of bringing them back.
+To also find its old config after `TELETASK_CENTRAL_ID`, `TELETASK_MQTT_PREFIX` or `TELETASK_MQTT_DISCOVERY_PREFIX` changed, it keeps the list of config topics it published retained on `teletask2mqtt/bridges/<TELETASK_MQTT_CLIENTID>/discovery`.
+This does not work when `TELETASK_MQTT_CLIENTID` changes as well.
 When the service disappears without disconnecting (crash, kill, network or power loss), the broker publishes `offline` as the last will, so Home Assistant marks all entities unavailable.
 
 Both images (`latest` and `latest-native`) have a Docker `HEALTHCHECK`, so `docker ps` shows the container as `healthy` or `unhealthy`.

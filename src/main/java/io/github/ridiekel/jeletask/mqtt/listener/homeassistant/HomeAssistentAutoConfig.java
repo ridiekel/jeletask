@@ -31,6 +31,17 @@ public class HomeAssistentAutoConfig {
         this.teletaskIdentifier = teletaskIdentifier;
     }
 
+    /**
+     * Matches the config topic of every component this bridge publishes, and of none published by another bridge.
+     */
+    public String configTopicFilter() {
+        return String.format("%s/+/%s/+/config", discoveryPrefix(this.configuration), this.teletaskIdentifier);
+    }
+
+    private static String discoveryPrefix(Teletask2MqttConfigurationProperties configuration) {
+        return Optional.ofNullable(configuration.getMqtt().getDiscoveryPrefix()).orElse("homeassistant");
+    }
+
     public HAConfig<?> toConfig(ComponentSpec component) {
         return Optional.ofNullable(component)
                 .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
@@ -147,7 +158,7 @@ public class HomeAssistentAutoConfig {
         private String createConfigTopic(Teletask2MqttConfigurationProperties configuration, ComponentSpec c, String haNodeId) {
             //<discovery_prefix>/<component>/[<node_id>/]<object_id>/config
             return String.format("%s/%s/%s/%s/config",
-                    Optional.ofNullable(configuration.getMqtt().getDiscoveryPrefix()).orElse("homeassistant"),
+                    discoveryPrefix(configuration),
                     haComponent(c),
                     haNodeId,
                     haObjectId(c)

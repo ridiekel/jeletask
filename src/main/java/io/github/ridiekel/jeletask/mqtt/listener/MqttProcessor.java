@@ -1,6 +1,7 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.ridiekel.jeletask.HealthCheck;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttLogger.*;
 import static io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters.componentTopic;
@@ -61,6 +64,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private static final ConnectedStatus CONNECTED_STATUS = new ConnectedStatus();
     private final HomeAssistentAutoConfig homeAssistentAutoConfig;
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    private static final long STALE_CONFIG_COLLECT_MILLIS = 1000;
 
     private PingMesage pingMesage;
     private volatile boolean lastPingSucceeded = true;
@@ -128,6 +132,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     public void startup() {
         try {
             this.configureAndConnectMqtt();
+            this.removeStaleConfig();
             this.publishConfig();
             this.subscribe();
             this.teletaskClient.groupGet();
@@ -292,6 +297,77 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     public void refreshStates() {
         this.teletaskClient.groupGet();
+    }
+
+    /**
+     * Clears the retained config of components that are no longer configured, or whose Home Assistant type changed.
+     * Otherwise the broker keeps handing them to Home Assistant, which brings the entities back after every restart.
+     * <p>
+     * Finds the old config in two ways: the retained config topics with the node id of this bridge, and the list of
+     * config topics this bridge published last time. That list survives a change of the central id or the prefixes,
+     * because it is kept under the MQTT client id.
+     */
+    public void removeStaleConfig() throws MqttException {
+        Set<String> current = this.centralUnit.getAllComponents().stream()
+                .map(component -> this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic().topic())
+                .collect(Collectors.toSet());
+
+        Set<String> previous = ConcurrentHashMap.newKeySet();
+        String filter = this.homeAssistentAutoConfig.configTopicFilter();
+        String discoveryTopicsTopic = this.getDiscoveryTopicsTopic();
+        this.mqttClient.subscribe(filter, 0, (topic, message) -> {
+            // An empty payload means the config was cleared already
+            if (message.isRetained() && message.getPayload().length > 0) {
+                previous.add(topic);
+            }
+        });
+        this.mqttClient.subscribe(discoveryTopicsTopic, 0, (_, message) -> {
+            if (message.isRetained() && message.getPayload().length > 0) {
+                previous.addAll(readDiscoveryTopics(message));
+            }
+        });
+        try {
+            // The broker sends the retained messages right after subscribing, give it a moment to send them all
+            Thread.sleep(STALE_CONFIG_COLLECT_MILLIS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            this.mqttClient.unsubscribe(new String[]{filter, discoveryTopicsTopic});
+        }
+
+        previous.stream()
+                .filter(topic -> !current.contains(topic))
+                // Only ever clear config topics, whatever ended up in the list
+                .filter(topic -> topic.endsWith("/config"))
+                .sorted()
+                .forEach(topic -> this.publish(What.CONFIG, () -> padded("STALE"), topic, "", true, LOG::info));
+
+        this.publishDiscoveryTopics(current);
+    }
+
+    private static List<String> readDiscoveryTopics(MqttMessage message) {
+        try {
+            return StringUtilities.OBJECT_MAPPER.readValue(message.getPayload(), new TypeReference<>() {
+            });
+        } catch (IOException e) {
+            LOG.warn(() -> "Ignoring the list of previously published discovery topics, it is not readable: " + e.getMessage());
+            return List.of();
+        }
+    }
+
+    private void publishDiscoveryTopics(Set<String> topics) {
+        try {
+            this.publish(What.CONFIG, () -> padded("TOPICS"), this.getDiscoveryTopicsTopic(), StringUtilities.OBJECT_MAPPER.writeValueAsString(topics.stream().sorted().toList()), true, LOG::debug);
+        } catch (JsonProcessingException e) {
+            LOG.error(e);
+        }
+    }
+
+    /**
+     * Not based on the central id or the prefixes, so it can still be found after those changed.
+     */
+    public String getDiscoveryTopicsTopic() {
+        return "teletask2mqtt/bridges/" + removeInvalid(this.getConfiguration().getMqtt().getClientId(), "teletask2mqtt") + "/discovery";
     }
 
     public void removeConfig() {
