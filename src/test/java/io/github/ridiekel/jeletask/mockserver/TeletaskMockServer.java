@@ -1,16 +1,17 @@
 package io.github.ridiekel.jeletask.mockserver;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
+import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.*;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
+import io.github.ridiekel.jeletask.client.builder.message.messages.impl.SetMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.*;
-import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types.HASensorConfig;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -112,11 +113,6 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("temperature")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
-
-            for (int i = -200; i <= 300; i++) {
-                BigDecimal value = BigDecimal.valueOf(i).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
-                e.with(c.getFunction(), c.getNumber()).when(set(new TemperatureState(value))).thenRespond(new TemperatureState(value));
-            }
         });
     }
 
@@ -147,79 +143,16 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         LOG.info("Finsihed creating mocks ({})!", mocks.size());
     }
 
-    private static <T> List<T> withNull(Collection<T> values) {
-        ArrayList<T> list = new ArrayList<>(values);
-        list.add(null);
-        return Collections.unmodifiableList(list);
-    }
-
-    private static List<BigDecimal> precomputedTemps(ComponentSpec componentSpec) {
-        List<BigDecimal> temps = new ArrayList<>();
-        int step = (int) (componentSpec.getHA_temperature_step() * 10);
-        int start = HASensorConfig.TEMPERATURE_MINIMUM * 10;
-        int end = HASensorConfig.TEMPERATURE_MAXIMUM * 10;
-        for (int temp = start; temp <= end; temp += step) {
-            temps.add(BigDecimal.valueOf(temp).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP));
-        }
-        return temps;
-    }
-
     private void mockTemperatureControlSensor(ExpectationBuilder e) {
-        final List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR)
+        this.centralUnit.getComponents(Function.SENSOR)
                 .filter(c -> "temperaturecontrol".equalsIgnoreCase(c.getType()))
-                .toList();
-
-        final List<TemperatureControlStateCalculator.ValidTemperatureControlMode> modes = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlMode.class));
-        final List<TemperatureControlStateCalculator.ValidTemperatureControlSpeed> speeds = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlSpeed.class));
-        final List<TemperatureControlStateCalculator.ValidTemperatureControlPreset> presets = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlPreset.class));
-        final List<TemperatureControlStateCalculator.ValidTemperatureControlAction> actions = withNull(EnumSet.allOf(TemperatureControlStateCalculator.ValidTemperatureControlAction.class));
-
-        for (ComponentSpec c : components) {
-            final List<BigDecimal> temps = precomputedTemps(c);
-
-            c.setState(defaultTemperatureControlStateBuilder().build());
-
-            TemperatureControlState off = defaultTemperatureControlStateBuilder()
-                    .state(OnOffToggleStateCalculator.ValidOnOffToggle.OFF)
-                    .mode(TemperatureControlStateCalculator.ValidTemperatureControlMode.OFF)
-                    .build();
-            e.with(c.getFunction(), c.getNumber()).when(set(off)).thenRespond(off);
-
-            for (BigDecimal currentTemp : temps) {
-                for (BigDecimal targetTemp : temps) {
-                    for (TemperatureControlStateCalculator.ValidTemperatureControlMode mode : modes) {
-                        for (TemperatureControlStateCalculator.ValidTemperatureControlSpeed speed : speeds) {
-                            for (TemperatureControlStateCalculator.ValidTemperatureControlPreset preset : presets) {
-                                for (TemperatureControlStateCalculator.ValidTemperatureControlAction action : actions) {
-                                    TemperatureControlState auto = defaultTemperatureControlStateBuilder()
-                                            .state(OnOffToggleStateCalculator.ValidOnOffToggle.ON)
-                                            .mode(mode)
-                                            .preset(preset)
-                                            .fanspeed(speed)
-                                            .action(action)
-                                            .targetTemperature(targetTemp)
-                                            .currentTemperature(currentTemp)
-                                            .build();
-                                    e.with(c.getFunction(), c.getNumber()).when(set(auto)).thenRespond(auto);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                .forEach(c -> c.setState(defaultTemperatureControlStateBuilder().build()));
     }
-
 
     private void mockHumiditySensor(ExpectationBuilder e) {
         List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("humidity")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
-
-            for (int i = 0; i <= 100; i++) {
-                BigDecimal value = BigDecimal.valueOf(i);
-                e.with(c.getFunction(), c.getNumber()).when(set(new HumidityState(value))).thenRespond(new HumidityState(value));
-            }
         });
     }
 
@@ -382,7 +315,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                             MockServerCommand command = new MockServerCommand(message);
                             LOG.trace(() -> String.format("Created mock command: %s", command));
 
-                            List<Supplier<MockServerResponse>> responses = getMocks().get(command.toString());
+                            List<Supplier<MockServerResponse>> responses = Optional.ofNullable(getMocks().get(command.toString())).orElseGet(() -> echoSensorState(message));
                             if (responses != null) {
                                 LOG.trace(() -> String.format("Got command responses from mocks. Size: %s", responses.size()));
                                 responses.forEach(response -> {
@@ -444,6 +377,16 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
         }
         LOG.debug("Stopped test server.");
+    }
+
+    /**
+     * A sensor reports back the state it was set to, so the mocks don't need every possible state up front.
+     */
+    private static List<Supplier<MockServerResponse>> echoSensorState(MessageSupport message) {
+        if (message instanceof SetMessage set && set.getFunction() == Function.SENSOR) {
+            return List.of(() -> (centralUnit, _) -> centralUnit.getMessageHandler().createResponseEventMessageForTesting(centralUnit, set.getFunction(), new MessageHandler.OutputState(set.getNumber(), set.getState())));
+        }
+        return null;
     }
 
     public Map<String, List<Supplier<MockServerResponse>>> getMocks() {
