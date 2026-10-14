@@ -60,8 +60,8 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
         try (var result = new ClassGraph().acceptPackages("org.openqa.selenium").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
-                    hints.reflection().registerType(classInfo.loadClass(), MemberCategory.values());
-                } catch (Exception e) {
+                    hints.reflection().registerType(Class.forName(classInfo.getName(), false, NativeTestRuntimeHints.class.getClassLoader()), MemberCategory.values());
+                } catch (Exception | LinkageError e) {
                     System.out.println(e.getMessage());
                 }
             });
@@ -86,8 +86,8 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
         try (var result = new ClassGraph().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
-                    hints.reflection().registerType(classInfo.loadClass(), MemberCategory.values());
-                } catch (Exception e) {
+                    hints.reflection().registerType(Class.forName(classInfo.getName(), false, NativeTestRuntimeHints.class.getClassLoader()), MemberCategory.values());
+                } catch (Exception | LinkageError e) {
                     System.out.println(e.getMessage());
                 }
             });
