@@ -252,7 +252,7 @@
     <scm>
         <connection>scm:git:git@github.com:ridiekel/jeletask.git</connection>
         <developerConnection>scm:git:git@github.com:ridiekel/jeletask.git</developerConnection>
-        <url>https://github.com/ridiekel/jeletask/tree/master</url>
+        <url>https://github.com/ridiekel/jeletask/tree/main</url>
         <tag>HEAD</tag>
     </scm>
 
