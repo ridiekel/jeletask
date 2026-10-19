@@ -176,6 +176,7 @@
                 <configuration>
                     <buildArgs>
                         <buildArg>-march=compatibility</buildArg>
+                        <buildArg>--initialize-at-build-time=io.github.classgraph.vfs.VfsFileSystemProvider</buildArg>
                     </buildArgs>
                 </configuration>
             </plugin>
