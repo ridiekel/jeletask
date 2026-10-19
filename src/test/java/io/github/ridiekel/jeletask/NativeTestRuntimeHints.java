@@ -47,7 +47,7 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
         hints.resources().registerPattern("META-INF/defaultservices/com.codeborne.selenide.impl.WebElementSelector");
         hints.resources().registerPattern("META-INF/defaultservices/com.codeborne.selenide.proxy.SelenideProxyServerFactory");
 
-        try (ScanResult sr = new ClassGraph().scan()) {
+        try (ScanResult sr = new ClassGraph().enableClasspath().scan()) {
             for (Resource r : sr.getResourcesWithExtension("js")) {
                 hints.resources().registerPattern(r.getPath());
             }
@@ -57,7 +57,7 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
         }
 
         hints.proxies().registerJdkProxy(SelenideElement.class);
-        try (var result = new ClassGraph().acceptPackages("org.openqa.selenium").enableClassInfo().scan()) {
+        try (var result = new ClassGraph().enableClasspath().acceptPackages("org.openqa.selenium").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
                     hints.reflection().registerType(Class.forName(classInfo.getName(), false, NativeTestRuntimeHints.class.getClassLoader()), MemberCategory.values());
@@ -83,7 +83,7 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
     private static void registerTestContainersHints(RuntimeHints hints) {
         hints.resources().registerPattern("org/testcontainers/**");
 
-        try (var result = new ClassGraph().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne").enableClassInfo().scan()) {
+        try (var result = new ClassGraph().enableClasspath().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
                     hints.reflection().registerType(Class.forName(classInfo.getName(), false, NativeTestRuntimeHints.class.getClassLoader()), MemberCategory.values());
