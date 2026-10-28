@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -252,6 +253,14 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 "\n\t", AnsiColor.GREEN, "Response:",
                 "\n", AnsiColor.BRIGHT_GREEN, StringUtilities.indent(StringUtilities.prettyString(result)),
                 "\n", AnsiColor.BRIGHT_CYAN, "\tcurl -X POST \\\n\t\t-H 'Authorization: Bearer " + BEARER + "' \\\n\t\t-H 'Content-Type: application/json' \\\n\t\t-d '" + body + "' " + apiUrl + uri + " | jq .", AnsiColor.DEFAULT));
+    }
+
+    public void callService(String domain, String service, Map<String, Object> data) {
+        String uri = "/services/" + domain + "/" + service;
+
+        LOG.info(AnsiOutput.toString("[", AnsiColor.YELLOW, "POST", AnsiColor.DEFAULT, "] " + apiUrl + uri, " - ", AnsiColor.BRIGHT_WHITE, data, AnsiColor.DEFAULT));
+
+        haWebClient.post().uri(uri).bodyValue(data).retrieve().toBodilessEntity().block();
     }
 
     public Entity state(Function function, int number, String type) {

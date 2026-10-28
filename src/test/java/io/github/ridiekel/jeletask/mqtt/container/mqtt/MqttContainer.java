@@ -155,6 +155,14 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
         }
     }
 
+    public void publish(String topic, String payload) {
+        try {
+            this.mqttClient.publish(topic, payload.getBytes(), 1, false);
+        } catch (MqttException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Integer getPort() {
         return this.getFirstMappedPort();
     }

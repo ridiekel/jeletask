@@ -364,6 +364,21 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         }
     }
 
+    /**
+     * Sends an event as if the state changed on the central unit itself, e.g. on a wall panel.
+     */
+    public void sendEvent(Function function, int number, State<?> state) {
+        EventMessage eventMessage = centralUnit.getMessageHandler().createResponseEventMessageForTesting(centralUnit, function, new MessageHandler.OutputState(number, state));
+        RESPONSE_EXECUTOR.execute(() -> {
+            try {
+                TeletaskMockServer.this.outputStream.write(eventMessage.getRawBytes());
+                TeletaskMockServer.this.outputStream.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     public void stop() {
         LOG.debug("Stopping test server...");
         try {
