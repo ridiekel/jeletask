@@ -337,7 +337,8 @@ instead of aborting the whole state message; the attribute is then left out of t
 | ECO_OFFSET   | Store a new eco offset (eco = day − offset), pass `eco_preset_offset`               |
 
 The preset actions only change the stored preset temperatures; they never switch a thermostat on.
-Day/night are sent as 1 byte `(°C + 40) × 2`. The eco offset is sent in steps of 0.5 °C (`offset × 2`):
+Day/night are sent as 1 byte `(°C + 40) × 2`, so they must be between -40 and 87.5 °C; the eco offset must be between
+0 and 127.5 °C. A value outside that range, or a missing value, is rejected and nothing is sent. The eco offset is sent in steps of 0.5 °C (`offset × 2`):
 the DoIP manual (TDS15132) says `× 10`, but a MICROS+ stored 15.0 °C when sent 30 (reports do use `× 10`).
 
 ```
@@ -359,7 +360,8 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 | FROST             | Change to frost protection preset                                |
 | MANUAL            | Leave the presets: re-sends the current target temperature      |
 
-Turning an OFF thermostat back on (e.g. by choosing a preset or mode in Home Assistant) first sends `ON`.
+Choosing a mode, fan speed or preset on an OFF thermostat (e.g. in Home Assistant) sends `ON` first and then the
+chosen mode, fan speed or preset. `{"state":"ON"}` on its own turns the thermostat back on in its previous mode.
 
 | For operation mode change | Description                    |
 |---------------------------|--------------------------------|

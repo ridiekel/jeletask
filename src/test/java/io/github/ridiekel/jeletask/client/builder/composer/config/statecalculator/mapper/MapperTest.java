@@ -76,6 +76,17 @@ class MapperTest {
         assertEquals("No value for key 'UNKNOWN'. The mapper has following keys: {ON=22, OFF=23}", npe.getMessage());
     }
 
+    @Test
+    void toEnumOrNull_knownKey_returnsEnum() {
+        assertEquals(State.OFF, mapper.toEnumOrNull(converter.convert(23)));
+    }
+
+    @Test
+    void toEnumOrNull_unknownKey_returnsNull() {
+        // e.g. 0 for "no active preset" in a TEMPERATURECONTROL event
+        assertNull(mapper.toEnumOrNull(converter.convert(0)));
+    }
+
     private void assertRoundTrip(State state, int numeric) {
         // toBytes should encode the numeric value with our converter
         byte[] expected = converter.convert(numeric);

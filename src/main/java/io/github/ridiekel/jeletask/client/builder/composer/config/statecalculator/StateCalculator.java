@@ -3,6 +3,8 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 
+import java.util.List;
+
 public interface StateCalculator<S extends State<?>> {
     S fromEvent(ComponentSpec component, byte[] dataBytes);
 
@@ -21,6 +23,18 @@ public interface StateCalculator<S extends State<?>> {
     S stateFromMessage(String message);
 
     byte[] toCommand(ComponentSpec component, S state);
+
+    /**
+     * The states to send, in order, for one requested state. Most components need a single command; override this when
+     * the central unit needs more than one, e.g. switching a thermostat on before changing its mode.
+     *
+     * @param component The component the state is sent to, holding its current state.
+     * @param state     The requested state.
+     * @return The states to convert with {@link #toCommand(ComponentSpec, State)} and send one after the other.
+     */
+    default List<S> toCommandStates(ComponentSpec component, S state) {
+        return List.of(state);
+    }
 
     /**
      * Only used during testing. I added this here for convenience.

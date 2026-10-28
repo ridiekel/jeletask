@@ -1,9 +1,13 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.SensorType;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureControlStateCalculator.ValidTemperatureControlPreset;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadOnlyConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -13,9 +17,7 @@ import java.util.stream.Collectors;
  * <a href="https://www.home-assistant.io/integrations/sensor.mqtt/">MQTT Sensor Discovery</a>
  */
 public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
-
-    public static final int TEMPERATURE_MINIMUM = 10;
-    public static final int TEMPERATURE_MAXIMUM = 30;
+    private static final Logger LOG = LogManager.getLogger();
 
     public HASensorConfig(HAConfigParameters parameters) {
         super(parameters);
@@ -88,17 +90,10 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("action_template", """
                     {% if value_json.state == 'OFF' %}off{% elif (value_json.output_state | int(0)) % 2 == 1 %}{{ 'cooling' if value_json.mode == 'COOL' else 'heating' }}{% else %}idle{% endif %}
                     """);
-            // label -> Teletask preset, e.g. "Manual=MANUAL,Comfort=DAY". A missing preset in the state means MANUAL.
-            Map<String, String> presets = new LinkedHashMap<>();
-            for (String entry : Optional.ofNullable(parameters.getComponentSpec().getHA_preset_modes()).orElse("").split(",")) {
-                if (!entry.isBlank()) {
-                    String[] parts = entry.split("=", 2);
-                    presets.put(parts[0].trim(), (parts.length > 1 ? parts[1] : parts[0]).trim().toUpperCase());
-                }
-            }
+            Map<String, String> presets = presetModes(parameters);
             if (!presets.isEmpty()) {
-                String toLabel = presets.entrySet().stream().map(e -> "'" + e.getValue() + "': '" + e.getKey() + "'").collect(Collectors.joining(", ", "{", "}"));
-                String toPreset = presets.entrySet().stream().map(e -> "'" + e.getKey() + "': '" + e.getValue() + "'").collect(Collectors.joining(", ", "{", "}"));
+                String toLabel = presets.entrySet().stream().map(e -> jinjaString(e.getValue()) + ": " + jinjaString(e.getKey())).collect(Collectors.joining(", ", "{", "}"));
+                String toPreset = presets.entrySet().stream().map(e -> jinjaString(e.getKey()) + ": " + jinjaString(e.getValue())).collect(Collectors.joining(", ", "{", "}"));
                 this.putArray("preset_modes", presets.keySet().toArray(String[]::new));
                 this.put("preset_mode_state_topic", "~/state");
                 this.put("preset_mode_command_topic", "~/set");
@@ -135,5 +130,32 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
 
     private static boolean isType(HAConfigParameters parameters, SensorType expected) {
         return expected == SensorType.from(parameters.getComponentSpec());
+    }
+
+    /**
+     * label -> Teletask preset, e.g. "Manual=MANUAL,Comfort=DAY". A missing preset in the state means MANUAL.
+     * Unknown presets and the label "none" (reserved by HA) are left out, so HA does not reject the whole entity.
+     */
+    private static Map<String, String> presetModes(HAConfigParameters parameters) {
+        Map<String, String> presets = new LinkedHashMap<>();
+        for (String entry : Optional.ofNullable(parameters.getComponentSpec().getHA_preset_modes()).orElse("").split(",")) {
+            if (!entry.isBlank()) {
+                String[] parts = entry.split("=", 2);
+                String label = parts[0].trim();
+                String preset = (parts.length > 1 ? parts[1] : parts[0]).trim().toUpperCase();
+                if (Arrays.stream(ValidTemperatureControlPreset.values()).noneMatch(p -> p.name().equals(preset))) {
+                    LOG.warn("Ignoring ha_preset_modes entry '{}' of sensor {}: unknown preset '{}', expected one of {}", entry, parameters.getComponentSpec().getNumber(), preset, Arrays.toString(ValidTemperatureControlPreset.values()));
+                } else if (label.equalsIgnoreCase("none")) {
+                    LOG.warn("Ignoring ha_preset_modes entry '{}' of sensor {}: Home Assistant reserves the label 'none'", entry, parameters.getComponentSpec().getNumber());
+                } else {
+                    presets.put(label, preset);
+                }
+            }
+        }
+        return presets;
+    }
+
+    private static String jinjaString(String value) {
+        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'";
     }
 }

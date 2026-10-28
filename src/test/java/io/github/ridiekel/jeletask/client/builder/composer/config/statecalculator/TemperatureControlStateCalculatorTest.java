@@ -7,6 +7,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureStateCalculator.bigDecimalToBytes;
 
@@ -71,22 +72,72 @@ class TemperatureControlStateCalculatorTest {
         Assertions.assertThat(command).hasSize(3);
     }
 
-    @Test
-    void turningOnFromOffSendsOn() {
-        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+    private static ComponentSpec component(OnOffToggleStateCalculator.ValidOnOffToggle current) {
         ComponentSpec component = component();
-        component.setState(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
+        component.setState(new TemperatureControlState(current));
+        return component;
+    }
 
-        // HA mode_command_template for 'heat' while the thermostat is OFF
-        Assertions.assertThat(c.toCommand(component, c.stateFromMessage("{\"state\": \"ON\", \"mode\": \"HEAT\"}")))
-                .containsExactly((byte) 255);
+    private static List<byte[]> commands(ComponentSpec component, String message) {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        return c.toCommandStates(component, c.stateFromMessage(message)).stream().map(s -> c.toCommand(component, s)).toList();
+    }
+
+    @Test
+    void turningOnSendsOn() {
         // HA power on payload
-        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{ \"state\": \"ON\" }")))
-                .containsExactly((byte) 255);
-        // Already ON: mode command is passed through
-        component.setState(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
-        Assertions.assertThat(c.toCommand(component, c.stateFromMessage("{\"state\": \"ON\", \"mode\": \"HEAT\"}")))
-                .containsExactly((byte) 95);
+        Assertions.assertThat(commands(component(OnOffToggleStateCalculator.ValidOnOffToggle.OFF), "{ \"state\": \"ON\" }"))
+                .containsExactly(new byte[]{(byte) 255});
+    }
+
+    @Test
+    void turningOffSendsOff() {
+        // HA mode_command_template for 'off'
+        Assertions.assertThat(commands(component(OnOffToggleStateCalculator.ValidOnOffToggle.ON), "{\"state\": \"OFF\"}"))
+                .containsExactly(new byte[]{0});
+    }
+
+    @Test
+    void modePresetOrFanOnAnOffThermostatSendsOnFirst() {
+        ComponentSpec off = component(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
+
+        // HA mode_command_template for 'heat' while the thermostat is OFF: ON, then the mode itself
+        Assertions.assertThat(commands(off, "{\"state\": \"ON\", \"mode\": \"HEAT\"}"))
+                .containsExactly(new byte[]{(byte) 255}, new byte[]{95});
+        Assertions.assertThat(commands(off, "{\"state\": \"ON\", \"preset\": \"NIGHT\"}"))
+                .containsExactly(new byte[]{(byte) 255}, new byte[]{25});
+        Assertions.assertThat(commands(off, "{\"state\": \"ON\", \"fanspeed\": \"LOW\"}"))
+                .containsExactly(new byte[]{(byte) 255}, new byte[]{97});
+    }
+
+    @Test
+    void modeOnAnOnThermostatIsSentAsIs() {
+        Assertions.assertThat(commands(component(OnOffToggleStateCalculator.ValidOnOffToggle.ON), "{\"state\": \"ON\", \"mode\": \"HEAT\"}"))
+                .containsExactly(new byte[]{95});
+    }
+
+    @Test
+    void frostPresetCommand() {
+        Assertions.assertThat(commands(component(OnOffToggleStateCalculator.ValidOnOffToggle.ON), "{\"state\": \"ON\", \"preset\": \"FROST\"}"))
+                .containsExactly(new byte[]{24});
+    }
+
+    @Test
+    void unknownModeDoesNotThrow() {
+        TemperatureControlState state = new TemperatureControlStateCalculator().fromEvent(component(), event(26, 200, 89, true));  // 0 is mode OFF, 200 is not a mode
+
+        Assertions.assertThat(state.getMode()).isNull();
+        Assertions.assertThat(state.getPreset()).isEqualTo(TemperatureControlStateCalculator.ValidTemperatureControlPreset.DAY);
+    }
+
+    @Test
+    void stateWithoutPresetModeOrFanRoundTripsThroughAnEvent() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        TemperatureControlState state = c.fromEvent(component(), event(0, 0, 0, true));
+
+        TemperatureControlState again = c.fromEvent(component(), c.toEventForTesting(component(), state));
+
+        Assertions.assertThat(again).isEqualTo(state);
     }
 
     @Test
@@ -106,6 +157,21 @@ class TemperatureControlStateCalculatorTest {
     }
 
     @Test
+    void manualPresetWithItsOwnTarget() {
+        Assertions.assertThat(commands(component(OnOffToggleStateCalculator.ValidOnOffToggle.ON), "{\"state\": \"ON\", \"preset\": \"MANUAL\", \"target_temperature\": 20.5}"))
+                .containsExactly(Bytes.concat(new byte[]{87}, bigDecimalToBytes(new BigDecimal("20.5"))));
+    }
+
+    @Test
+    void manualPresetWithoutAnyTargetIsRejected() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+
+        Assertions.assertThatThrownBy(() -> c.toCommand(component(OnOffToggleStateCalculator.ValidOnOffToggle.ON), c.stateFromMessage("{\"state\": \"ON\", \"preset\": \"MANUAL\"}")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("target_temperature");
+    }
+
+    @Test
     void presetTemperatureCommands() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
 
@@ -122,12 +188,57 @@ class TemperatureControlStateCalculatorTest {
 
     @Test
     void presetTemperatureCommandsDoNotTurnAnOffThermostatOn() {
-        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
-        ComponentSpec component = component();
-        component.setState(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
+        Assertions.assertThat(commands(component(OnOffToggleStateCalculator.ValidOnOffToggle.OFF), "{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": 20}"))
+                .containsExactly(new byte[]{29, (byte) 120});
+    }
 
-        Assertions.assertThat(c.toCommand(component, c.stateFromMessage("{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": 20}")))
-                .containsExactly((byte) 29, (byte) 120);
+    @Test
+    void presetTemperatureCommandsAtTheEdgesOfTheByte() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": -40}")))
+                .containsExactly((byte) 29, (byte) 0);
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"NIGHT_PRESET\", \"night_at_heating_preset_temperature\": 87.5}")))
+                .containsExactly((byte) 27, (byte) 255);
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 127.5}")))
+                .containsExactly((byte) 88, (byte) 255);
+    }
+
+    @Test
+    void presetTemperatureOutOfRangeIsRejected() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+
+        // (100 + 40) x 2 = 280 would wrap around to 24, which the central stores as -28 °C
+        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": 100}")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("day_preset_temperature");
+        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"NIGHT_PRESET\", \"night_at_heating_preset_temperature\": -40.5}")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("night_at_heating_preset_temperature");
+        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": -2}")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("eco_preset_offset");
+    }
+
+    @Test
+    void actionWithoutItsValueIsRejected() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+
+        for (String action : List.of("TARGET", "DAY_PRESET", "NIGHT_PRESET", "ECO_OFFSET")) {
+            Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"" + action + "\"}")))
+                    .as(action)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageStartingWith("Missing");
+        }
+    }
+
+    @Test
+    void mockedCentralAppliesOnAndOff() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
+
+        Assertions.assertThat(c.fromCommandForTesting(component, new byte[]{(byte) 255}).getState()).isEqualTo(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
+        Assertions.assertThat(c.fromCommandForTesting(component, new byte[]{0}).getState()).isEqualTo(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
     }
 
     @Test
