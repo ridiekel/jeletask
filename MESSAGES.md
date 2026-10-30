@@ -338,8 +338,9 @@ instead of aborting the whole state message; the attribute is then left out of t
 
 The preset actions only change the stored preset temperatures; they never switch a thermostat on.
 Day/night are sent as 1 byte `(°C + 40) × 2`, so they must be between -40 and 87.5 °C; the eco offset must be between
-0 and 127.5 °C. A value outside that range, or a missing value, is rejected and nothing is sent. The eco offset is sent in steps of 0.5 °C (`offset × 2`):
-the DoIP manual (TDS15132) says `× 10`, but a MICROS+ stored 15.0 °C when sent 30 (reports do use `× 10`).
+0 and 25.5 °C, the most a report can hold. A value outside that range, or a missing value, is rejected and nothing is sent. The eco offset is sent in steps of 0.5 °C (`offset × 2`):
+the DoIP manual (TDS15132) says `× 10`, but a MICROS+ stored 15.0 °C when sent 30 (reports do use `× 10`, unsigned). This was only measured
+on a heating-only MICROS+: other central types may follow the manual, and negative offsets are untested.
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \

@@ -9,6 +9,7 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HomeAssistentAutoConfig;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
+import io.github.ridiekel.jeletask.utilities.StringUtilities;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -48,16 +49,24 @@ class HASensorConfigTest {
     }
 
     @Test
-    void defaultPresetsFanModesAndTemperatureRange() {
+    void defaultsAddNoPresetsAndNoHvacAction() {
         ObjectNode config = thermostat(c -> {
         });
 
-        Assertions.assertThat(texts(config.get("preset_modes"))).containsExactly("day", "night", "eco", "frost");
+        Assertions.assertThat(config.has("preset_modes")).isFalse();
+        Assertions.assertThat(config.has("action_topic")).isFalse();
+        Assertions.assertThat(config.has("action_template")).isFalse();
         Assertions.assertThat(texts(config.get("fan_modes"))).containsExactly("auto", "low", "medium", "high");
         Assertions.assertThat(config.get("min_temp").asDouble()).isEqualTo(10);
         Assertions.assertThat(config.get("max_temp").asDouble()).isEqualTo(30);
-        Assertions.assertThat(config.get("preset_mode_value_template").asText()).contains("{'DAY': 'day', 'NIGHT': 'night', 'ECO': 'eco', 'FROST': 'frost'}");
-        Assertions.assertThat(config.get("preset_mode_command_template").asText()).contains("{'day': 'DAY', 'night': 'NIGHT', 'eco': 'ECO', 'frost': 'FROST'}");
+    }
+
+    @Test
+    void optionsAreReadFromTheConfigKeys() throws Exception {
+        ComponentSpec component = StringUtilities.OBJECT_MAPPER.readValue("{\"ha_preset_modes\": \"Dag=DAY\", \"ha_hvac_action\": true}", ComponentSpec.class);
+
+        Assertions.assertThat(component.getHA_preset_modes()).isEqualTo("Dag=DAY");
+        Assertions.assertThat(component.isHA_hvac_action()).isTrue();
     }
 
     @Test
@@ -116,8 +125,7 @@ class HASensorConfigTest {
 
     @Test
     void offStateIsReportedAsModeOffWithoutTarget() {
-        ObjectNode config = thermostat(c -> {
-        });
+        ObjectNode config = thermostat(c -> c.setHA_hvac_action(true));
 
         Assertions.assertThat(config.get("mode_state_template").asText()).contains("value_json.state|upper == \"OFF\"");
         Assertions.assertThat(config.get("mode_command_template").asText()).contains("{\"state\": \"OFF\"}");

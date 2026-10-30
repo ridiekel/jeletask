@@ -200,8 +200,8 @@ class TemperatureControlStateCalculatorTest {
                 .containsExactly((byte) 29, (byte) 0);
         Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"NIGHT_PRESET\", \"night_at_heating_preset_temperature\": 87.5}")))
                 .containsExactly((byte) 27, (byte) 255);
-        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 127.5}")))
-                .containsExactly((byte) 88, (byte) 255);
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 25.5}")))
+                .containsExactly((byte) 88, (byte) 51);
     }
 
     @Test
@@ -216,6 +216,10 @@ class TemperatureControlStateCalculatorTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("night_at_heating_preset_temperature");
         Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": -2}")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("eco_preset_offset");
+        // 26 x 10 does not fit in the byte of a report
+        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 26}")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("eco_preset_offset");
     }

@@ -280,10 +280,11 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
                 s -> presetToByte("night_at_heating_preset_temperature", s.getNightAtHeatingPresetTemperature()),
                 (c, s, b) -> s.setNightAtHeatingPresetTemperature(byteToPreset(b[1]))
         ),
-        // SET_TEMPSETSTANDBY: the eco offset in steps of 0.5 °C (offset x 2). TDS15132 says "x 10", but a
-        // MICROS+ stored 15.0 °C when sent 30 and 12.5 °C when sent 25 (measured 2026-10-28). Reports stay x 10.
+        // SET_TEMPSETSTANDBY: the eco offset in steps of 0.5 °C (offset x 2). TDS15132 says "x 10", but a MICROS+
+        // stored 1.5, 15.0, 0.5 and 4.0 °C when sent 3, 30, 1 and 8 (measured 2026-10-30, also on the wall panel).
+        // Reports stay x 10 in an unsigned byte, so 25.5 °C is the most the central can report back.
         ECO_OFFSET(
-                s -> UNSIGNED_BYTE.convert(inRange("eco_preset_offset", s.getEcoPresetOffset(), BigDecimal.ZERO, new BigDecimal("127.5")).multiply(BigDecimal.valueOf(2)).setScale(0, RoundingMode.HALF_UP)),
+                s -> UNSIGNED_BYTE.convert(inRange("eco_preset_offset", s.getEcoPresetOffset(), BigDecimal.ZERO, new BigDecimal("25.5")).multiply(BigDecimal.valueOf(2)).setScale(0, RoundingMode.HALF_UP)),
                 (c, s, b) -> s.setEcoPresetOffset(new BigDecimal(Byte.toUnsignedInt(b[1])).divide(BigDecimal.valueOf(2), 1, RoundingMode.HALF_UP))
         );
 

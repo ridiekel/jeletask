@@ -37,8 +37,10 @@ public class ComponentSpec {
     private double HA_max_temp = 30;
     // Empty = no fan control in HA (e.g. radiator zones)
     private String HA_fan_modes = "auto,low,medium,high";
-    // Presets shown in HA, comma separated: "PRESET" or "Label=PRESET" (DAY, NIGHT, ECO, FROST, MANUAL)
-    private String HA_preset_modes = "day=DAY,night=NIGHT,eco=ECO,frost=FROST";
+    // Presets shown in HA, comma separated: "PRESET" or "Label=PRESET" (DAY, NIGHT, ECO, FROST, MANUAL). Empty = no presets
+    private String HA_preset_modes = "";
+    // Show the demand of output_state as hvac_action. Only observed on a MICROS+, the manual marks that byte as not used
+    private boolean HA_hvac_action = false;
 
     // For GAS (General Analog Sensor)
     private String gas_type = "";
