@@ -11,10 +11,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 public final class MessageUtilities {
+    private static final long FRAGMENT_SILENCE_MILLIS = 500;
+    private static final long MAX_RECEIVE_MILLIS = 5000;
+
     private MessageUtilities() {
     }
 
@@ -27,23 +31,28 @@ public final class MessageUtilities {
 
         InputStream inputStream = teletaskReceiver.getInputStream();
 
-        byte[] overflow = null;
+        if (inputStream == null) {
+            return responses;
+        }
+
+        byte[] overflow = new byte[0];
         long startTime = System.currentTimeMillis();
-        while (overflow == null || overflow.length > 0) {
-            if ((System.currentTimeMillis() - startTime) > 5000) {
-                throw new RuntimeException("Did not receive data in a timely fashion. This means either: \n\t- You sent wrong data to the server and hence did not get an acknowledge.\n\t- Or you requested information from the server that was not available to the server");
-            }
-            int available = inputStream == null ? -1 : inputStream.available();
+        long lastDataTime = startTime;
+        do {
+            int available = inputStream.available();
             if (available > 0) {
                 byte[] read = new byte[available];
                 inputStream.read(read, 0, available);
-                byte[] data = overflow == null ? read : Bytes.concat(overflow, read);
-                overflow = extractMessages(logger, teletaskReceiver.getCentralUnit(), responses, data, currentlyRunningMessage);
-            } else {
+                overflow = extractMessages(logger, teletaskReceiver.getCentralUnit(), responses, Bytes.concat(overflow, read), currentlyRunningMessage);
+                lastDataTime = System.currentTimeMillis();
+            }
+            long now = System.currentTimeMillis();
+            if (overflow.length > 0 && (now - lastDataTime > FRAGMENT_SILENCE_MILLIS || now - startTime > MAX_RECEIVE_MILLIS)) {
+                logger.warn("Receive - Dropping incomplete message: {}", Bytes.bytesToHex(overflow));
                 overflow = new byte[0];
             }
             Thread.sleep(10);
-        }
+        } while (overflow.length > 0);
 
         return responses;
     }
@@ -56,16 +65,14 @@ public final class MessageUtilities {
             byte b = data[i];
             logger.trace("Receive - Processing byte: {}", Bytes.bytesToHex(b));
             if (b == messageHandler.getStxValue()) {
-                int eventLengthInclChkSum = data[i + 1] + 1; // +1 for checksum
-                byte[] event = new byte[eventLengthInclChkSum];
-
-                if (i + eventLengthInclChkSum > data.length) {
-                    overflow = new byte[data.length - i];
-                    System.arraycopy(data, i, event, 0, data.length - i);
+                if (i + 1 == data.length || i + data[i + 1] + 1 > data.length) {
+                    overflow = Arrays.copyOfRange(data, i, data.length);
                     i = data.length - 1;
 
                     logger.trace("Receive - Overflowing following byte[]: {}", Bytes.bytesToHex(overflow));
                 } else {
+                    int eventLengthInclChkSum = data[i + 1] + 1; // +1 for checksum
+                    byte[] event = new byte[eventLengthInclChkSum];
                     System.arraycopy(data, i, event, 0, eventLengthInclChkSum);
 
                     i += eventLengthInclChkSum - 1;
