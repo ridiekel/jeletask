@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.client;
 
+import ch.qos.logback.classic.Level;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator.ValidOnOffToggle;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
@@ -256,9 +257,13 @@ class TeletaskClientImplConnectionTest {
         List<Exception> failures = new CopyOnWriteArrayList<>();
         AtomicBoolean succeeded = new AtomicBoolean();
 
-        client.get(stoppingOnFirstUse, (f, n, s) -> succeeded.set(true), (f, n, s, e) -> failures.add(e));
+        try (LogCapture log = LogCapture.of(TeletaskClientImpl.class, Level.DEBUG)) {
+            client.get(stoppingOnFirstUse, (f, n, s) -> succeeded.set(true), (f, n, s, e) -> failures.add(e));
 
-        assertThat(failures).singleElement().isInstanceOf(RejectedExecutionException.class);
+            assertThat(failures).singleElement().isInstanceOf(RejectedExecutionException.class);
+            assertThat(log.messages(Level.DEBUG)).anySatisfy(line -> assertThat(line)
+                    .startsWith("Exception (java.util.concurrent.RejectedExecutionException) caught in execute: Task"));
+        }
         assertFalse(succeeded.get());
     }
 

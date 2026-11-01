@@ -327,7 +327,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
                     .execute(new MessageExecutor(message, this));
             onSuccess.accept(message);
         } catch (Exception e) {
-            LOG.debug(() -> String.format("Exception ({}) caught in execute: %s", e.getClass().getName(), e.getMessage()));
+            LOG.debug(() -> String.format("Exception (%s) caught in execute: %s", e.getClass().getName(), e.getMessage()));
             onFailed.accept(message, e);
         }
     }
