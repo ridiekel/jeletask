@@ -157,6 +157,16 @@ class MqttProcessorTest {
     }
 
     @Test
+    void aFailedPeriodicRefreshDoesNotEndTheRefreshes() {
+        configuration.getPublish().setStatesInterval(1);
+        processor.startup();
+        teletask.groupGetFails = true;
+        int before = teletask.groupGets.get();
+
+        Awaitility.await("refreshes after the first failure").atMost(AWAIT).until(() -> teletask.groupGets.get() >= before + 2);
+    }
+
+    @Test
     void noPeriodicRefreshWhenTheIntervalIsZero() {
         processor.startup();
         assertThat(teletask.groupGets).hasValue(1);

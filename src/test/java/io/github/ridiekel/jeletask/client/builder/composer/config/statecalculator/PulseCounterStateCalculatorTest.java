@@ -104,10 +104,10 @@ class PulseCounterStateCalculatorTest {
     }
 
     @Test
-    void totalIsASignedInt32() {
-        // §6.8.5 says int32. NumberConverter.UNSIGNED_INT masks with 0xffffffff, which keeps the sign despite its name
-        assertThat(total(1, "FF FF FF FF")).isEqualTo(-1f);
-        assertThat(total(1000, "80 00 00 00")).isEqualTo(-2147483.75f);
+    void totalIsNeverNegative() {
+        // §6.8.5 says int32, but a count of pulses cannot be negative, so the full four bytes are read as unsigned
+        assertThat(total(1, "FF FF FF FF")).isEqualTo(4294967295f);
+        assertThat(total(1000, "80 00 00 00")).isEqualTo(2147483.75f);
     }
 
     @Test

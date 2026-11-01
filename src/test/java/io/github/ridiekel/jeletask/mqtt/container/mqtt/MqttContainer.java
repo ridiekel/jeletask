@@ -41,6 +41,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class MqttContainer extends GenericContainer<MqttContainer> {
+    public void closeCaptureClient() throws MqttException {
+        if (mqttClient != null) {
+            mqttClient.disconnectForcibly(0, 0, false);
+            mqttClient.close(true);
+        }
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Teletask2MqttConfigurationProperties properties;

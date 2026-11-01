@@ -4,6 +4,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
@@ -14,6 +15,8 @@ import org.springframework.util.ClassUtils;
 
 import java.util.List;
 
+// The scan reads .class files, and a native image has none
+@DisabledInNativeImage
 class NativeRuntimeHintsTest {
     private static final String BASE_PACKAGE = "io.github.ridiekel.jeletask";
 

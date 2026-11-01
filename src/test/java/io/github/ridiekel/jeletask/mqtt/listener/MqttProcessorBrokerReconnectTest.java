@@ -38,9 +38,11 @@ class MqttProcessorBrokerReconnectTest {
     private final FakeTeletaskClient teletask = new FakeTeletaskClient();
     private final Teletask2MqttConfigurationProperties configuration = MqttProcessorFixtures.configuration();
     private final CentralUnit centralUnit = MqttProcessorFixtures.centralUnit();
-    private final MqttProcessor processor = new MqttProcessor(centralUnit, teletask, configuration);
+    private final MqttProcessor processor = new MqttProcessor(centralUnit, teletask, configuration, _ -> {
+    }, (brokerUrl, clientId) -> bridge = new MqttClient(brokerUrl, clientId, new MemoryPersistence()));
     private final MqttContainer broker = new MqttContainer(configuration, processor, centralUnit);
     private final List<String> availability = new CopyOnWriteArrayList<>();
+    private MqttClient bridge;
     private MqttClient observer;
 
     static boolean dockerAvailable() {
@@ -49,14 +51,17 @@ class MqttProcessorBrokerReconnectTest {
 
     @AfterEach
     void tearDown() throws MqttException {
-        // See MqttProcessorTest: the connected status is static
-        teletask.connected = false;
-        processor.checkAndPublishConnectedStatus();
-        if (observer != null) {
-            observer.disconnectForcibly(0, 0, false);
-            observer.close(true);
+        try {
+            // See MqttProcessorTest: the connected status is static
+            teletask.connected = false;
+            processor.checkAndPublishConnectedStatus();
+            closeObserver();
+            // They reconnect automatically, and a later broker can get the same port
+            close(bridge);
+            broker.closeCaptureClient();
+        } finally {
+            broker.stop();
         }
-        broker.stop();
     }
 
     @Test
@@ -71,8 +76,7 @@ class MqttProcessorBrokerReconnectTest {
 
         DockerClient docker = broker.getDockerClient();
         String containerId = broker.getContainerId();
-        observer.disconnectForcibly(0, 0, false);
-        observer.close(true);
+        closeObserver();
         availability.clear();
 
         docker.stopContainerCmd(containerId).exec();
@@ -88,6 +92,18 @@ class MqttProcessorBrokerReconnectTest {
         int groupGets = teletask.groupGets.get();
         observer.publish(BASE_TOPIC + "/refresh", "after restart".getBytes(), 1, false);
         Awaitility.await("refresh after reconnect").atMost(AWAIT).until(() -> teletask.groupGets.get() > groupGets);
+    }
+
+    private void closeObserver() throws MqttException {
+        close(observer);
+        observer = null;
+    }
+
+    private static void close(MqttClient client) throws MqttException {
+        if (client != null) {
+            client.disconnectForcibly(0, 0, false);
+            client.close(true);
+        }
     }
 
     private void connectObserver() throws MqttException {

@@ -61,10 +61,14 @@ final class MqttProcessorFixtures {
     static final class FakeTeletaskClient implements TeletaskClient {
         final AtomicInteger groupGets = new AtomicInteger();
         volatile boolean connected = true;
+        volatile boolean groupGetFails;
 
         @Override
         public void groupGet() {
             groupGets.incrementAndGet();
+            if (groupGetFails) {
+                throw new IllegalStateException("central unit is away");
+            }
         }
 
         @Override
