@@ -509,6 +509,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             this.getIoService().awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             LOG.debug(() -> String.format("Exception (%s) caught in stop: %s", e.getClass().getName(), e.getMessage()));
+            Thread.currentThread().interrupt();
         } finally {
             this.ioService = null;
         }

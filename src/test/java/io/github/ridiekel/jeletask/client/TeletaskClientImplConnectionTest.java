@@ -223,6 +223,27 @@ class TeletaskClientImplConnectionTest {
     }
 
     @Test
+    void stopKeepsTheInterruptOfTheCallerAndStillClosesEverything() {
+        this.central.goOnline();
+        TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
+        client.start();
+        awaitLogMessagesOn(0);
+        // Keeps the io thread busy, so that stop really has to wait for it
+        this.central.acknowledging(false);
+        client.get(Function.RELAY, RELAY_1, (f, n, s) -> {
+        }, (f, n, s, e) -> {
+        });
+        eventually().until(() -> !this.central.frames(Command.GET).isEmpty());
+
+        Thread.currentThread().interrupt();
+        client.stop();
+
+        assertTrue(Thread.interrupted());
+        assertNull(client.getOutputStream());
+        eventually().until(() -> this.central.closedByClient(0));
+    }
+
+    @Test
     void aSocketThatCannotConnectIsClosed() {
         Socket socket = new Socket();
 
