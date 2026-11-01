@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ridiekel.jeletask.TeletaskReceiver;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator.ValidOnOffToggle;
+import io.github.ridiekel.jeletask.client.builder.composer.microsplus.MicrosPlusMessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMessage;
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.KeepAliveMessage;
@@ -161,6 +162,125 @@ class MessageUtilitiesTest {
             assertThat(messages).as("length byte %s", impossibleLength).hasSize(1);
             assertRelayEvents(messages, OTHER_RELAY);
         }
+    }
+
+    @Test
+    void singleMessageIsParsed() throws Exception {
+        assertRelayEvents(receive(chunks(relayOnEvent(OTHER_RELAY))), OTHER_RELAY);
+    }
+
+    @Test
+    void multipleMessagesInOneBlockAreParsedInOrder() throws Exception {
+        byte[] block = concat(relayOnEvent(OTHER_RELAY), relayOnEvent(RELAY_WHOSE_NUMBER_EQUALS_ACKNOWLEDGE));
+
+        assertRelayEvents(receive(chunks(block)), OTHER_RELAY, RELAY_WHOSE_NUMBER_EQUALS_ACKNOWLEDGE);
+        assertThat(logged()).doesNotContain("WARN");
+    }
+
+    @Test
+    void nothingAvailableReturnsNoMessages() throws Exception {
+        assertThat(receive(chunks())).isEmpty();
+    }
+
+    @Test
+    void missingStreamReturnsNoMessages() throws Exception {
+        assertThat(receive(null)).isEmpty();
+    }
+
+    @Test
+    void acknowledgeAcknowledgesTheRunningMessage() throws Exception {
+        KeepAliveMessage running = new KeepAliveMessage(centralUnit);
+
+        List<MessageSupport> messages = MessageUtilities.receive(logger, receiver(chunks(new byte[]{acknowledge()})), running);
+
+        assertThat(running.isAcknowledged()).isTrue();
+        assertThat(messages).isEmpty();
+    }
+
+    @Test
+    void acknowledgeBetweenMessagesAcknowledgesAndKeepsBothMessages() throws Exception {
+        KeepAliveMessage running = new KeepAliveMessage(centralUnit);
+        byte[] block = concat(concat(relayOnEvent(OTHER_RELAY), new byte[]{acknowledge()}), relayOnEvent(OTHER_RELAY));
+
+        List<MessageSupport> messages = MessageUtilities.receive(logger, receiver(chunks(block)), running);
+
+        assertThat(running.isAcknowledged()).isTrue();
+        assertRelayEvents(messages, OTHER_RELAY, OTHER_RELAY);
+    }
+
+    @Test
+    void acknowledgeWithoutRunningMessageIsIgnored() throws Exception {
+        assertRelayEvents(receive(chunks(concat(new byte[]{acknowledge()}, relayOnEvent(OTHER_RELAY)))), OTHER_RELAY);
+
+        assertThat(logged()).contains("there is no currently running message");
+    }
+
+    @Test
+    void messageWithAcknowledgeValueInsideDoesNotAcknowledge() throws Exception {
+        KeepAliveMessage running = new KeepAliveMessage(centralUnit);
+
+        MessageUtilities.receive(logger, receiver(chunks(relayOnEvent(RELAY_WHOSE_NUMBER_EQUALS_ACKNOWLEDGE))), running);
+
+        assertThat(running.isAcknowledged()).isFalse();
+    }
+
+    @Test
+    void unknownByteIsLoggedAndSkipped() throws Exception {
+        assertRelayEvents(receive(chunks(concat(new byte[]{0x7F}, relayOnEvent(OTHER_RELAY)))), OTHER_RELAY);
+
+        assertThat(logged()).contains("WARN").contains("don't know how to handle it: 7F");
+    }
+
+    @Test
+    void eventForComponentNotInConfigIsSkippedWithoutError() throws Exception {
+        byte[] unknown = relayOnEvent(OTHER_RELAY);
+        unknown[6] = 0x7E;
+        recalculateChecksum(unknown);
+
+        assertRelayEvents(receive(chunks(concat(unknown, relayOnEvent(OTHER_RELAY)))), OTHER_RELAY);
+
+        assertThat(logged()).contains(CentralUnit.ComponentNotFoundInConfigException.class.getName()).doesNotContain("ERROR");
+    }
+
+    @Test
+    void messageThatFailsToParseIsLoggedAndTheNextMessageSurvives() throws Exception {
+        byte[] corrupt = relayOnEvent(OTHER_RELAY);
+        corrupt[corrupt.length - 1]++;
+
+        assertRelayEvents(receive(chunks(concat(corrupt, relayOnEvent(OTHER_RELAY)))), OTHER_RELAY);
+
+        assertThat(logged()).contains("ERROR").contains("Checksum not correct");
+    }
+
+    @Test
+    void messageTheHandlerParsesToNothingIsNotReturned() throws Exception {
+        CentralUnit nothingParsed = new CentralUnit() {
+            @Override
+            public MessageHandler getMessageHandler() {
+                return new MicrosPlusMessageHandler() {
+                    @Override
+                    public MessageSupport parse(CentralUnit centralUnit, byte[] message) {
+                        return null;
+                    }
+                };
+            }
+        };
+        byte[] frame = relayOnEvent(OTHER_RELAY);
+        centralUnit = nothingParsed;
+
+        assertThat(receive(chunks(frame))).isEmpty();
+    }
+
+    private byte acknowledge() {
+        return (byte) messageHandler.getAcknowledgeValue();
+    }
+
+    private static void recalculateChecksum(byte[] frame) {
+        byte sum = 0;
+        for (int i = 0; i < frame.length - 1; i++) {
+            sum += frame[i];
+        }
+        frame[frame.length - 1] = sum;
     }
 
     private List<MessageSupport> receive(InputStream stream) throws Exception {
