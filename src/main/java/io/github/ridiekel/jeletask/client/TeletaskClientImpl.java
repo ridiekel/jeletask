@@ -369,6 +369,10 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         if (connected) {
             LOG.info(() -> "Successfully (Re)connected");
+        } else {
+            this.closeInputStream();
+            this.closeOutputStream();
+            this.closeSocket();
         }
 
         return connected;

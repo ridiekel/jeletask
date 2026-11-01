@@ -102,6 +102,20 @@ class TeletaskClientImplConnectionTest {
     }
 
     @Test
+    void aFailedAttemptClosesItsConnectionBeforeTheNextOne() {
+        this.central.acknowledging(false);
+        this.central.goOnline();
+        TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
+
+        CompletableFuture.runAsync(client::start);
+
+        eventually().until(() -> this.central.closedByClient(0));
+        this.central.acknowledging(true);
+        eventually().until(client::isConnected);
+        assertFalse(this.central.closedByClient(this.central.connectionCount() - 1));
+    }
+
+    @Test
     void disconnectWhileConnectingAbortsTheStart() throws Exception {
         TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
         CompletableFuture<Void> start = CompletableFuture.runAsync(client::start);
