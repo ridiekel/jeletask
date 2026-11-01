@@ -375,9 +375,21 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     private Socket createSocket(String host, int port) throws IOException {
-        Socket newSocket = new Socket();
-        newSocket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MILLIS);
-        return newSocket;
+        return connectOrClose(new Socket(), new InetSocketAddress(host, port));
+    }
+
+    static Socket connectOrClose(Socket socket, InetSocketAddress address) throws IOException {
+        try {
+            socket.connect(address, CONNECT_TIMEOUT_MILLIS);
+            return socket;
+        } catch (IOException | RuntimeException e) {
+            try {
+                socket.close();
+            } catch (IOException closeFailure) {
+                e.addSuppressed(closeFailure);
+            }
+            throw e;
+        }
     }
 
     private void startKeepAlive() {

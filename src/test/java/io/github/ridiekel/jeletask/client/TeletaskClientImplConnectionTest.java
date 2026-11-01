@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -218,6 +220,25 @@ class TeletaskClientImplConnectionTest {
         TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
 
         assertThrows(CloneNotSupportedException.class, client::clone);
+    }
+
+    @Test
+    void aSocketThatCannotConnectIsClosed() {
+        Socket socket = new Socket();
+
+        assertThrows(IOException.class, () -> TeletaskClientImpl.connectOrClose(socket, new InetSocketAddress("127.0.0.1", this.central.port())));
+
+        assertTrue(socket.isClosed());
+    }
+
+    @Test
+    void aSocketThatConnectsStaysOpen() throws IOException {
+        this.central.goOnline();
+
+        try (Socket socket = TeletaskClientImpl.connectOrClose(new Socket(), new InetSocketAddress("127.0.0.1", this.central.port()))) {
+            assertTrue(socket.isConnected());
+            assertFalse(socket.isClosed());
+        }
     }
 
     private TeletaskClientImpl client(TestCentralUnit unit) {
