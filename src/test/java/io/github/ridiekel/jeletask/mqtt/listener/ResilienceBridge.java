@@ -202,8 +202,6 @@ final class ResilienceBridge implements AutoCloseable {
             this.client.disconnect();
             // A test has to outlive its client, see ClientThreads
             this.threads.awaitAllGone();
-            // The connected status is static, hand it back like MqttProcessorTest does
-            this.processor.checkAndPublishConnectedStatus();
         } finally {
             close(this.bridgeMqtt);
         }

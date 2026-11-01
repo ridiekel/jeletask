@@ -16,7 +16,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -55,16 +54,6 @@ class MqttProcessorTest {
     );
 
     private final Map<String, String> retainedOnBroker = new ConcurrentHashMap<>();
-
-    /**
-     * The connected status is static in MqttProcessor. Hand it back in its initial state, or a later bridge in this
-     * JVM (an End2End test) sees no change and never publishes that it is online.
-     */
-    @AfterEach
-    void resetStaticConnectedStatus() {
-        teletask.connected = false;
-        processor.checkAndPublishConnectedStatus();
-    }
 
     @Test
     void connectionLostExitsWithStatus5WhenConfigured() {

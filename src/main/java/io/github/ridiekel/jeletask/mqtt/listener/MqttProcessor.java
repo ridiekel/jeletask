@@ -63,7 +63,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private final CentralUnit centralUnit;
     private final TeletaskClient teletaskClient;
-    private static final ConnectedStatus CONNECTED_STATUS = new ConnectedStatus();
+    private final ConnectedStatus connectedStatus = new ConnectedStatus();
     private final HomeAssistentAutoConfig homeAssistentAutoConfig;
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private static final long STALE_CONFIG_COLLECT_MILLIS = 1000;
@@ -420,13 +420,13 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
     public void checkAndPublishConnectedStatus() {
         boolean currentConnectionStatus = this.teletaskClient.isConnected();
-        if (currentConnectionStatus != CONNECTED_STATUS.connected) {
-            CONNECTED_STATUS.connected = currentConnectionStatus;
-            CONNECTED_STATUS.since = Instant.now();
-            CONNECTED_STATUS.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
+        if (currentConnectionStatus != connectedStatus.connected) {
+            connectedStatus.connected = currentConnectionStatus;
+            connectedStatus.since = Instant.now();
+            connectedStatus.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
             publishConnectionStatus();
-        } else if (CONNECTED_STATUS.nextPublish.isBefore(Instant.now())) {
-            CONNECTED_STATUS.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
+        } else if (connectedStatus.nextPublish.isBefore(Instant.now())) {
+            connectedStatus.nextPublish = Instant.now().plus(1, ChronoUnit.MINUTES);
             publishConnectionStatus();
         }
         writeHealth();
@@ -435,7 +435,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private void writeHealth() {
         boolean mqttConnected = this.mqttClient != null && this.mqttClient.isConnected() && this.lastPingSucceeded;
         try {
-            HealthCheck.getDefault().write(CONNECTED_STATUS.connected, mqttConnected);
+            HealthCheck.getDefault().write(connectedStatus.connected, mqttConnected);
         } catch (IOException e) {
             LOG.warn(() -> "Could not write health status: " + e.getMessage());
         }
@@ -477,9 +477,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     public void publishConnectionStatus() {
         try {
-            LOG.debug("Publishing connection status: " + State.OBJECT_MAPPER.writeValueAsString(CONNECTED_STATUS));
+            LOG.debug("Publishing connection status: " + State.OBJECT_MAPPER.writeValueAsString(connectedStatus));
             // Always retained, otherwise a retained last will keeps saying offline.
-            this.publish(What.ONLINE, () -> padded("BRIDGE"), this.getAvailabilityTopic(), CONNECTED_STATUS.getState(), true, LOG::debug);
+            this.publish(What.ONLINE, () -> padded("BRIDGE"), this.getAvailabilityTopic(), connectedStatus.getState(), true, LOG::debug);
         } catch (JsonProcessingException e) {
             LOG.error(e);
         }

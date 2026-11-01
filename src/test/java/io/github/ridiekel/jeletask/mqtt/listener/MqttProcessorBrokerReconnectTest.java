@@ -52,9 +52,6 @@ class MqttProcessorBrokerReconnectTest {
     @AfterEach
     void tearDown() throws MqttException {
         try {
-            // See MqttProcessorTest: the connected status is static
-            teletask.connected = false;
-            processor.checkAndPublishConnectedStatus();
             closeObserver();
             // They reconnect automatically, and a later broker can get the same port
             close(bridge);
