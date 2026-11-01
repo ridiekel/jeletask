@@ -1,6 +1,7 @@
 ## Release notes
 
-Check this for every change that goes to `main`, in the same merge request:
+Check this for every change, on any branch, and commit the result together with the change, so the
+notes reach `main` if the change does:
 
 - Would a user notice the change, or do they need to act on it? Then create or update
   `release-notes/<version>.md`, where `<version>` is the version in `pom.xml` without `-SNAPSHOT`.
