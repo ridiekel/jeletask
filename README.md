@@ -577,6 +577,12 @@ To run only the other tests:
 ./mvnw test -Dtest='!End2End*'
 ```
 
+Mutation testing with PIT covers the fast, deterministic core and needs no Docker. The report ends up in `target/pit-reports`:
+
+```shell
+./mvnw -Pmutation test-compile org.pitest:pitest-maven:mutationCoverage
+```
+
 `MockingTeletaskTestSupport` is not a base class for unit tests: it is a `@SpringBootTest`, and its `@BeforeEach` drives Chrome against the Home Assistant container.
 Its login check also asserts the exact number of dashboard cards, so a new component in the test config can fail every `End2End*` class during setup, pointing at the login instead of at your change.
 

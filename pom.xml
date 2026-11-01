@@ -276,4 +276,55 @@
             <url>https://www.gnu.org/licenses/lgpl-3.0.en.html</url>
         </license>
     </licenses>
+    <profiles>
+        <profile>
+            <!-- Only the fast and deterministic core: tests with a real client, timers or Docker make this take hours -->
+            <id>mutation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>1.30.1</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>1.2.3</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <targetClasses>
+                                <param>io.github.ridiekel.jeletask.client.builder.composer.config.*</param>
+                                <param>io.github.ridiekel.jeletask.client.builder.message.MessageUtilities*</param>
+                                <param>io.github.ridiekel.jeletask.client.builder.message.messages.impl.*</param>
+                                <param>io.github.ridiekel.jeletask.client.spec.state.*</param>
+                                <param>io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.*</param>
+                                <param>io.github.ridiekel.jeletask.mqtt.listener.logic.motor.Progress*</param>
+                                <param>io.github.ridiekel.jeletask.mqtt.listener.command.*</param>
+                                <param>io.github.ridiekel.jeletask.utilities.*</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>io.github.ridiekel.jeletask.client.builder.composer.*</param>
+                                <param>io.github.ridiekel.jeletask.client.builder.message.MessageUtilitiesTest</param>
+                                <param>io.github.ridiekel.jeletask.client.builder.message.messages.impl.*</param>
+                                <param>io.github.ridiekel.jeletask.client.spec.state.*</param>
+                                <param>io.github.ridiekel.jeletask.mqtt.listener.homeassistant.*</param>
+                                <param>io.github.ridiekel.jeletask.mqtt.listener.logic.motor.ProgressTest</param>
+                                <param>io.github.ridiekel.jeletask.mqtt.listener.command.*</param>
+                                <param>io.github.ridiekel.jeletask.utilities.*</param>
+                            </targetTests>
+                            <threads>4</threads>
+                            <timeoutConstant>2000</timeoutConstant>
+                            <timestampedReports>false</timestampedReports>
+                            <outputFormats>
+                                <param>HTML</param>
+                                <param>CSV</param>
+                            </outputFormats>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
