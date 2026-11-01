@@ -89,6 +89,117 @@ class MotorProgressorTest {
         }
     }
 
+    // Long enough to still be running at the end of a test
+    private static final String LONG_RUN = "3600";
+
+    private final List<ComponentSpec> published = new ArrayList<>();
+    private final MotorProgressor progressor = new MotorProgressor(10, (c, s) -> published.add(c));
+
+    private static ComponentSpec motor(int number, OnOffToggleStateCalculator.ValidOnOffToggle power, int from, int to, String secondsToFinish) {
+        MotorState state = new MotorState(MotorStateCalculator.ValidMotorDirectionState.MOTOR_GO_TO_POSITION);
+        state.setPower(power);
+        state.setCurrentPosition(from);
+        state.setRequestedPosition(to);
+        state.setSecondsToFinish(secondsToFinish == null ? null : new BigDecimal(secondsToFinish));
+        ComponentSpec motor = new ComponentSpec(Function.MOTOR, state, number);
+        motor.setDescription("Test motor " + number);
+        return motor;
+    }
+
+    @Test
+    void nothingIsPublishedWithoutARunningMotor() {
+        progressor.run();
+
+        Assertions.assertThat(published).isEmpty();
+    }
+
+    @Test
+    void aMotorThatIsNotOnIsNotTracked() {
+        progressor.update(motor(1, OnOffToggleStateCalculator.ValidOnOffToggle.OFF, 10, 20, LONG_RUN));
+        progressor.update(motor(2, null, 10, 20, LONG_RUN));
+
+        progressor.run();
+
+        Assertions.assertThat(published).isEmpty();
+    }
+
+    @Test
+    void aRunningMotorIsPublishedOnEveryRun() {
+        ComponentSpec motor = motor(1, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 10, 20, LONG_RUN);
+        progressor.update(motor);
+
+        progressor.run();
+        progressor.run();
+
+        Assertions.assertThat(published).containsExactly(motor, motor);
+    }
+
+    @Test
+    void aMotorThatFinishedIsPublishedOnceMoreAsOffAndThenForgotten() {
+        ComponentSpec motor = motor(1, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 20, 20, LONG_RUN);
+        progressor.update(motor);
+
+        progressor.run();
+        Assertions.assertThat(((MotorState) motor.getState()).getPower()).isEqualTo(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
+        progressor.run();
+
+        Assertions.assertThat(published).containsExactly(motor);
+    }
+
+    @Test
+    void anEventThatSaysTheMotorStoppedEndsTheRun() {
+        ComponentSpec motor = motor(1, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 10, 20, LONG_RUN);
+        progressor.update(motor);
+
+        ((MotorState) motor.getState()).setPower(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
+        progressor.update(motor);
+        progressor.run();
+
+        Assertions.assertThat(published).isEmpty();
+    }
+
+    @Test
+    void aNewEventReplacesTheRunOfTheSameMotor() {
+        ComponentSpec motor = motor(1, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 10, 20, LONG_RUN);
+        progressor.update(motor);
+        progressor.update(motor);
+
+        progressor.run();
+
+        Assertions.assertThat(published).containsExactly(motor);
+    }
+
+    @Test
+    void motorsAreTrackedIndependently() {
+        ComponentSpec finished = motor(1, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 20, 20, LONG_RUN);
+        ComponentSpec running = motor(2, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 10, 20, LONG_RUN);
+        progressor.update(finished);
+        progressor.update(running);
+
+        progressor.run();
+        Assertions.assertThat(published).containsExactlyInAnyOrder(finished, running);
+
+        published.clear();
+        progressor.run();
+        Assertions.assertThat(published).containsExactly(running);
+    }
+
+    @Test
+    void aRunThatCannotBeCalculatedIsIgnored() {
+        // A short event from the central: running, but without the bytes for the time left
+        ComponentSpec noTime = motor(1, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 10, 20, null);
+        ComponentSpec noPosition = motor(2, OnOffToggleStateCalculator.ValidOnOffToggle.ON, 10, 20, LONG_RUN);
+        ((MotorState) noPosition.getState()).setCurrentPosition(null);
+
+        Assertions.assertThatCode(() -> {
+            progressor.update(noTime);
+            progressor.update(noPosition);
+        }).doesNotThrowAnyException();
+        progressor.run();
+
+        Assertions.assertThat(published).isEmpty();
+    }
+
     private record MotorStateHistory(
             OnOffToggleStateCalculator.ValidOnOffToggle power,
             Integer currentPosition,
