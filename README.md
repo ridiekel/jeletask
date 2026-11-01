@@ -23,6 +23,11 @@ So when upgrading from a previous version, please make sure to take this into ac
 1. When updating your container, please remove it and recreate it when using portainer (https://github.com/ridiekel/jeletask/issues/32#issuecomment-3536714894).
 2. You will have to remove your teletask device in HA before upgrading.
 
+Upgrading to 6.4 needs no configuration changes, but `TEMPERATURECONTROL` sensors behave differently in two ways:
+
+1. An OFF thermostat now shows as `off` in Home Assistant, without a target temperature, instead of its last mode.
+2. A command with `"state": "ON"` and a mode, preset or fan speed now switches an OFF thermostat on. Home Assistant always sends that state, so `set_fan_mode` on an OFF zone turns it on too.
+
 # Configuring
 
 ## Teletask2MQTT
