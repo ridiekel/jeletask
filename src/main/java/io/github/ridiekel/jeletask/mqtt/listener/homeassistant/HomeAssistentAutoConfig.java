@@ -56,13 +56,13 @@ public class HomeAssistentAutoConfig {
             // Dimmers -> -> HA auto discovery: light
             Map.entry(Function.DIMMER, f(HADeviceType.LIGHT, HADimmerConfig::new)),
             // Flags can be read + turned on/off -> HA auto discovery: switch
-            Map.entry(Function.FLAG, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
+            Map.entry(Function.FLAG, f(switchSceneLight(HADeviceType.SWITCH), HomeAssistentAutoConfig::onOffConfig)),
             // Mood functions actually act like a switch in Teletask. They can be turned ON/OFF?
             // HA scenes can only be 'activated' and do not support a state?
             // -> HA auto discovery: switch
-            Map.entry(Function.GENMOOD, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
-            Map.entry(Function.LOCMOOD, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
-            Map.entry(Function.TIMEDMOOD, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new)),
+            Map.entry(Function.GENMOOD, f(switchSceneLight(HADeviceType.SWITCH), HomeAssistentAutoConfig::onOffConfig)),
+            Map.entry(Function.LOCMOOD, f(switchSceneLight(HADeviceType.SWITCH), HomeAssistentAutoConfig::onOffConfig)),
+            Map.entry(Function.TIMEDMOOD, f(switchSceneLight(HADeviceType.SWITCH), HomeAssistentAutoConfig::onOffConfig)),
             // Motors -> HA auto discovery: cover. Sufficient?
             Map.entry(Function.MOTOR, f(HADeviceType.COVER, HAMotorConfig::new)),
             Map.entry(Function.SENSOR, f(haDeviceTypeFromTypeToHaTypeMap(Map.of(
@@ -74,10 +74,15 @@ public class HomeAssistentAutoConfig {
                     SensorType.TEMPERATURECONTROL, HADeviceType.CLIMATE,
                     SensorType.PULSECOUNTER, HADeviceType.SENSOR
             )), HASensorConfig::new)),
-            Map.entry(Function.RELAY, f(switchSceneLight(HADeviceType.LIGHT), HAOnOffConfig::new)),
+            Map.entry(Function.RELAY, f(switchSceneLight(HADeviceType.LIGHT), HomeAssistentAutoConfig::onOffConfig)),
             // Timed functions actually act like a switch. They can only be ON or OFF -> HA auto discovery: switch
-            Map.entry(Function.TIMEDFNC, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new))
+            Map.entry(Function.TIMEDFNC, f(switchSceneLight(HADeviceType.SWITCH), HomeAssistentAutoConfig::onOffConfig))
     );
+
+    // The type can make any on/off function read-only, and a binary_sensor compares with payload_on instead of state_on
+    private static HAConfig<?> onOffConfig(HAConfigParameters parameters) {
+        return parameters.getDeviceType() == HADeviceType.BINARY_SENSOR ? new HABinarySensorConfig(parameters) : new HAOnOffConfig(parameters);
+    }
 
     private static java.util.function.Function<ComponentSpec, HADeviceType> switchSceneLight(HADeviceType defaultType) {
         return c -> {

@@ -16,6 +16,7 @@ class End2EndMqttAddonConfigTest extends MockingTeletaskTestSupport {
         this.ha().openMqttSettings();
 
         String[] expectedDevices = {
+                "Binary Sensor Relay 1",
                 "Condition 1",
                 "Dimmer 1",
                 "Flags",
