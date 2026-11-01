@@ -17,6 +17,11 @@
         "type": "scene"
       },
       {
+        "number": 13,
+        "description": "Binary Sensor Relay 1",
+        "type": "binary_sensor"
+      },
+      {
         "number": 99,
         "description": "Light in living room",
         "suggested_area": "Living Room Area"

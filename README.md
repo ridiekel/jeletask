@@ -480,6 +480,8 @@ Example:
 The default type of relay is ```light```, for moods and other "on/off" devices, it is ```switch```, but can be overridden.
 Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 
+Use ```binary_sensor``` for an "on/off" device that Home Assistant should only read, like a valve relay the central drives itself.
+
 ```json
 {
   "RELAY": [

@@ -46,6 +46,21 @@ class End2EndRelayTest extends MockingTeletaskTestSupport {
     }
 
     @Test
+    void relayBinarySensor() {
+        teletask().relay(13).turnOff();
+        ha().web().relay(13)
+                .shouldHaveStateTextOff()
+                .shouldHaveBinarySensorIcon()
+                .shouldHaveIconStateOff();
+
+        teletask().relay(13).turnOn();
+        ha().web().relay(13)
+                .shouldHaveStateTextOn()
+                .shouldHaveBinarySensorIcon()
+                .shouldHaveIconStateOn();
+    }
+
+    @Test
     void relayScene() {
         teletask().relay(12).turnOff();
         mqtt().expect().relay(12).lastStateMessage().toHave().state().off();

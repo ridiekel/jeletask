@@ -159,7 +159,11 @@ public class HaWebFunctions {
         );
 
         private static java.util.function.@NotNull Function<ComponentSpec, String> onOffElementSelector() {
-            return c -> Objects.equals(c.getType(), "scene") ? "hui-scene-entity-row" : "hui-toggle-entity-row";
+            return c -> switch (Objects.toString(c.getType(), "")) {
+                case "scene" -> "hui-scene-entity-row";
+                case "binary_sensor" -> "hui-simple-entity-row";
+                default -> "hui-toggle-entity-row";
+            };
         }
 
         protected final int index;
