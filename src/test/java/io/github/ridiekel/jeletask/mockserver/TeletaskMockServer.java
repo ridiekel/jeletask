@@ -165,12 +165,12 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         });
     }
 
-    private void mockDisplayMessage(ExpectationBuilder e) {
+    void mockDisplayMessage(ExpectationBuilder e) {
         this.centralUnit.getComponents(Function.DISPLAYMESSAGE).forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
         });
         e.when(groupGet(Function.DISPLAYMESSAGE, this.centralUnit.getComponents(Function.DISPLAYMESSAGE).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.DISPLAYMESSAGE).map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+                this.centralUnit.getComponents(Function.DISPLAYMESSAGE).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DISPLAYMESSAGE, component.getNumber(), component.getState())).collect(Collectors.toList())
         );
     }
 
