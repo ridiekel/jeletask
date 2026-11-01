@@ -153,7 +153,7 @@ class MessageSupportTest {
 
     @Test
     void traceLogInfoShowsEveryPartOfRealMessages() {
-        try (LogCapture _ = LogCapture.of(MessageSupport.class, Level.TRACE)) {
+        try (var _ = LogCapture.of(MessageSupport.class, Level.TRACE)) {
             for (MessageSupport message : realMessages()) {
                 byte[] bytes = message instanceof EventMessage event ? event.getRawBytes() : this.unit.getMessageHandler().compose(message.getCommand(), message.getPayload());
 
@@ -174,7 +174,7 @@ class MessageSupportTest {
 
     @Test
     void traceLogInfoNamesParametersAndFallsBackWhenTheyHaveNoName() {
-        try (LogCapture _ = LogCapture.of(MessageSupport.class, Level.TRACE)) {
+        try (var _ = LogCapture.of(MessageSupport.class, Level.TRACE)) {
             MessageSupport get = new GetMessage(this.unit, Function.RELAY, TestCentralUnit.RELAY_1);
             assertThat(get.getLogInfo(this.unit.getMessageHandler().compose(get.getCommand(), get.getPayload())))
                     .contains("| Central Unit | Fnc | Number | Number | ChkSm |");
@@ -191,7 +191,7 @@ class MessageSupportTest {
 
     @Test
     void shortLogInfoHoldsCommandAndPayload() {
-        try (LogCapture _ = LogCapture.of(MessageSupport.class, Level.INFO)) {
+        try (var _ = LogCapture.of(MessageSupport.class, Level.INFO)) {
             GetMessage get = new GetMessage(this.unit, Function.RELAY, TestCentralUnit.RELAY_1);
 
             String info = get.getLogInfo(this.unit.getMessageHandler().compose(get.getCommand(), get.getPayload()));
