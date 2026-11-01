@@ -40,6 +40,9 @@ The target is `release-notes/<version>.md`, where `<version>` is the version in 
 - If users have to act, or automations can break, also add it to `# Upgrading from previous version`
   in `README.md`.
 
+The add-on `Dockerfile` under `## Home Assistant OS (local add-on)` in `README.md` pins the image. Set
+its `FROM` line to `ridiekel/jeletask2mqtt:<version>-native`, also when no notes are needed.
+
 Commit any changes with the message `docs(release): release notes voor <version>`.
 
 ## 4. Push
