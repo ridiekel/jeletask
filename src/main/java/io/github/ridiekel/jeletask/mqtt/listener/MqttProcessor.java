@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.awaitility.Awaitility;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -43,6 +44,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -78,11 +80,26 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private final LongPressInputCaptor longPressInputCaptor;
     @Getter
     private final Teletask2MqttConfigurationProperties configuration;
+    private final IntConsumer exitHandler;
+    private final MqttClientFactory mqttClientFactory;
 
+    // Required: with more than one constructor, Spring otherwise looks for a no-arg one.
+    @Autowired
     public MqttProcessor(CentralUnit centralUnit,
                          TeletaskClient teletaskClient,
                          Teletask2MqttConfigurationProperties configuration
     ) {
+        this(centralUnit, teletaskClient, configuration, System::exit, (brokerUrl, clientId) -> new MqttClient(brokerUrl, clientId, new MemoryPersistence()));
+    }
+
+    MqttProcessor(CentralUnit centralUnit,
+                  TeletaskClient teletaskClient,
+                  Teletask2MqttConfigurationProperties configuration,
+                  IntConsumer exitHandler,
+                  MqttClientFactory mqttClientFactory
+    ) {
+        this.exitHandler = exitHandler;
+        this.mqttClientFactory = mqttClientFactory;
         this.centralUnit = centralUnit;
         this.teletaskClient = teletaskClient;
         this.teletaskClient.registerStateChangeListener(this);
@@ -111,6 +128,11 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             this.teletaskClient.disconnect();
             this.checkAndPublishConnectedStatus();
         }));
+    }
+
+    @FunctionalInterface
+    interface MqttClientFactory {
+        MqttClient create(String brokerUrl, String clientId) throws MqttException;
     }
 
     private void scheduleGroupGet(Teletask2MqttConfigurationProperties configuration) {
@@ -164,7 +186,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
         log(LOG::info, What.CONNECTION, "STATUS", String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", brokerUrl, clientId, username, password != null));
 
-        this.mqttClient = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
+        this.mqttClient = this.mqttClientFactory.create(brokerUrl, clientId);
 
         MqttConnectOptions options = this.connectOptions(username, password);
 
@@ -173,7 +195,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             public void connectionLost(Throwable cause) {
                 log(LOG::warn, What.CONNECTION, "STATUS", "Connection lost!");
                 if (configuration.getMqtt().isExitOnDisconnect()) {
-                    System.exit(5);
+                    exitHandler.accept(5);
                 }
             }
 
@@ -239,7 +261,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         });
         this.subscribe(getRemoteStopTopic(), (_, message) -> {
             LOG.debug(() -> String.format("Stopping the service: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
-            System.exit(0);
+            this.exitHandler.accept(0);
         });
         this.subscribe(getRemoteRefreshTopic(), (_, message) -> {
             LOG.debug(() -> String.format("Refreshing states: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
