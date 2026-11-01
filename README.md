@@ -570,6 +570,7 @@ Running tests is done using:
 ```
 
 The `End2End*` tests need Docker. Without a Docker daemon they fail at context startup instead of being skipped, which is not a regression.
+The `Resilience*` tests disturb the connections of the bridge through Toxiproxy. They also need Docker, but are skipped without it.
 To run only the other tests:
 
 ```shell
