@@ -1,6 +1,8 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.TemperatureControlState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.assertj.core.api.Assertions;
@@ -266,6 +268,21 @@ class TemperatureControlStateCalculatorTest {
         e[8] = (byte) 150;
         TemperatureControlState state = new TemperatureControlStateCalculator().fromEvent(component(), e);
         Assertions.assertThat(state.getEcoPresetOffset()).isEqualByComparingTo("15.0");
+    }
+
+    @Test
+    void reportedBytesAreUnsignedInTheJson() throws Exception {
+        // MESSAGES.md documents window_open as 0 / 255, not -1
+        byte[] e = event(26, 95, 0, true);
+        e[13] = (byte) 255;
+        e[14] = (byte) 137;
+        e[15] = (byte) 128;
+
+        JsonNode json = State.OBJECT_MAPPER.readTree(new TemperatureControlStateCalculator().fromEvent(component(), e).toString());
+
+        Assertions.assertThat(json.get("window_open").asInt()).isEqualTo(255);
+        Assertions.assertThat(json.get("output_state").asInt()).isEqualTo(137);
+        Assertions.assertThat(json.get("swing_direction").asInt()).isEqualTo(128);
     }
 
     @Test

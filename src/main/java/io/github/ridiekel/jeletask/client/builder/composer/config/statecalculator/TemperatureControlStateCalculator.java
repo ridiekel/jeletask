@@ -94,9 +94,9 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         state.setPreset(PRESET_MAPPER.toEnumOrNull(new byte[]{dataBytes[9]}));
         state.setMode(MODE_MAPPER.toEnumOrNull(new byte[]{dataBytes[10]}));
         state.setFanspeed(SPEED_MAPPER.toEnumOrNull(new byte[]{dataBytes[11]}));
-        state.setWindowOpen(dataBytes[13]);       // 0 = open, 255 = closed
-        state.setOutputState(dataBytes[14]);      // Untested, no idea about the values
-        state.setSwingDirection(dataBytes[15]);   // Untested, no idea about the values
+        state.setWindowOpen(Byte.toUnsignedInt(dataBytes[13]));       // 0 = open, 255 = closed
+        state.setOutputState(Byte.toUnsignedInt(dataBytes[14]));      // Untested, no idea about the values
+        state.setSwingDirection(Byte.toUnsignedInt(dataBytes[15]));   // Untested, no idea about the values
         if (dataBytes.length >= 18) {
             state.setNightAtCoolingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[16], dataBytes[17]}));
         }
