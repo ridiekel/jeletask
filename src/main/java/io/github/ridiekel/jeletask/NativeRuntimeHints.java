@@ -19,6 +19,7 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
     private static void registerJeletaskHints(RuntimeHints hints) {
         hints.reflection().registerType(Progress.class, MemberCategory.values());
         hints.reflection().registerType(LongPressInputCaptor.class, MemberCategory.values());
+        hints.reflection().registerType(LongPressInputCaptor.Captor.class, MemberCategory.values());
 
         hints.reflection().registerType(DimmerState.class, MemberCategory.values());
         hints.reflection().registerType(DisplayMessageState.class, MemberCategory.values());

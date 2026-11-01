@@ -110,7 +110,7 @@ public class LongPressInputCaptor {
         return this.pressedInputs.computeIfAbsent(component, c -> new Captor(component.getLong_press_duration_millis()));
     }
 
-    static class Captor extends InputState {
+    public static class Captor extends InputState {
         @Getter
         private Long stopPressTime;
         @Getter
