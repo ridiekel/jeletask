@@ -163,8 +163,8 @@ public class MotorStateCalculator extends StateCalculatorSupport<MotorState> {
             return NumberConverter.UNSIGNED_BYTE.convert(p);
         }).orElse(currentPosition);
         byte[] secondsToFinish = Optional.ofNullable(state.getSecondsToFinish()).map(n -> n.multiply(HUNDRED)).map(NumberConverter.UNSIGNED_SHORT::convert).orElse(Bytes.EMPTY);
-        byte[] correctionAtZeroPercentInSeconds = Optional.ofNullable(state.getCorrectionAtZeroPercentInSeconds()).map(NumberConverter.UNSIGNED_SHORT::convert).orElse(Bytes.EMPTY);
-        byte[] correctionAtHundredPercentInSeconds = Optional.ofNullable(state.getCorrectionAtHundredPercentInSeconds()).map(NumberConverter.UNSIGNED_SHORT::convert).orElse(Bytes.EMPTY);
+        byte[] correctionAtZeroPercentInSeconds = Optional.ofNullable(state.getCorrectionAtZeroPercentInSeconds()).map(NumberConverter.UNSIGNED_BYTE::convert).orElse(Bytes.EMPTY);
+        byte[] correctionAtHundredPercentInSeconds = Optional.ofNullable(state.getCorrectionAtHundredPercentInSeconds()).map(NumberConverter.UNSIGNED_BYTE::convert).orElse(Bytes.EMPTY);
 
         return Bytes.concat(direction, power, protection, requestedPosition, currentPosition, secondsToFinish, correctionAtZeroPercentInSeconds, correctionAtHundredPercentInSeconds);
     }
