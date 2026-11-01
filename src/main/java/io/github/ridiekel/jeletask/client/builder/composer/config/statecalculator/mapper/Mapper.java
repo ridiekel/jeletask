@@ -32,6 +32,20 @@ public final class Mapper<V extends Enum<V>> {
         return Enum.valueOf(enumClass, toString(dataBytes));
     }
 
+    /**
+     * Lenient variant of {@link #toEnum(byte[])}: returns {@code null} instead of throwing when the value is unknown.
+     * Use this when decoding events from the central unit, where a value outside the known set (e.g. 0 for "not used")
+     * should not make the whole state unreadable.
+     */
+    public V toEnumOrNull(byte[] dataBytes) {
+        int key = this.numberConverter.convert(dataBytes).intValue();
+        V value = this.byNumber.get(key);
+        if (value == null) {
+            LOG.debug(() -> String.format("No %s for key '%s' (bytes '%s'), ignoring. Known keys: %s", this.enumClass.getSimpleName(), key, Bytes.bytesToHex(dataBytes), this.byNumber));
+        }
+        return value;
+    }
+
     public String toString(byte[] dataBytes) {
         int key = this.numberConverter.convert(dataBytes).intValue();
         LOG.trace(() -> "Converted '" + Bytes.bytesToHex(dataBytes) + "' to number '" + key + "'. Looking up the key in " + this.byNumber);

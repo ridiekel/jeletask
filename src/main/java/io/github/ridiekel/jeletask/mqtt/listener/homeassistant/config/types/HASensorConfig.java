@@ -1,18 +1,23 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.SensorType;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureControlStateCalculator.ValidTemperatureControlPreset;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadOnlyConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * <a href="https://www.home-assistant.io/integrations/sensor.mqtt/">MQTT Sensor Discovery</a>
  */
 public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
-
-    public static final int TEMPERATURE_MINIMUM = 10;
-    public static final int TEMPERATURE_MAXIMUM = 30;
+    private static final Logger LOG = LogManager.getLogger();
 
     public HASensorConfig(HAConfigParameters parameters) {
         super(parameters);
@@ -20,8 +25,8 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
         if (isType(parameters, SensorType.TEMPERATURECONTROL)) {
             // HA 'climate'
 
-            this.putInt("min_temp", TEMPERATURE_MINIMUM);
-            this.putInt("max_temp", TEMPERATURE_MAXIMUM);
+            this.putDouble("min_temp", parameters.getComponentSpec().getHA_min_temp());
+            this.putDouble("max_temp", parameters.getComponentSpec().getHA_max_temp());
             this.putDouble("precision", parameters.getComponentSpec().getHA_temperature_step());
             this.putDouble("temp_step", parameters.getComponentSpec().getHA_temperature_step());
             this.putArray("modes", parameters.getComponentSpec().getHA_modes().split(","));
@@ -43,33 +48,60 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
                     """);
             this.put("mode_state_topic", "~/state");
             this.put("mode_command_topic", "~/set");
-            this.put("fan_mode_state_topic", "~/state");
-            this.put("fan_mode_command_topic", "~/set");
             this.put("current_temperature_template", "{{ value_json.current_temperature }}");
-            this.put("temperature_state_template", "{{ value_json.target_temperature }}");
+            // While OFF the central reports its frost protection target (e.g. 5.0); 'None' clears the target in HA
+            this.put("temperature_state_template", "{% if value_json.state == 'OFF' %}None{% else %}{{ value_json.target_temperature }}{% endif %}");
             this.put("temperature_command_template", """
                     { "state": "ON", "action": "TARGET", "target_temperature": {{ value|float }} }
                     """);
+            // Teletask keeps reporting the last mode (e.g. HEAT) while the thermostat is OFF
             this.put("mode_state_template", """
-                    {% if value_json.mode|upper == "VENT" %}
+                    {% if value_json.state|upper == "OFF" %}
+                        off
+                    {% elif value_json.mode|upper == "VENT" %}
                         fan_only
                     {% else %}
                         {{ value_json.mode|lower }}
                     {% endif %}
                     """);
             this.put("mode_command_template", """
-                    {% if value|lower == "fan_only" %}
+                    {% if value|lower == "off" %}
+                        {"state": "OFF"}
+                    {% elif value|lower == "fan_only" %}
                         {"state": "ON", "mode": "VENT"}
                     {% else %}
                         {"state": "ON", "mode": "{{ value | upper}}"}
                     {% endif %}
                     """);
-            this.put("fan_mode_command_template", """
-                    {"state": "ON", "fanspeed": "{{ value|upper }}"}
-                    """);
-            this.put("fan_mode_state_template", """
-                    {{ value_json.fanspeed|lower }}
-                    """);
+            String fanModes = parameters.getComponentSpec().getHA_fan_modes();
+            if (fanModes != null && !fanModes.isBlank()) {
+                this.putArray("fan_modes", fanModes.split(","));
+                this.put("fan_mode_state_topic", "~/state");
+                this.put("fan_mode_command_topic", "~/set");
+                this.put("fan_mode_command_template", """
+                        {"state": "ON", "fanspeed": "{{ value|upper }}"}
+                        """);
+                this.put("fan_mode_state_template", """
+                        {{ value_json.fanspeed|lower }}
+                        """);
+            }
+            if (parameters.getComponentSpec().isHA_hvac_action()) {
+                // Bit 0 of output_state is the thermostat's own heat/cool demand (seen on MICROS+: 8 = idle, 9 = demand)
+                this.put("action_topic", "~/state");
+                this.put("action_template", """
+                        {% if value_json.state == 'OFF' %}off{% elif (value_json.output_state | int(0)) % 2 == 1 %}{{ 'cooling' if value_json.mode == 'COOL' else 'heating' }}{% else %}idle{% endif %}
+                        """);
+            }
+            Map<String, String> presets = presetModes(parameters);
+            if (!presets.isEmpty()) {
+                String toLabel = presets.entrySet().stream().map(e -> jinjaString(e.getValue()) + ": " + jinjaString(e.getKey())).collect(Collectors.joining(", ", "{", "}"));
+                String toPreset = presets.entrySet().stream().map(e -> jinjaString(e.getKey()) + ": " + jinjaString(e.getValue())).collect(Collectors.joining(", ", "{", "}"));
+                this.putArray("preset_modes", presets.keySet().toArray(String[]::new));
+                this.put("preset_mode_state_topic", "~/state");
+                this.put("preset_mode_command_topic", "~/set");
+                this.put("preset_mode_value_template", "{% if value_json.state == 'OFF' %}none{% else %}{{ " + toLabel + ".get((value_json.preset or 'MANUAL')|upper, 'none') }}{% endif %}");
+                this.put("preset_mode_command_template", "{\"state\": \"ON\", \"preset\": \"{{ " + toPreset + ".get(value, value|upper) }}\"}");
+            }
             this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
         } else if (isType(parameters, SensorType.PULSECOUNTER)) {
             // TODO: implement both current + total. Only current is implemented right now.
@@ -100,5 +132,32 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
 
     private static boolean isType(HAConfigParameters parameters, SensorType expected) {
         return expected == SensorType.from(parameters.getComponentSpec());
+    }
+
+    /**
+     * label -> Teletask preset, e.g. "Manual=MANUAL,Comfort=DAY". A missing preset in the state means MANUAL.
+     * Unknown presets and the label "none" (reserved by HA) are left out, so HA does not reject the whole entity.
+     */
+    private static Map<String, String> presetModes(HAConfigParameters parameters) {
+        Map<String, String> presets = new LinkedHashMap<>();
+        for (String entry : Optional.ofNullable(parameters.getComponentSpec().getHA_preset_modes()).orElse("").split(",")) {
+            if (!entry.isBlank()) {
+                String[] parts = entry.split("=", 2);
+                String label = parts[0].trim();
+                String preset = (parts.length > 1 ? parts[1] : parts[0]).trim().toUpperCase();
+                if (Arrays.stream(ValidTemperatureControlPreset.values()).noneMatch(p -> p.name().equals(preset))) {
+                    LOG.warn("Ignoring ha_preset_modes entry '{}' of sensor {}: unknown preset '{}', expected one of {}", entry, parameters.getComponentSpec().getNumber(), preset, Arrays.toString(ValidTemperatureControlPreset.values()));
+                } else if (label.equalsIgnoreCase("none")) {
+                    LOG.warn("Ignoring ha_preset_modes entry '{}' of sensor {}: Home Assistant reserves the label 'none'", entry, parameters.getComponentSpec().getNumber());
+                } else {
+                    presets.put(label, preset);
+                }
+            }
+        }
+        return presets;
+    }
+
+    private static String jinjaString(String value) {
+        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'";
     }
 }

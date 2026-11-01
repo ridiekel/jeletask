@@ -68,7 +68,9 @@
       {
         "number": 33,
         "description": "Temperature Control",
-        "type": "TEMPERATURECONTROL"
+        "type": "TEMPERATURECONTROL",
+        "ha_preset_modes": "day=DAY,night=NIGHT,eco=ECO,frost=FROST",
+        "ha_hvac_action": true
       },
       { "number": 36, "description": "Humidity Sensor", "type": "HUMIDITY" }
     ],

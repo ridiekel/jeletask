@@ -9,6 +9,8 @@ import org.apache.commons.lang3.function.TriConsumer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter.UNSIGNED_BYTE;
@@ -55,7 +57,10 @@ import static io.github.ridiekel.jeletask.client.builder.composer.config.stateca
 public class TemperatureControlStateCalculator extends StateCalculatorSupport<TemperatureControlState> {
     public static final OnOffToggleStateCalculator ON_OFF_TOGGLE_STATE_CALCULATOR = new OnOffToggleStateCalculator();
     private static final Mapper<ValidTemperatureControlAction> ACTION_MAPPER = new Mapper<>(ValidTemperatureControlAction.class, UNSIGNED_BYTE)
-            .add(ValidTemperatureControlAction.TARGET, 87);
+            .add(ValidTemperatureControlAction.TARGET, 87)
+            .add(ValidTemperatureControlAction.DAY_PRESET, 29)
+            .add(ValidTemperatureControlAction.NIGHT_PRESET, 27)
+            .add(ValidTemperatureControlAction.ECO_OFFSET, 88);
     private static final Mapper<ValidTemperatureControlMode> MODE_MAPPER = new Mapper<>(ValidTemperatureControlMode.class, UNSIGNED_BYTE)
             .add(ValidTemperatureControlMode.OFF, 0)
             .add(ValidTemperatureControlMode.AUTO, 94)
@@ -84,14 +89,17 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         state.setTargetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[2], dataBytes[3]}));
         state.setDayPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[4], dataBytes[5]}));
         state.setNightAtHeatingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[6], dataBytes[7]}));
-        state.setEcoPresetOffset(new BigDecimal(dataBytes[8]).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP));
-        state.setPreset(PRESET_MAPPER.toEnum(new byte[]{dataBytes[9]}));
-        state.setMode(MODE_MAPPER.toEnum(new byte[]{dataBytes[10]}));
-        state.setFanspeed(SPEED_MAPPER.toEnum(new byte[]{dataBytes[11]}));
+        state.setEcoPresetOffset(new BigDecimal(Byte.toUnsignedInt(dataBytes[8])).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP));
+        // Lenient: thermostats without e.g. a fan or preset report 0 here, which is not a valid setting value.
+        state.setPreset(PRESET_MAPPER.toEnumOrNull(new byte[]{dataBytes[9]}));
+        state.setMode(MODE_MAPPER.toEnumOrNull(new byte[]{dataBytes[10]}));
+        state.setFanspeed(SPEED_MAPPER.toEnumOrNull(new byte[]{dataBytes[11]}));
         state.setWindowOpen(dataBytes[13]);       // 0 = open, 255 = closed
         state.setOutputState(dataBytes[14]);      // Untested, no idea about the values
         state.setSwingDirection(dataBytes[15]);   // Untested, no idea about the values
-        state.setNightAtCoolingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[16], dataBytes[17]}));
+        if (dataBytes.length >= 18) {
+            state.setNightAtCoolingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[16], dataBytes[17]}));
+        }
 
         return state;
     }
@@ -145,6 +153,9 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
 
         if (state.getState() == OnOffToggleStateCalculator.ValidOnOffToggle.OFF) {
             setting = ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(component, new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
+        } else if (state.getAction() == null && state.getMode() == null && state.getFanspeed() == null && state.getPreset() == null) {
+            // Just turning on: the central restores the previous mode and target temperature
+            setting = ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(component, new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
         } else if (state.getAction() != null) {
             setting = ACTION_MAPPER.toBytes(state.getAction());
             data = state.getAction().getData(state);
@@ -152,11 +163,41 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
             setting = MODE_MAPPER.toBytes(state.getMode());
         } else if (state.getFanspeed() != null) {
             setting = SPEED_MAPPER.toBytes(state.getFanspeed());
+        } else if (state.getPreset() == ValidTemperatureControlPreset.MANUAL) {
+            // There is no "manual" preset in Teletask: re-sending the target temperature switches the zone to manual
+            TemperatureControlState target = new TemperatureControlState(state.getState());
+            target.setTargetTemperature(Optional.ofNullable(state.getTargetTemperature()).orElseGet(() -> currentTargetTemperature(component)));
+            setting = ACTION_MAPPER.toBytes(ValidTemperatureControlAction.TARGET);
+            data = ValidTemperatureControlAction.TARGET.getData(target);
         } else if (state.getPreset() != null) {
             setting = PRESET_MAPPER.toBytes(state.getPreset());
         }
 
         return Bytes.concat(setting, data);
+    }
+
+    /**
+     * A mode, fan speed or preset command does not switch an OFF thermostat back on, so send ON first.
+     */
+    @Override
+    public List<TemperatureControlState> toCommandStates(ComponentSpec component, TemperatureControlState state) {
+        if (isOff(component)
+                && state.getState() == OnOffToggleStateCalculator.ValidOnOffToggle.ON
+                && state.getAction() == null
+                && (state.getMode() != null || state.getFanspeed() != null || state.getPreset() != null)) {
+            return List.of(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.ON), state);
+        }
+        return List.of(state);
+    }
+
+    private static BigDecimal currentTargetTemperature(ComponentSpec component) {
+        return component != null && component.getState() instanceof TemperatureControlState current ? current.getTargetTemperature() : null;
+    }
+
+    private static boolean isOff(ComponentSpec component) {
+        return component != null
+                && component.getState() instanceof TemperatureControlState current
+                && current.getState() == OnOffToggleStateCalculator.ValidOnOffToggle.OFF;
     }
 
     @Override
@@ -167,9 +208,10 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
                 bigDecimalToBytes(state.getDayPresetTemperature()),
                 bigDecimalToBytes(state.getNightAtHeatingPresetTemperature()),
                 UNSIGNED_BYTE.convert(state.getEcoPresetOffset().multiply(BigDecimal.TEN).setScale(0, RoundingMode.HALF_UP)),
-                PRESET_MAPPER.toBytes(state.getPreset()),
-                MODE_MAPPER.toBytes(state.getMode()),
-                SPEED_MAPPER.toBytes(state.getFanspeed()),
+                // No active preset, mode or fan speed is reported as 0 (TDS15132: "SET_OFF if there is no active preset")
+                state.getPreset() == null || state.getPreset() == ValidTemperatureControlPreset.MANUAL ? new byte[]{0} : PRESET_MAPPER.toBytes(state.getPreset()),
+                state.getMode() == null ? new byte[]{0} : MODE_MAPPER.toBytes(state.getMode()),
+                state.getFanspeed() == null ? new byte[]{0} : SPEED_MAPPER.toBytes(state.getFanspeed()),
                 ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(component, new OnOffState(state.getState())),
                 UNSIGNED_BYTE.convert(state.getWindowOpen()),
                 UNSIGNED_BYTE.convert(state.getOutputState()),
@@ -182,10 +224,17 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
     public TemperatureControlState fromCommandForTesting(ComponentSpec component, byte[] dataBytes) {
         TemperatureControlState state = (TemperatureControlState) component.getState();
 
+        int setting = Byte.toUnsignedInt(dataBytes[0]);
+        if (setting == 255 || setting == 0) {
+            // SET_ON / SET_OFF
+            state.setState(ON_OFF_TOGGLE_STATE_CALCULATOR.fromEvent(component, new byte[]{dataBytes[0]}).getState());
+            return state;
+        }
+
         //Could be done better I guess
         try {
-            state.setAction(ACTION_MAPPER.toEnum(new byte[]{dataBytes[0]}));
-            state.getAction().applyData(component, state, dataBytes);
+            ValidTemperatureControlAction action = ACTION_MAPPER.toEnum(new byte[]{dataBytes[0]});
+            action.applyData(component, state, dataBytes);
         } catch (IllegalStateException e1) {
             try {
                 state.setFanspeed(SPEED_MAPPER.toEnum(new byte[]{dataBytes[0]}));
@@ -217,11 +266,50 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
 
     public enum ValidTemperatureControlAction {
         TARGET(
-                s -> TemperatureStateCalculator.bigDecimalToBytes(s.getTargetTemperature()),
+                s -> TemperatureStateCalculator.bigDecimalToBytes(required("target_temperature", s.getTargetTemperature())),
                 (c, s, b) -> {
                     s.setTargetTemperature(TemperatureStateCalculator.bytesToBigDecimal(c, new byte[]{b[1], b[2]}));
                 }
+        ),
+        // SET_TEMPSETDAY / SET_TEMPSETNIGHT: 1 byte = (°C + 40) x 2 (TDS15132, "Sensor values - SETS")
+        DAY_PRESET(
+                s -> presetToByte("day_preset_temperature", s.getDayPresetTemperature()),
+                (c, s, b) -> s.setDayPresetTemperature(byteToPreset(b[1]))
+        ),
+        NIGHT_PRESET(
+                s -> presetToByte("night_at_heating_preset_temperature", s.getNightAtHeatingPresetTemperature()),
+                (c, s, b) -> s.setNightAtHeatingPresetTemperature(byteToPreset(b[1]))
+        ),
+        // SET_TEMPSETSTANDBY: the eco offset in steps of 0.5 °C (offset x 2). TDS15132 says "x 10", but a MICROS+
+        // stored 1.5, 15.0, 0.5 and 4.0 °C when sent 3, 30, 1 and 8 (measured 2026-10-30, also on the wall panel).
+        // Reports stay x 10 in an unsigned byte, so 25.5 °C is the most the central can report back.
+        ECO_OFFSET(
+                s -> UNSIGNED_BYTE.convert(inRange("eco_preset_offset", s.getEcoPresetOffset(), BigDecimal.ZERO, new BigDecimal("25.5")).multiply(BigDecimal.valueOf(2)).setScale(0, RoundingMode.HALF_UP)),
+                (c, s, b) -> s.setEcoPresetOffset(new BigDecimal(Byte.toUnsignedInt(b[1])).divide(BigDecimal.valueOf(2), 1, RoundingMode.HALF_UP))
         );
+
+        private static byte[] presetToByte(String name, BigDecimal celsius) {
+            return UNSIGNED_BYTE.convert(inRange(name, celsius, BigDecimal.valueOf(-40), new BigDecimal("87.5")).add(BigDecimal.valueOf(40)).multiply(BigDecimal.valueOf(2)).setScale(0, RoundingMode.HALF_UP));
+        }
+
+        private static BigDecimal required(String name, BigDecimal value) {
+            if (value == null) {
+                throw new IllegalArgumentException("Missing '" + name + "'");
+            }
+            return value;
+        }
+
+        // A SET value is 1 byte, a value outside min .. max would silently wrap around
+        private static BigDecimal inRange(String name, BigDecimal value, BigDecimal min, BigDecimal max) {
+            if (required(name, value).compareTo(min) < 0 || value.compareTo(max) > 0) {
+                throw new IllegalArgumentException("'" + name + "' must be between " + min + " and " + max + ", was " + value);
+            }
+            return value;
+        }
+
+        private static BigDecimal byteToPreset(byte value) {
+            return new BigDecimal(Byte.toUnsignedInt(value)).divide(BigDecimal.valueOf(2), 1, RoundingMode.HALF_UP).subtract(BigDecimal.valueOf(40));
+        }
 
         private final Function<TemperatureControlState, byte[]> getData;
         private final TriConsumer<ComponentSpec, TemperatureControlState, byte[]> applyData;
@@ -261,5 +349,10 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         DAY,
         NIGHT,
         ECO,
+        /**
+         * Not a Teletask preset: reported (in HA) when no known preset is active, i.e. a manually set target.
+         * Sending it re-applies the current target temperature.
+         */
+        MANUAL,
     }
 }

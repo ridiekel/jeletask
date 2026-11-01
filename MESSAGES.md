@@ -320,26 +320,49 @@ The following json attributes are provided on the /state MQTT topic:
 | fanspeed                            | SPAUTO/SPLOW/SPMED/SPHIGH | The current fan speed                            |
 | window_open                         | 0 = closed / 255 = open   | Window state (Untested)                          |
 | swing_direction                     |                           | switch direction as value (Untested)             |
-| output_state                        |                           | Untested/Unsure                                  |
+| output_state                        |                           | Bit 0 = the thermostat's own heat/cool demand (seen on a MICROS+: 8 = idle, 9 = demand) |
 | day_preset_temperature              |                           | Day preset temperature (see prosoft)             |
 | night_at_heating_preset_temperature |                           | Night at heating temperature (see prosoft)       |
 | night_at_cooling_preset_temperature |                           | Night at cooling temperature (see prosoft)       |
 | eco_preset_offset                   |                           | ECO offset preset temperature (see prosoft)      |
 
-| For actions | Description                                              |
-|-------------|----------------------------------------------------------|
-| TARGET      | Set target state, also pass the target_temperature value |
+Unknown preset, mode or fan speed values (e.g. `0`, sent by radiator zones without a fan) are ignored and logged
+instead of aborting the whole state message; the attribute is then left out of the JSON.
+
+| For actions  | Description                                                                         |
+|--------------|-------------------------------------------------------------------------------------|
+| TARGET       | Set target state, also pass the target_temperature value                            |
+| DAY_PRESET   | Store a new day preset temperature, pass `day_preset_temperature`                   |
+| NIGHT_PRESET | Store a new night (heating) preset temperature, pass `night_at_heating_preset_temperature` |
+| ECO_OFFSET   | Store a new eco offset (eco = day − offset), pass `eco_preset_offset`               |
+
+The preset actions only change the stored preset temperatures; they never switch a thermostat on.
+Day/night are sent as 1 byte `(°C + 40) × 2`, so they must be between -40 and 87.5 °C; the eco offset must be between
+0 and 25.5 °C, the most a report can hold. A value outside that range, or a missing value, is rejected and nothing is sent. The eco offset is sent in steps of 0.5 °C (`offset × 2`):
+the DoIP manual (TDS15132) says `× 10`, but a MICROS+ stored 15.0 °C when sent 30 (reports do use `× 10`, unsigned). This was only measured
+on a heating-only MICROS+: other central types may follow the manual, and negative offsets are untested.
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/sensor/9/set \
+    -m '{"state":"ON","action":"DAY_PRESET","day_preset_temperature":21.5}'
+```
 
 | For state change            | Description                                 |
 |-----------------------------|---------------------------------------------|
 | ON                          | Turn on the device                          |
 | OFF                         | Turn off the device                         |
 
-| For preset change | Description            |
-|-------------------|------------------------|
-| DAY               | Change to day preset   |
-| NIGHT             | Change to night preset |
-| ECO               | Change to eco preset   |
+| For preset change | Description                                                      |
+|-------------------|------------------------------------------------------------------|
+| DAY               | Change to day preset                                             |
+| NIGHT             | Change to night preset                                           |
+| ECO               | Change to eco preset                                             |
+| FROST             | Change to frost protection preset                                |
+| MANUAL            | Leave the presets: re-sends the current target temperature      |
+
+Choosing a mode, fan speed or preset on an OFF thermostat (e.g. in Home Assistant) sends `ON` first and then the
+chosen mode, fan speed or preset. `{"state":"ON"}` on its own turns the thermostat back on in its previous mode.
 
 | For operation mode change | Description                    |
 |---------------------------|--------------------------------|

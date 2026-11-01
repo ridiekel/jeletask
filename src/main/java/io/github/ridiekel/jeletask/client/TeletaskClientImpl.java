@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client;
 
 import io.github.ridiekel.jeletask.TeletaskReceiver;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.StateCalculator;
 import io.github.ridiekel.jeletask.client.builder.message.MessageUtilities;
 import io.github.ridiekel.jeletask.client.builder.message.executor.MessageExecutor;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
@@ -98,11 +99,17 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             }
 
             if (!Objects.equals(component.getState(), state)) {
-                this.execute(
-                        new SetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                StateCalculator<State<?>> stateCalculator = this.getCentralUnit().getMessageHandler().getFunctionConfig(component.getFunction()).getStateCalculator(component);
+                List<SetMessage> messages = stateCalculator.toCommandStates(component, Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))).stream()
+                        .map(s -> new SetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), s))
+                        .toList();
+                // Compose every command up front: an invalid state is rejected here, before anything is sent
+                messages.forEach(SetMessage::getStateBytes);
+                messages.forEach(message -> this.execute(
+                        message,
                         m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
                         (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-                );
+                ));
             }
         });
     }

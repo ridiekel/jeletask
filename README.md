@@ -23,6 +23,11 @@ So when upgrading from a previous version, please make sure to take this into ac
 1. When updating your container, please remove it and recreate it when using portainer (https://github.com/ridiekel/jeletask/issues/32#issuecomment-3536714894).
 2. You will have to remove your teletask device in HA before upgrading.
 
+Upgrading to 6.4 needs no configuration changes, but `TEMPERATURECONTROL` sensors behave differently in two ways:
+
+1. An OFF thermostat now shows as `off` in Home Assistant, without a target temperature, instead of its last mode.
+2. A command with `"state": "ON"` and a mode, preset or fan speed now switches an OFF thermostat on. Home Assistant always sends that state, so `set_fan_mode` on an OFF zone turns it on too.
+
 # Configuring
 
 ## Teletask2MQTT
@@ -413,6 +418,45 @@ Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
   ]
 }
 ```
+
+### Thermostats (TEMPERATURECONTROL)
+
+A `TEMPERATURECONTROL` sensor becomes a Home Assistant `climate` entity with the current and target temperature,
+and modes. While the thermostat is OFF, HA shows mode `off` and no target temperature. The following optional keys
+tune the HA entity:
+
+| Key                | Default                                  | Description                                                                                                   |
+|--------------------|------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `ha_modes`         | all modes                                | HVAC modes offered in HA, e.g. `heat,off` for radiator zones                                                  |
+| `ha_preset_modes`  | empty                                    | Presets offered in HA, `PRESET` or `Label=PRESET` (DAY, NIGHT, ECO, FROST, MANUAL); empty = no presets       |
+| `ha_hvac_action`   | `false`                                  | Show the heat/cool demand as `hvac_action` (heating / idle / off); only observed on a heating-only MICROS+   |
+| `ha_fan_modes`     | `auto,low,medium,high`                   | Fan modes offered in HA; empty = no fan control (e.g. radiator zones)                                        |
+| `ha_min_temp`      | `10`                                     | Lowest target temperature in HA                                                                               |
+| `ha_max_temp`      | `30`                                     | Highest target temperature in HA                                                                              |
+
+Example for a radiator zone on an Aurus wall panel, with your own preset labels:
+
+```json
+{
+  "number": 9,
+  "description": "Office thermostat",
+  "type": "TEMPERATURECONTROL",
+  "ha_modes": "heat,off",
+  "ha_min_temp": 5,
+  "ha_fan_modes": "",
+  "ha_preset_modes": "Manual=MANUAL,Comfort=DAY,Night=NIGHT,Eco=ECO",
+  "ha_hvac_action": true,
+  "ha_unit_of_measurement": "°C"
+}
+```
+
+The day/night/eco preset temperatures can be changed over MQTT with the `DAY_PRESET`, `NIGHT_PRESET` and `ECO_OFFSET`
+actions (see [MESSAGES.md](MESSAGES.md)), e.g. from an MQTT `number` entity in Home Assistant.
+
+A radiator zone (`ha_modes: heat,off`, Dutch preset labels via `ha_preset_modes`) on a Home Assistant dashboard:
+the standard thermostat card, plus a status line and preset buttons built on the climate entity's attributes.
+
+![Thermostat in Home Assistant](src/main/resources/ha-thermostat.png "TEMPERATURECONTROL thermostat in Home Assistant")
 
 # Developing
 

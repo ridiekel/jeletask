@@ -204,7 +204,8 @@ public class HAConfig<T extends HAConfig<T>> {
     }
 
     protected String idWithDomain(HAConfigParameters parameters) {
-        String id = id(parameters);
+        // The bridge itself is SENSOR -1: "sensor__1" would be slugified by HA to "sensor_1" and clash with sensor 1
+        String id = parameters.getComponentSpec().getNumber() < 0 ? baseId(parameters).replace("-", "_") + "_bridge" : id(parameters);
         //For some reason. If I don't prefix this with <something>. HA will not use this value. It doesn't even have to be correct. Just for fun I tried it with smurf, and it also worked. I just added the domain, since that is what I think it should be.
         return parameters.getDeviceType().toString().toLowerCase() + "." + id;
     }
