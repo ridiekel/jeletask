@@ -180,6 +180,7 @@ abstract class ResilienceScenarios {
         this.bridge.relayChangesOnCentral(1, ValidOnOffToggle.ON);
         this.bridge.awaitOnMqtt(1, ValidOnOffToggle.ON);
         this.bridge.awaitCommandRoundTrip(2, ValidOnOffToggle.ON);
+        assertThat(this.bridge.connections()).isGreaterThan(1);
     }
 
     @Test
@@ -198,6 +199,7 @@ abstract class ResilienceScenarios {
         this.bridge.awaitStatusRequestsOnLatestConnection();
         this.bridge.awaitOnMqtt(3, ValidOnOffToggle.ON);
         this.bridge.awaitCommandRoundTrip(1, ValidOnOffToggle.ON);
+        assertThat(this.bridge.connections()).isGreaterThan(1);
     }
 
     @Test
