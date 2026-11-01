@@ -127,8 +127,9 @@ class EventMessageTest {
 
         assertThat(relay[0]).isEqualTo("Function: RELAY | 1 | 01");
         assertThat(relay[1]).isEqualTo("Output: 1000 | 03 E8");
-        assertThat(relay[2]).matches("(?s)State: FF\\s.*");
-        assertThat(pulse[2]).matches("(?s)State: 06 3A 00 00 00 00 00 00 00 1A 00 00 FF 00 00 00 00 0F 42 40\\s.*");
+        // The JSON of the state follows directly, so a trailing checksum byte would break the match
+        assertThat(relay[2]).matches("(?s)State: FF\\s+\\{.*");
+        assertThat(pulse[2]).matches("(?s)State: 06 3A 00 00 00 00 00 00 00 1A 00 00 FF 00 00 00 00 0F 42 40\\s+\\{.*");
     }
 
     @Test
