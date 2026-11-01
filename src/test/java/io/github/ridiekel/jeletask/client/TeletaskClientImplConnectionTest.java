@@ -193,7 +193,7 @@ class TeletaskClientImplConnectionTest {
     @Test
     void aFailingWriteIsReportedAsCommunicationException() throws IOException {
         this.central.goOnline();
-        TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
         client.start();
         client.getOutputStream().close();
 
@@ -239,7 +239,7 @@ class TeletaskClientImplConnectionTest {
     @Test
     void stopKeepsTheInterruptOfTheCallerAndStillClosesEverything() {
         this.central.goOnline();
-        TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
         client.start();
         awaitLogMessagesOn(0);
         // Keeps the io thread busy, so that stop really has to wait for it
@@ -255,6 +255,28 @@ class TeletaskClientImplConnectionTest {
         assertTrue(Thread.interrupted());
         assertNull(client.getOutputStream());
         eventually().until(() -> this.central.closedByClient(0));
+    }
+
+    @Test
+    void aBusyIoThreadDoesNotPileUpEventListenersInFrontOfTheNextCommand() {
+        this.central.goOnline();
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
+        client.start();
+        awaitLogMessagesOn(0);
+        this.central.acknowledging(false);
+        client.get(Function.RELAY, RELAY_1, (f, n, s) -> {
+        }, (f, n, s, e) -> {
+        });
+        eventually().until(() -> !this.central.frames(Command.GET).isEmpty());
+
+        // Almost the whole wait for the missing acknowledge. A listener every 20ms taking 10ms would mean a backlog of a second.
+        eventually().during(1900, TimeUnit.MILLISECONDS).until(() -> true);
+        this.central.acknowledging(true);
+        client.get(Function.RELAY, RELAY_2, (f, n, s) -> {
+        }, (f, n, s, e) -> {
+        });
+
+        eventually().atMost(800, TimeUnit.MILLISECONDS).until(() -> this.central.frames(Command.GET).size() == 2);
     }
 
     @Test

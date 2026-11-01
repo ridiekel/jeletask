@@ -149,9 +149,10 @@ public final class FakeCentral implements AutoCloseable {
     }
 
     private void handle(Connection connection, Frame frame) {
-        // Before answering, so a test that saw the acknowledge also sees the frame
+        // Decided before the frame shows up, so a test that saw it knows what happens to it whatever it changes next
+        boolean acknowledge = this.acknowledging;
         this.frames.add(frame);
-        if (this.acknowledging) {
+        if (acknowledge) {
             write(connection.socket, new byte[]{(byte) HANDLER.getAcknowledgeValue()});
         }
         byte[] response = this.responder.apply(frame);

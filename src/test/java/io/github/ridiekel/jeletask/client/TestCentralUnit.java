@@ -74,6 +74,23 @@ public final class TestCentralUnit extends CentralUnit {
         });
     }
 
+    /**
+     * For tests that silence the central unit or break the connection themselves: a keep-alive would answer that with a reconnect.
+     */
+    public static TestCentralUnit withoutKeepAlive(int port) {
+        return new TestCentralUnit(port, new KeepAliveStrategy() {
+            @Override
+            public int getIntervalMillis() {
+                return 60_000;
+            }
+
+            @Override
+            public void execute(TeletaskClientImpl client) {
+                // Nothing to send
+            }
+        });
+    }
+
     public static TestCentralUnit withKeepAlive(int port, KeepAliveStrategy keepAliveStrategy) {
         return new TestCentralUnit(port, keepAliveStrategy);
     }

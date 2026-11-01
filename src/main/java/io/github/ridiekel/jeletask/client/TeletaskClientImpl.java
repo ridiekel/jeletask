@@ -62,6 +62,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicBoolean starting = new AtomicBoolean(false);
     private final AtomicBoolean stopping = new AtomicBoolean(false);
+    private final AtomicBoolean eventListenerQueued = new AtomicBoolean(false);
 
     @Autowired
     public TeletaskClientImpl(CentralUnit centralUnit) {
@@ -328,7 +329,13 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.eventListenerTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                TeletaskClientImpl.this.ioService.execute(TeletaskClientImpl.this.getEventMessageListener());
+                // The io thread can be busy for minutes, e.g. while reconnecting. A queue full of listeners would keep commands waiting afterwards.
+                if (TeletaskClientImpl.this.eventListenerQueued.compareAndSet(false, true)) {
+                    TeletaskClientImpl.this.ioService.execute(() -> {
+                        TeletaskClientImpl.this.eventListenerQueued.set(false);
+                        TeletaskClientImpl.this.getEventMessageListener().run();
+                    });
+                }
             }
         }, 0, 20);
     }
