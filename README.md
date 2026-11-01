@@ -217,6 +217,18 @@ Maybe this was a bug in one of their versions.
 
 <img src="src/main/resources/prosoft_input_edge_triggered.png" alt="drawing" width="600px"/>
 
+### One DoIP connection, PROSOFT downloads
+
+On my MICROS+ only one DoIP (TCP) client can be connected at a time: when I tried a second connection from a
+PC while the bridge was running, it was dropped immediately. So don't test the API with another tool while the
+bridge is connected, stop the bridge first.
+
+After a download from PROSOFT the central can drop its DoIP connections. If states stop updating in Home
+Assistant afterwards, restart the bridge. A function you just added in PROSOFT (e.g. a new flag) stays `unknown`
+in Home Assistant until it was downloaded to the central and the bridge has read its state: at the next forced
+refresh (`TELETASK_PUBLISH_STATES_INTERVAL`, every 5 minutes by default) or when the bridge restarts. Adding a
+function to `config.json` always needs a restart, because the bridge reads that file at startup.
+
 # Running
 
 ## Environment variables
@@ -323,6 +335,54 @@ networks:
 If you already have an MQTT server running somewhere, you can remove the mqtt service from the docker-compose.yml.
 Point the config to your mqtt instance.
 
+## Home Assistant OS (local add-on)
+
+On Home Assistant OS you can run the bridge as a local add-on next to the Mosquitto broker add-on.
+Create a folder `/addons/jeletask2mqtt/` (e.g. with the Samba or SSH add-on) with three files:
+
+`config.yaml`
+
+```yaml
+name: "Jeletask2MQTT"
+description: "Teletask DoIP to MQTT bridge"
+version: "1.0.0"
+slug: "jeletask_mqtt_bridge"
+arch:
+  - amd64
+  - aarch64
+startup: services
+boot: auto
+```
+
+`Dockerfile`
+
+```dockerfile
+FROM ridiekel/jeletask2mqtt:6.3.2-native
+
+COPY --chmod=644 config.json /teletask2mqtt/config.json
+
+ENV TELETASK_CENTRAL_HOST="192.168.0.200"
+ENV TELETASK_CENTRAL_PORT="55957"
+ENV TELETASK_CENTRAL_ID="1"
+ENV TELETASK_MQTT_HOST="core-mosquitto"
+ENV TELETASK_MQTT_PORT="1883"
+ENV TELETASK_MQTT_USERNAME="<mqtt user>"
+ENV TELETASK_MQTT_PASSWORD="<mqtt password>"
+ENV TELETASK_MQTT_RETAINED="true"
+```
+
+and your `config.json`. Then go to Settings → Apps (Add-ons in older versions) → store → ⋮ → Check
+for updates; the add-on appears under "Local".
+
+`config.json` is copied into the image when the add-on is built. After changing it (or the Dockerfile), use
+**Rebuild** on the add-on page: a restart keeps running the old configuration. Keep the folder out of shared
+backups/repositories, as the Dockerfile contains your MQTT password.
+
+A Rebuild also pulls the image again, so with a `latest` tag every configuration change could upgrade the bridge as
+well. That is why the `FROM` line names a version: use the [current one](https://hub.docker.com/r/ridiekel/jeletask2mqtt/tags),
+and raise it yourself after reading [the upgrade notes](#upgrading-from-previous-version). If the native image fails,
+use the tag without `-native` (see [Versions](#versions)).
+
 # Health check
 
 The service sends an `online` message every minute.
@@ -368,6 +428,29 @@ light.teletask_my_teletask_relay_36
 After that, you overview in HA should look something like this:
 
 ![Home Assistant Overview](src/main/resources/ha-overview.png "Home Assistant Overview")
+
+## Tips for automations
+
+- When the bridge loses its connection (or restarts), all entities become `unavailable` and then come back with
+  their current state. A state trigger without `from` then fires as if the flag or input changed. For triggers
+  that should react to a real change (e.g. a flag set by a button), exclude those states. This works for inputs too,
+  which have other states than `on` and `off`:
+
+  ```yaml
+  triggers:
+    - trigger: state
+      entity_id: switch.teletask_1_flag_10
+      not_from: ["unavailable", "unknown"]
+      not_to: ["unavailable", "unknown"]
+  ```
+
+- Digital inputs report `OPEN` / `CLOSED` in capitals; state comparisons in Home Assistant are case sensitive,
+  so `is_state('sensor.teletask_1_input_33', 'OPEN')`, not `'open'`. With `long_press_duration_millis` in the
+  config, the states are `NOT_PRESSED`, `SHORT_PRESS` and `LONG_PRESS` instead.
+- Changing the `type` of a component can change its Home Assistant platform, e.g. a sensor from `TEMPERATURE`
+  (`sensor.`) to `TEMPERATURECONTROL` (`climate.`). The old entity disappears together with its history link, so
+  check dashboards and automations that used it. The room temperature is then the `current_temperature`
+  attribute of the climate entity; a template sensor gives you a `sensor.` again for graphs and statistics.
 
 # MQTT
 
