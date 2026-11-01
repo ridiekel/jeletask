@@ -78,10 +78,12 @@ final class MqttProcessorFixtures {
 
         @Override
         public void registerStateChangeListener(StateChangeListener listener) {
+            // Nothing to register: this client never produces events, the tests hand them to the processor themselves
         }
 
         @Override
         public void disconnect() {
+            // Nothing to close: this client holds no connection, the tests set the connected flag themselves
         }
 
         @Override

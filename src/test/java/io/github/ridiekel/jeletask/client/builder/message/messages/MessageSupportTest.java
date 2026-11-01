@@ -153,7 +153,7 @@ class MessageSupportTest {
 
     @Test
     void traceLogInfoShowsEveryPartOfRealMessages() {
-        try (LogCapture log = LogCapture.of(MessageSupport.class, Level.TRACE)) {
+        try (LogCapture _ = LogCapture.of(MessageSupport.class, Level.TRACE)) {
             for (MessageSupport message : realMessages()) {
                 byte[] bytes = message instanceof EventMessage event ? event.getRawBytes() : this.unit.getMessageHandler().compose(message.getCommand(), message.getPayload());
 
@@ -174,7 +174,7 @@ class MessageSupportTest {
 
     @Test
     void traceLogInfoNamesParametersAndFallsBackWhenTheyHaveNoName() {
-        try (LogCapture log = LogCapture.of(MessageSupport.class, Level.TRACE)) {
+        try (LogCapture _ = LogCapture.of(MessageSupport.class, Level.TRACE)) {
             MessageSupport get = new GetMessage(this.unit, Function.RELAY, TestCentralUnit.RELAY_1);
             assertThat(get.getLogInfo(this.unit.getMessageHandler().compose(get.getCommand(), get.getPayload())))
                     .contains("| Central Unit | Fnc | Number | Number | ChkSm |");
@@ -191,7 +191,7 @@ class MessageSupportTest {
 
     @Test
     void shortLogInfoHoldsCommandAndPayload() {
-        try (LogCapture log = LogCapture.of(MessageSupport.class, Level.INFO)) {
+        try (LogCapture _ = LogCapture.of(MessageSupport.class, Level.INFO)) {
             GetMessage get = new GetMessage(this.unit, Function.RELAY, TestCentralUnit.RELAY_1);
 
             String info = get.getLogInfo(this.unit.getMessageHandler().compose(get.getCommand(), get.getPayload()));
@@ -211,15 +211,15 @@ class MessageSupportTest {
         DisplayMessageState display = new DisplayMessageState();
         display.setAscii(true);
         display.setMessageLine1("Hello");
-        CentralUnit unit = this.unit;
+        CentralUnit centralUnit = this.unit;
         return List.of(
                 new KeepAliveMessage(unit),
-                new LogMessage(unit, Function.RELAY, new LogState(ValidOnOffToggle.ON)),
-                new GetMessage(unit, Function.RELAY, TestCentralUnit.RELAY_1),
-                new GroupGetMessage(unit, Function.RELAY, TestCentralUnit.RELAY_1, TestCentralUnit.RELAY_2, TestCentralUnit.RELAY_WITHOUT_STATE),
-                new SetMessage(unit, Function.RELAY, TestCentralUnit.RELAY_1, ON),
-                new DisplayMessage(unit, Function.DISPLAYMESSAGE, TestCentralUnit.DISPLAY, display),
-                unit.getMessageHandler().createResponseEventMessageForTesting(unit, Function.RELAY, new MessageHandler.OutputState(TestCentralUnit.RELAY_1, ON))
+                new LogMessage(centralUnit, Function.RELAY, new LogState(ValidOnOffToggle.ON)),
+                new GetMessage(centralUnit, Function.RELAY, TestCentralUnit.RELAY_1),
+                new GroupGetMessage(centralUnit, Function.RELAY, TestCentralUnit.RELAY_1, TestCentralUnit.RELAY_2, TestCentralUnit.RELAY_WITHOUT_STATE),
+                new SetMessage(centralUnit, Function.RELAY, TestCentralUnit.RELAY_1, ON),
+                new DisplayMessage(centralUnit, Function.DISPLAYMESSAGE, TestCentralUnit.DISPLAY, display),
+                centralUnit.getMessageHandler().createResponseEventMessageForTesting(centralUnit, Function.RELAY, new MessageHandler.OutputState(TestCentralUnit.RELAY_1, ON))
         );
     }
 

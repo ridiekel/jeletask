@@ -150,7 +150,7 @@ class TeletaskClientImplConnectionTest {
     }
 
     @Test
-    void disconnectWhileConnectingAbortsTheStart() throws Exception {
+    void disconnectWhileConnectingAbortsTheStart() {
         TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
         CompletableFuture<Void> start = CompletableFuture.runAsync(client::start);
 

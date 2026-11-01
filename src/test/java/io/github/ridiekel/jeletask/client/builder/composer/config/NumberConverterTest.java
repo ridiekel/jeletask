@@ -91,7 +91,9 @@ class NumberConverterTest {
             "UNSIGNED_INT,   010203",
     })
     void tooFewBytesAreRejectedInsteadOfGuessed(NumberConverter converter, String bytes) {
-        Assertions.assertThatThrownBy(() -> converter.convert(hex(bytes))).isInstanceOf(BufferUnderflowException.class);
+        byte[] tooFew = hex(bytes);
+
+        Assertions.assertThatThrownBy(() -> converter.convert(tooFew)).isInstanceOf(BufferUnderflowException.class);
     }
 
     @Test
@@ -106,7 +108,9 @@ class NumberConverterTest {
 
     @Test
     void readBeyondTheEndIsRejected() {
-        Assertions.assertThatThrownBy(() -> NumberConverter.UNSIGNED_SHORT.read(hex("AABB"), 1)).isInstanceOf(IndexOutOfBoundsException.class);
+        byte[] twoBytes = hex("AABB");
+
+        Assertions.assertThatThrownBy(() -> NumberConverter.UNSIGNED_SHORT.read(twoBytes, 1)).isInstanceOf(IndexOutOfBoundsException.class);
     }
 
     @ParameterizedTest

@@ -235,7 +235,7 @@ class HASensorConfigTest {
     }
 
     @Test
-    void thePowerPayloadsAreStatesTheBridgeUnderstands() throws Exception {
+    void thePowerPayloadsAreStatesTheBridgeUnderstands() {
         ObjectNode config = thermostat(c -> {
         });
 

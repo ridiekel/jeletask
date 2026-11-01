@@ -49,7 +49,9 @@ public final class MessageUtilities {
             }
             long now = System.currentTimeMillis();
             if (overflow.length > 0 && (now - lastDataTime > FRAGMENT_SILENCE_MILLIS || now - startTime > MAX_RECEIVE_MILLIS)) {
-                logger.warn("Receive - Dropping incomplete message: {}", Bytes.bytesToHex(overflow));
+                if (logger.isWarnEnabled()) {
+                    logger.warn("Receive - Dropping incomplete message: {}", Bytes.bytesToHex(overflow));
+                }
                 overflow = new byte[0];
             }
             Thread.sleep(10);
@@ -67,7 +69,9 @@ public final class MessageUtilities {
             logger.trace("Receive - Processing byte: {}", Bytes.bytesToHex(b));
             if (b == messageHandler.getStxValue()) {
                 if (i + 1 < data.length && data[i + 1] < MIN_MESSAGE_LENGTH) {
-                    logger.warn("Receive - Skipping STX followed by impossible length: {}", Bytes.bytesToHex(data[i + 1]));
+                    if (logger.isWarnEnabled()) {
+                        logger.warn("Receive - Skipping STX followed by impossible length: {}", Bytes.bytesToHex(data[i + 1]));
+                    }
                 } else if (i + 1 == data.length || i + data[i + 1] + 1 > data.length) {
                     overflow = Arrays.copyOfRange(data, i, data.length);
                     i = data.length - 1;

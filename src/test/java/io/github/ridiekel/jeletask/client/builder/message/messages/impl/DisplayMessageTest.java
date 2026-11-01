@@ -73,7 +73,7 @@ class DisplayMessageTest {
 
     @Test
     void twoInterfacesFromTheManualExample() {
-        // §3.6: BusNr = {1, 2}, Adres = {11, 7}
+        // The example of §3.6 addresses two interfaces: bus 1 with address 11 and bus 2 with address 7
         assertThat(frame(message("1,2", "11,7"))).isEqualTo(
                 "02 2B 04 01 "
                         + "01 02 0B 07 "

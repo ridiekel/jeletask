@@ -380,8 +380,10 @@ class TemperatureControlStateCalculatorTest {
     @Test
     void mockedCentralRejectsAnUnknownSetting() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
+        byte[] unknownSetting = {(byte) 200};
 
-        Assertions.assertThatThrownBy(() -> c.fromCommandForTesting(component(OnOffToggleStateCalculator.ValidOnOffToggle.ON), new byte[]{(byte) 200}))
+        Assertions.assertThatThrownBy(() -> c.fromCommandForTesting(component, unknownSetting))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -454,11 +456,12 @@ class TemperatureControlStateCalculatorTest {
     void manualPresetCannotTakeATargetFromAnythingButAThermostat() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
         TemperatureControlState manual = c.stateFromMessage("{\"state\": \"ON\", \"preset\": \"MANUAL\"}");
+        ComponentSpec notAThermostat = componentWithState(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
 
         Assertions.assertThatThrownBy(() -> c.toCommand(null, manual))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("target_temperature");
-        Assertions.assertThatThrownBy(() -> c.toCommand(componentWithState(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON)), manual))
+        Assertions.assertThatThrownBy(() -> c.toCommand(notAThermostat, manual))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("target_temperature");
     }
@@ -493,8 +496,9 @@ class TemperatureControlStateCalculatorTest {
     void presetValuesJustOutsideTheRangeAreRejected(String action, String attribute, String value) {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
         TemperatureControlState state = c.stateFromMessage("{\"state\": \"ON\", \"action\": \"" + action + "\", \"" + attribute + "\": " + value + "}");
+        ComponentSpec component = component();
 
-        Assertions.assertThatThrownBy(() -> c.toCommand(component(), state))
+        Assertions.assertThatThrownBy(() -> c.toCommand(component, state))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(attribute)
                 .hasMessageContaining(value);

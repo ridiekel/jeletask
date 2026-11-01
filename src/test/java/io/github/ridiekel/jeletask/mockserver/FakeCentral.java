@@ -121,7 +121,7 @@ public final class FakeCentral implements AutoCloseable {
                 Connection connection = new Connection(this.connections.size(), socket);
                 this.connections.add(connection);
                 Thread.ofPlatform().daemon().name("fake-central-read").start(() -> read(connection));
-            } catch (IOException e) {
+            } catch (IOException _) {
                 return;
             }
         }
@@ -142,7 +142,7 @@ public final class FakeCentral implements AutoCloseable {
                 input.readFully(bytes, 2, bytes.length - 2);
                 handle(connection, new Frame(connection.index, bytes));
             }
-        } catch (IOException e) {
+        } catch (IOException _) {
             // Either dropped by the test, which closed the socket itself, or reset by the client
             connection.closedByClient = !connection.socket.isClosed();
         }
@@ -165,7 +165,7 @@ public final class FakeCentral implements AutoCloseable {
         try {
             socket.getOutputStream().write(bytes);
             socket.getOutputStream().flush();
-        } catch (IOException e) {
+        } catch (IOException _) {
             // The other side is gone. A test about that notices on its own.
         }
     }
@@ -175,7 +175,7 @@ public final class FakeCentral implements AutoCloseable {
             if (closeable != null) {
                 closeable.close();
             }
-        } catch (Exception e) {
+        } catch (Exception _) {
             // Nothing left to clean up
         }
     }

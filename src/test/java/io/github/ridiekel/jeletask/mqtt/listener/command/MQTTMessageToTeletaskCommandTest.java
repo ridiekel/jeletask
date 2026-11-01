@@ -130,7 +130,7 @@ class MQTTMessageToTeletaskCommandTest {
             this.centralUnit = centralUnit;
         }
 
-        private void record(Call call) {
+        private void recordCall(Call call) {
             calls.add(call);
             if (failure != null) {
                 throw failure;
@@ -139,12 +139,12 @@ class MQTTMessageToTeletaskCommandTest {
 
         @Override
         public void set(Function function, int number, State<?> state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-            record(new Call("set", function, number, state));
+            recordCall(new Call("set", function, number, state));
         }
 
         @Override
         public void displaymessage(int number, DisplayMessageState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-            record(new Call("displaymessage", Function.DISPLAYMESSAGE, number, state));
+            recordCall(new Call("displaymessage", Function.DISPLAYMESSAGE, number, state));
         }
 
         @Override

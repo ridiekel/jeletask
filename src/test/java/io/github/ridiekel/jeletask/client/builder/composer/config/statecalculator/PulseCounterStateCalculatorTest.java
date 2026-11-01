@@ -120,8 +120,9 @@ class PulseCounterStateCalculatorTest {
     void aReportTooShortForTheTotalFails() {
         // Characterization: §3.9 gives other sensors only two bytes after Direction, which would land here
         byte[] withoutTotal = Bytes.hexToBytes("06 3A 00 00 00 00 00 00 00 1A 00 00 FF 00 00 00 00 00");
+        ComponentSpec component = component(1000);
 
-        assertThatThrownBy(() -> CALCULATOR.fromEvent(component(1000), withoutTotal))
+        assertThatThrownBy(() -> CALCULATOR.fromEvent(component, withoutTotal))
                 .isInstanceOf(ArrayIndexOutOfBoundsException.class);
     }
 
@@ -159,7 +160,10 @@ class PulseCounterStateCalculatorTest {
 
     @Test
     void cannotBeWrittenTo() {
-        assertThatThrownBy(() -> CALCULATOR.toCommand(component(1000), new PulseCounterState("PULSECOUNTER")))
+        ComponentSpec component = component(1000);
+        PulseCounterState state = new PulseCounterState("PULSECOUNTER");
+
+        assertThatThrownBy(() -> CALCULATOR.toCommand(component, state))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("read only");
     }
@@ -193,7 +197,10 @@ class PulseCounterStateCalculatorTest {
         PulseCounterState otherCurrent = CALCULATOR.fromEvent(component(1000), report("00 02", "00 00 00 01"));
         PulseCounterState otherTotal = CALCULATOR.fromEvent(component(1000), report("00 01", "00 00 00 02"));
 
-        assertThat(state).isEqualTo(same).hasSameHashCodeAs(same);
-        assertThat(state).isNotEqualTo(otherCurrent).isNotEqualTo(otherTotal);
+        assertThat(state)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(otherCurrent)
+                .isNotEqualTo(otherTotal);
     }
 }
