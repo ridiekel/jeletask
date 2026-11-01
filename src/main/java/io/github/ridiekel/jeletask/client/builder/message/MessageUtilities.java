@@ -18,6 +18,7 @@ import java.util.List;
 public final class MessageUtilities {
     private static final long FRAGMENT_SILENCE_MILLIS = 500;
     private static final long MAX_RECEIVE_MILLIS = 5000;
+    private static final int MIN_MESSAGE_LENGTH = 3; // STX, length and command
 
     private MessageUtilities() {
     }
@@ -65,7 +66,9 @@ public final class MessageUtilities {
             byte b = data[i];
             logger.trace("Receive - Processing byte: {}", Bytes.bytesToHex(b));
             if (b == messageHandler.getStxValue()) {
-                if (i + 1 == data.length || i + data[i + 1] + 1 > data.length) {
+                if (i + 1 < data.length && data[i + 1] < MIN_MESSAGE_LENGTH) {
+                    logger.warn("Receive - Skipping STX followed by impossible length: {}", Bytes.bytesToHex(data[i + 1]));
+                } else if (i + 1 == data.length || i + data[i + 1] + 1 > data.length) {
                     overflow = Arrays.copyOfRange(data, i, data.length);
                     i = data.length - 1;
 

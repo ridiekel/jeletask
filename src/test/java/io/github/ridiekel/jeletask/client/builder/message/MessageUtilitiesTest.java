@@ -149,6 +149,20 @@ class MessageUtilitiesTest {
         assertThat(logged()).contains("Dropping incomplete message");
     }
 
+    @Test
+    @Timeout(value = 3, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void stxFollowedByImpossibleLengthIsSkippedAndTheNextMessageSurvives() throws Exception {
+        byte[] frame = relayOnEvent(OTHER_RELAY);
+
+        for (int impossibleLength : new int[]{0xFF, 0xFE, 0x80, 0, 1, 2}) {
+            List<MessageSupport> messages = MessageUtilities.receive(loggerWritingTo(Level.OFF, new ByteArrayOutputStream()),
+                    receiver(chunks(concat(new byte[]{2, (byte) impossibleLength}, frame))));
+
+            assertThat(messages).as("length byte %s", impossibleLength).hasSize(1);
+            assertRelayEvents(messages, OTHER_RELAY);
+        }
+    }
+
     private List<MessageSupport> receive(InputStream stream) throws Exception {
         return MessageUtilities.receive(logger, receiver(stream));
     }
