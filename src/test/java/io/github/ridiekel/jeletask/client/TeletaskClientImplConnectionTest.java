@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Timeout;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -113,6 +114,38 @@ class TeletaskClientImplConnectionTest {
         this.central.acknowledging(true);
         eventually().until(client::isConnected);
         assertFalse(this.central.closedByClient(this.central.connectionCount() - 1));
+    }
+
+    @Test
+    void aCallDuringAReconnectWaitsForItInsteadOfStartingASecondConnection() {
+        this.central.goOnline();
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
+        client.start();
+        awaitLogMessagesOn(0);
+        this.central.goOffline();
+
+        CompletableFuture<Void> restart = CompletableFuture.runAsync(client::restart);
+        eventually().until(() -> !client.isConnected());
+        CompletableFuture<Void> call = CompletableFuture.runAsync(client::groupGet);
+        eventually().during(1200, TimeUnit.MILLISECONDS).until(() -> !call.isDone());
+        this.central.goOnline();
+
+        eventually().until(() -> restart.isDone() && call.isDone());
+        assertFalse(restart.isCompletedExceptionally());
+        assertFalse(call.isCompletedExceptionally());
+        eventually().until(() -> groupGetFunctionsOn(1).contains(Function.RELAY));
+        assertEquals(2, this.central.connectionCount());
+        assertThat(this.threads.started()).extracting(Thread::getName).containsOnlyOnce("keep-alive", "event-listener");
+    }
+
+    @Test
+    void aCallAfterAFailedStartFailsRightAwayInsteadOfWaitingForTheStart() {
+        TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
+        client.disconnect();
+        assertThrows(IllegalStateException.class, client::start);
+
+        // Would otherwise wait 30 seconds for a start that is no longer running
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> assertThrows(IllegalStateException.class, client::groupGet));
     }
 
     @Test

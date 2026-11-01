@@ -173,25 +173,28 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.starting.set(true);
         this.started.set(false);
 
-        LOG.info("Starting IO service...");
-        this.startIoService();
+        try {
+            LOG.info("Starting IO service...");
+            this.startIoService();
 
-        LOG.info("Connecting to central unit...");
-        connectAndWait();
+            LOG.info("Connecting to central unit...");
+            connectAndWait();
 
-        LOG.info("Starting event listener...");
-        this.startEventListener();
+            LOG.info("Starting event listener...");
+            this.startEventListener();
 
-        LOG.info("Performing group get...");
-        this.getIoService().execute(() -> {
-            this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
-        });
+            LOG.info("Performing group get...");
+            this.getIoService().execute(() -> {
+                this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
+            });
 
-        LOG.info("Starting keepalive...");
-        this.startKeepAlive();
+            LOG.info("Starting keepalive...");
+            this.startKeepAlive();
 
-        this.started.set(true);
-        this.starting.set(false);
+            this.started.set(true);
+        } finally {
+            this.starting.set(false);
+        }
     }
 
     private void connectAndWait() {
@@ -210,21 +213,27 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     public void restart() {
+        // Also counts as starting: a call in the meantime has to wait for this reconnect, not begin a second one
+        this.starting.set(true);
         this.started.set(false);
 
-        this.closeInputStream();
-        this.closeOutputStream();
-        this.closeSocket();
+        try {
+            this.closeInputStream();
+            this.closeOutputStream();
+            this.closeSocket();
 
-        this.connectAndWait();
+            this.connectAndWait();
 
-        this.getIoService().execute(() -> {
-            this.groupGet();
+            this.getIoService().execute(() -> {
+                this.groupGet();
 
-            this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
-        });
+                this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
+            });
 
-        this.started.set(true);
+            this.started.set(true);
+        } finally {
+            this.starting.set(false);
+        }
     }
 
     @Override

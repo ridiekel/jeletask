@@ -121,7 +121,12 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                 @Override
                 public void run() {
                     LOG.info(() -> "Forcing refresh of states...");
-                    teletaskClient.groupGet();
+                    try {
+                        teletaskClient.groupGet();
+                    } catch (RuntimeException e) {
+                        // An exception would end this timer for good, also when the central unit is merely away for now
+                        LOG.warn("Could not refresh states: {}", e.getMessage());
+                    }
                 }
             }, intervalMillis, intervalMillis);
         }
