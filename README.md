@@ -566,3 +566,33 @@ Running tests is done using:
 ```shell
 ./mvnw clean verify
 ```
+
+The `End2End*` tests need Docker. Without a Docker daemon they fail at context startup instead of being skipped, which is not a regression.
+To run only the other tests:
+
+```shell
+./mvnw test -Dtest='!End2End*'
+```
+
+`MockingTeletaskTestSupport` is not a base class for unit tests: it is a `@SpringBootTest`, and its `@BeforeEach` drives Chrome against the Home Assistant container.
+Its login check also asserts the exact number of dashboard cards, so a new component in the test config can fail every `End2End*` class during setup, pointing at the login instead of at your change.
+
+## Adding a function
+
+A new `Function` touches seven places, and the compiler does not point you to most of them:
+
+1. `Function`: the enum constant.
+2. `MicrosPlusFunctionConfiguration`: the function number and its `StateCalculator`.
+3. A `StateCalculator`, and usually a new `State` implementation, which must also be registered in `NativeRuntimeHints` (a new `Function` constant does not need that).
+4. `TeletaskClientImpl.sendLogEventMessages()`: lists every function that subscribes to events by hand. **Forget it and the component never receives state updates**, without any error.
+5. `HomeAssistentAutoConfig.FUNCTION_TO_TYPE`: a missing entry is a `NullPointerException` during Home Assistant discovery.
+6. `MESSAGES.md` and the config example in this README.
+7. `src/test/resources/test-config.json` and the Home Assistant fixtures in `src/test/resources/haconfig/`.
+
+A new `SensorType` needs an entry in two maps: `MicrosPlusFunctionConfiguration.SENSOR_CALCULATORS` and the map of the `SENSOR` function in `HomeAssistentAutoConfig`.
+
+## Logging
+
+`MqttLogger` is a formatting helper, it has no log methods. Use its static helpers with the class's own `LOG`, and don't write the `[MQTT ]` format by hand.
+
+`pom.xml` declares no Log4j2 dependency. `log4j-api` only comes in through the `log4j-to-slf4j` bridge of `spring-boot-starter-logging`, so every `LogManager.getLogger` call ends up in Logback. Removing or replacing that starter breaks the build.

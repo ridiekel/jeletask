@@ -250,6 +250,7 @@
         </plugins>
     </build>
 
+    <!-- The release job rewrites this URL with git's insteadOf. Changing it there or here alone breaks release:prepare. -->
     <scm>
         <connection>scm:git:git@github.com:ridiekel/jeletask.git</connection>
         <developerConnection>scm:git:git@github.com:ridiekel/jeletask.git</developerConnection>
