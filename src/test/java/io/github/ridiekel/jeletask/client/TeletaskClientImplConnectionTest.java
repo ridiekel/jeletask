@@ -171,7 +171,8 @@ class TeletaskClientImplConnectionTest {
         listener.failOnEverything();
         client.registerStateChangeListener(listener);
         client.start();
-        assertThat(this.threads.started()).extracting(Thread::getName).contains("keep-alive", "event-listener", "io");
+        // A native image lists a timer thread only shortly after it started
+        eventually().untilAsserted(() -> assertThat(this.threads.started()).extracting(Thread::getName).contains("keep-alive", "event-listener", "io"));
 
         client.stop();
 
