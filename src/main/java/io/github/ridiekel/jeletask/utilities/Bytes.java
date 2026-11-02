@@ -5,8 +5,11 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 
-public class Bytes {
+public final class Bytes {
     public static final byte[] EMPTY = new byte[0];
+
+    private Bytes() {
+    }
 
     public static byte[] concat(byte[]... bytes) {
         ByteBuffer bb = ByteBuffer.allocate(Arrays.stream(bytes).mapToInt(b -> b.length).sum());
@@ -23,7 +26,7 @@ public class Bytes {
     }
 
     public static byte[] hexToBytes(String s) {
-        return HexFormat.of().parseHex(s.replaceAll(" ", ""));
+        return HexFormat.of().parseHex(s.replace(" ", ""));
     }
 
     public static List<String> bytesToHexList(byte... bytes) {

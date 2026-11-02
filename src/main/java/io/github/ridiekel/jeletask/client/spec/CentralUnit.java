@@ -52,15 +52,26 @@ public class CentralUnit {
             ComponentSpec deviceSpec = new ComponentSpec();
             deviceSpec.setState(new StringState(this.getVersion()));
             deviceSpec.setFunction(Function.SENSOR);
-            deviceSpec.setNumber(Math.abs(key.hashCode()) * -1);
+            deviceSpec.setNumber(deviceNumber(key));
             deviceSpec.setType(SensorType.STRING.toString());
             deviceSpec.setDescription(key);
             return deviceSpec;
         });
     }
 
+    /**
+     * Devices get a stable negative number derived from their name; it ends up in MQTT topics and HA unique ids.
+     * Computed in long arithmetic so {@code Integer.MIN_VALUE} maps onto itself, exactly like the former int version did.
+     */
+    static int deviceNumber(String device) {
+        return (int) -Math.abs((long) device.hashCode());
+    }
+
     public ComponentSpec getComponent(Function function, int number) {
-        return getComponents(function).filter(c -> c.getNumber() == number).peek(c -> c.setFunction(function)).findAny().orElseThrow(() -> {
+        return getComponents(function).filter(c -> c.getNumber() == number).findAny().map(c -> {
+            c.setFunction(function);
+            return c;
+        }).orElseThrow(() -> {
             LOG.debug(
                     AnsiOutput.toString(AnsiColor.YELLOW, "[EVENT  ] - {}", AnsiColor.DEFAULT, " - {}"),
                     String.format("[%s] - [%s] - [%s]", StringUtils.rightPad(function.toString(), 10), StringUtils.leftPad(String.valueOf(number), 3), StringUtils.leftPad("", 40)),
@@ -71,12 +82,12 @@ public class CentralUnit {
     }
 
     @JsonIgnore
-    public Stream<? extends ComponentSpec> getComponents(Function function) {
+    public Stream<ComponentSpec> getComponents(Function function) {
         return this.getAllComponents().stream().filter(c -> c.getFunction() == function);
     }
 
     @JsonIgnore
-    public List<? extends ComponentSpec> getAllComponents() {
+    public List<ComponentSpec> getAllComponents() {
         if (this.allComponents == null) {
             this.allComponents = new ArrayList<>();
 
@@ -84,7 +95,8 @@ public class CentralUnit {
 
             Map<String, ComponentSpec> devices = new HashMap<>();
             for (Map.Entry<Function, List<ComponentSpec>> components : componentsTypes.entrySet()) {
-                List<ComponentSpec> componentsOfType = components.getValue().stream().peek(v -> v.setFunction(components.getKey())).toList();
+                List<ComponentSpec> componentsOfType = components.getValue();
+                componentsOfType.forEach(v -> v.setFunction(components.getKey()));
                 Set<ComponentSpec> deviceSpecs = componentsOfType.stream()
                         .filter(c -> c.getDevice() != null)
                         .map(c -> {
@@ -98,9 +110,8 @@ public class CentralUnit {
                 this.allComponents.addAll(componentsOfType);
             }
 
-            devices.forEach((key, value) -> {
-                ((StringState) value.getState()).setState(String.valueOf(this.allComponents.stream().filter(c -> Objects.equals(c.getDevice(), key)).count()));
-            });
+            devices.forEach((key, value) ->
+                    ((StringState) value.getState()).setState(String.valueOf(this.allComponents.stream().filter(c -> Objects.equals(c.getDevice(), key)).count())));
 
             this.componentsTypes = null; //We no longer need this, so we can free up some memory
         }
@@ -124,6 +135,7 @@ public class CentralUnit {
         return MessageHandlerFactory.getMessageHandler(this.getCentralUnitType());
     }
 
+    @SuppressWarnings("java:S1452") // the state type depends on the function at runtime; there is no single type argument
     public State<?> stateFromMessage(Function function, int number, String message) {
         return this.getMessageHandler().getFunctionConfig(function).getStateCalculator(this.getComponent(function, number)).stateFromMessage(message);
     }

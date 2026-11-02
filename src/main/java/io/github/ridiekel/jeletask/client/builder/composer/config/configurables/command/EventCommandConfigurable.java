@@ -5,7 +5,7 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMes
 import io.github.ridiekel.jeletask.client.spec.Command;
 
 public abstract class EventCommandConfigurable extends CommandConfigurable<EventMessage> {
-    public EventCommandConfigurable(int number, boolean needsCentralUnitParameter, String... paramNames) {
+    protected EventCommandConfigurable(int number, boolean needsCentralUnitParameter, String... paramNames) {
         super(Command.EVENT, number, needsCentralUnitParameter, paramNames);
     }
 }

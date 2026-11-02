@@ -17,7 +17,7 @@ public abstract class CommandConfigurable<M extends MessageSupport> extends Conf
     private final Map<Integer, String> paramNames;
     private final boolean needsCentralUnitParameter;
 
-    public CommandConfigurable(Command command, int number, boolean needsCentralUnitParameter, String... paramNames) {
+    protected CommandConfigurable(Command command, int number, boolean needsCentralUnitParameter, String... paramNames) {
         super(number, command);
 
         AtomicInteger index = new AtomicInteger(0);

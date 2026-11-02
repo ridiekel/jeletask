@@ -31,6 +31,8 @@ public abstract class State<S> {
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             .build();
 
+    // Named after the class on purpose: it is the "state" property of every MQTT state payload and of the builders
+    @SuppressWarnings("java:S1700")
     private S state;
 
     protected State() {

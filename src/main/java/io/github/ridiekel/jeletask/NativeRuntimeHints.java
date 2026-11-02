@@ -44,7 +44,6 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(ComponentSpec.class, MemberCategory.values());
         hints.reflection().registerType(Device.class, MemberCategory.values());
         hints.reflection().registerType(Function.class, MemberCategory.values());
-        hints.reflection().registerType(RoomSpec.class, MemberCategory.values());
 
         hints.reflection().registerType(MqttProcessor.ConnectedStatus.class, MemberCategory.values());
         hints.reflection().registerType(MqttProcessor.PingMesage.class, MemberCategory.values());

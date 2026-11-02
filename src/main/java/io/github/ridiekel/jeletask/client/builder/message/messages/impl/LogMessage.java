@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 public class LogMessage extends FunctionStateBasedMessageSupport<LogState> {
     private static final Logger LOG = LogManager.getLogger();
 
-    public LogMessage(CentralUnit ClientConfig, Function function, LogState state) {
-        super(ClientConfig, function, state);
+    public LogMessage(CentralUnit centralUnit, Function function, LogState state) {
+        super(centralUnit, function, state);
     }
 
     @Override

@@ -10,7 +10,10 @@ import java.io.UncheckedIOException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class ResourceUtilities {
+public final class ResourceUtilities {
+    private ResourceUtilities() {
+    }
+
     public static String asString(Resource resource) {
         try (Reader reader = new InputStreamReader(resource.getInputStream(), UTF_8)) {
             return FileCopyUtils.copyToString(reader);

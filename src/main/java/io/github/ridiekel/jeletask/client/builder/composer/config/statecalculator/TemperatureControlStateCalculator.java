@@ -235,13 +235,13 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         try {
             ValidTemperatureControlAction action = ACTION_MAPPER.toEnum(new byte[]{dataBytes[0]});
             action.applyData(component, state, dataBytes);
-        } catch (IllegalStateException e1) {
+        } catch (IllegalStateException _) {
             try {
                 state.setFanspeed(SPEED_MAPPER.toEnum(new byte[]{dataBytes[0]}));
-            } catch (IllegalStateException e2) {
+            } catch (IllegalStateException _) {
                 try {
                     state.setMode(MODE_MAPPER.toEnum(new byte[]{dataBytes[0]}));
-                } catch (IllegalStateException e3) {
+                } catch (IllegalStateException _) {
                     state.setPreset(PRESET_MAPPER.toEnum(new byte[]{dataBytes[0]}));
                 }
             }
@@ -267,9 +267,7 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
     public enum ValidTemperatureControlAction {
         TARGET(
                 s -> TemperatureStateCalculator.bigDecimalToBytes(required("target_temperature", s.getTargetTemperature())),
-                (c, s, b) -> {
-                    s.setTargetTemperature(TemperatureStateCalculator.bytesToBigDecimal(c, new byte[]{b[1], b[2]}));
-                }
+                (c, s, b) -> s.setTargetTemperature(TemperatureStateCalculator.bytesToBigDecimal(c, new byte[]{b[1], b[2]}))
         ),
         // SET_TEMPSETDAY / SET_TEMPSETNIGHT: 1 byte = (°C + 40) x 2 (TDS15132, "Sensor values - SETS")
         DAY_PRESET(

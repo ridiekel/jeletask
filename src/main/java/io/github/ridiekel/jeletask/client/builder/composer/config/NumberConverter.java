@@ -58,7 +58,7 @@ public enum NumberConverter {
 
         @Override
         public ByteBuffer putBytes(ByteBuffer buffer, Number number) {
-            return buffer.putInt((int) (number.intValue() & 0xffffffff));
+            return buffer.putInt(number.intValue());
         }
     });
 

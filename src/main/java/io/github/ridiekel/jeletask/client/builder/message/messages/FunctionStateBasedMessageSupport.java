@@ -12,8 +12,6 @@ public abstract class FunctionStateBasedMessageSupport<S extends State<?>> exten
     protected FunctionStateBasedMessageSupport(CentralUnit centralUnit, Function function, S state) {
         super(centralUnit, function);
         this.state = state;
-        if (state != null) {
-        }
     }
 
     public S getState() {

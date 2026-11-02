@@ -5,7 +5,7 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessa
 import io.github.ridiekel.jeletask.client.spec.Command;
 
 public abstract class GetCommandConfigurable extends CommandConfigurable<GetMessage> {
-    public GetCommandConfigurable(int number, boolean needsCentralUnitParameter, String... paramNames) {
+    protected GetCommandConfigurable(int number, boolean needsCentralUnitParameter, String... paramNames) {
         super(Command.GET, number, needsCentralUnitParameter, paramNames);
     }
 }

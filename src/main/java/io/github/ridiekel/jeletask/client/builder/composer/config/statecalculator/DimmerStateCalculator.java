@@ -17,9 +17,6 @@ import org.jspecify.annotations.NonNull;
  * </pre>
  */
 public class DimmerStateCalculator extends StateCalculatorSupport<DimmerState> {
-    public DimmerStateCalculator() {
-    }
-
     @Override
     public DimmerState fromEvent(ComponentSpec component, byte[] dataBytes) {
         Number number = NumberConverter.UNSIGNED_BYTE.convert(new byte[]{dataBytes[0]});
@@ -65,11 +62,9 @@ public class DimmerStateCalculator extends StateCalculatorSupport<DimmerState> {
     public boolean isValidWriteState(DimmerState state) {
         boolean isValid = super.isValidWriteState(state);
 
-        if (isValid) {
-            if (state.getBrightness() != null) {
-                int brightness = state.getBrightness().intValue();
-                isValid = (brightness >= 0 && brightness <= 100);
-            }
+        if (isValid && state.getBrightness() != null) {
+            int brightness = state.getBrightness().intValue();
+            isValid = (brightness >= 0 && brightness <= 100);
         }
 
         return isValid;

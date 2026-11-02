@@ -1,8 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
-import io.github.ridiekel.jeletask.client.TeletaskClientImpl;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.DisplayMessageStateCalculator;
-import io.github.ridiekel.jeletask.client.builder.message.messages.AcknowledgeException;
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionStateBasedMessageSupport;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
@@ -19,16 +17,14 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMessageState> {
     private final int number;
 
-    private final byte[] bus_and_address_bytes;
-    private final byte[] displaymessage_bytes;
+    private final byte[] busAndAddressBytes;
+    private final byte[] displayMessageBytes;
 
     public DisplayMessage(CentralUnit centralUnit, Function function, int number, DisplayMessageState state) {
-        super(centralUnit, function, state);
-        this.number = number;
+        // Validate the configuration before constructing the message (flexible constructor body, JEP 513)
+        ComponentSpec component = centralUnit.getComponent(function, number);
 
-        ComponentSpec component = this.getCentralUnit().getComponent(this.getFunction(), this.getNumber());
-
-        DisplayMessageStateCalculator displayMessageStateCalculator = this.getMessageHandler().getFunctionConfig(this.getFunction()).getStateCalculator(component);
+        DisplayMessageStateCalculator displayMessageStateCalculator = centralUnit.getMessageHandler().getFunctionConfig(function).getStateCalculator(component);
 
         if (component.getAddressNumbers() == null || component.getBusNumbers() == null)
             throw new IllegalArgumentException("Address or bus numbers are missing");
@@ -39,16 +35,19 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMess
         if (addressNumbers.length != busNumbers.length)
             throw new IllegalArgumentException("Address and bus numbers configuration error");
 
-        byte[] busNumbers_bytes = Bytes.EMPTY;
+        super(centralUnit, function, state);
+        this.number = number;
+
+        byte[] busNumbersBytes = Bytes.EMPTY;
         for(String busNumber: busNumbers)
-            busNumbers_bytes = Bytes.concat(busNumbers_bytes, new byte[]{Byte.valueOf(busNumber)});
+            busNumbersBytes = Bytes.concat(busNumbersBytes, new byte[]{Byte.valueOf(busNumber)});
 
-        byte[] addressNumbers_bytes = Bytes.EMPTY;
+        byte[] addressNumbersBytes = Bytes.EMPTY;
         for(String addressNumber: addressNumbers)
-            addressNumbers_bytes = Bytes.concat(addressNumbers_bytes, new byte[]{Byte.valueOf(addressNumber)});
+            addressNumbersBytes = Bytes.concat(addressNumbersBytes, new byte[]{Byte.valueOf(addressNumber)});
 
-        this.bus_and_address_bytes = Bytes.concat(busNumbers_bytes, addressNumbers_bytes);
-        this.displaymessage_bytes = displayMessageStateCalculator.toCommand(component, this.getState());
+        this.busAndAddressBytes = Bytes.concat(busNumbersBytes, addressNumbersBytes);
+        this.displayMessageBytes = displayMessageStateCalculator.toCommand(component, this.getState());
     }
 
     @Override
@@ -69,13 +68,7 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMess
 
     @Override
     protected byte[] getPayload() {
-        return Bytes.concat(bus_and_address_bytes, displaymessage_bytes);
-    }
-
-    @Override
-    public void execute(TeletaskClientImpl client) throws AcknowledgeException {
-        super.execute(client);
-
+        return Bytes.concat(busAndAddressBytes, displayMessageBytes);
     }
 
     @Override
@@ -88,7 +81,7 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMess
         return new String[]{
                 this.formatFunction(this.getFunction()),
                 this.formatOutput(this.getNumber()),
-                this.formatState(this.displaymessage_bytes, this.getState())
+                this.formatState(this.displayMessageBytes, this.getState())
         };
     }
 

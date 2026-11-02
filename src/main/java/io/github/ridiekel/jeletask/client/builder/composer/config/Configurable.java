@@ -4,7 +4,7 @@ public abstract class Configurable<T> {
     private final int number;
     private final T object;
 
-    public Configurable(int number, T object) {
+    protected Configurable(int number, T object) {
         this.number = number;
         this.object = object;
     }

@@ -61,50 +61,51 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
         return GasState.class;
     }
 
-    public static final String _704 = "704.0";
-    public static final String _176 = "176";
-    public static final String _1023 = "1023.0";
-    public static final String _880 = "880.0";
+    // Raw analog input values reported by the central unit for the supported sensor signal ranges
+    private static final String RAW_SPAN_4_20MA = "704.0";
+    private static final String RAW_OFFSET_4MA = "176";
+    private static final String RAW_FULL_SCALE_10BIT = "1023.0";
+    private static final String RAW_FULL_SCALE_0_20MA = "880.0";
 
     private static final Map<String, GasTypeConfig> CONFIGS = Stream.of(
             new GasTypeConfig("4-20ma",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal(_704), 10, RoundingMode.HALF_UP)
-                            .multiply(value.subtract(new BigDecimal(_176)))
+                            .divide(new BigDecimal(RAW_SPAN_4_20MA), 10, RoundingMode.HALF_UP)
+                            .multiply(value.subtract(new BigDecimal(RAW_OFFSET_4MA)))
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal(_704))
+                            .multiply(new BigDecimal(RAW_SPAN_4_20MA))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
-                            .add(new BigDecimal(_176))
+                            .add(new BigDecimal(RAW_OFFSET_4MA))
                             .setScale(0, RoundingMode.HALF_UP)
             ),
             new GasTypeConfig("0-10v",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal(_1023), 10, RoundingMode.HALF_UP)
+                            .divide(new BigDecimal(RAW_FULL_SCALE_10BIT), 10, RoundingMode.HALF_UP)
                             .multiply(value)
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal(_1023))
+                            .multiply(new BigDecimal(RAW_FULL_SCALE_10BIT))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
                             .setScale(0, RoundingMode.HALF_UP)
             ),
             new GasTypeConfig("5-10v",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal(_1023), 10, RoundingMode.HALF_UP)
+                            .divide(new BigDecimal(RAW_FULL_SCALE_10BIT), 10, RoundingMode.HALF_UP)
                             .multiply(value)
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal(_1023))
+                            .multiply(new BigDecimal(RAW_FULL_SCALE_10BIT))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
                             .setScale(0, RoundingMode.HALF_UP)
             ),
             new GasTypeConfig("0-20ma",
                     (value, min, max) -> max.subtract(min)
-                            .divide(new BigDecimal(_880), 10, RoundingMode.HALF_UP)
+                            .divide(new BigDecimal(RAW_FULL_SCALE_0_20MA), 10, RoundingMode.HALF_UP)
                             .multiply(value)
                             .add(min),
                     (value, min, max) -> value.subtract(min)
-                            .multiply(new BigDecimal(_880))
+                            .multiply(new BigDecimal(RAW_FULL_SCALE_0_20MA))
                             .divide(max.subtract(min), 10, RoundingMode.HALF_UP)
                             .setScale(0, RoundingMode.HALF_UP)
             )

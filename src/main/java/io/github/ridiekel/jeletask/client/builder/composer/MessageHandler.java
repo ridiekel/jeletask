@@ -14,6 +14,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 public interface MessageHandler {
     byte[] compose(Command command, byte[] payload);
 
+    @SuppressWarnings("java:S1452") // each command has its own message type; callers only need the common contract
     CommandConfigurable<?> getCommandConfig(Command command);
 
     FunctionConfigurable getFunctionConfig(Function function);

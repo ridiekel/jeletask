@@ -60,54 +60,67 @@ public final class MessageUtilities {
         return responses;
     }
 
-    private static byte[] extractMessages(Logger logger, CentralUnit centralUnit, Collection<MessageSupport> responses, byte[] data, MessageSupport currentlyRunningMessage) throws Exception {
-        logger.trace("Receive - Raw bytes: {}", Bytes.bytesToHex(data));
+    private static byte[] extractMessages(Logger logger, CentralUnit centralUnit, Collection<MessageSupport> responses, byte[] data, MessageSupport currentlyRunningMessage) {
+        logger.trace("Receive - Raw bytes: {}", () -> Bytes.bytesToHex(data));
         MessageHandler messageHandler = centralUnit.getMessageHandler();
-        byte[] overflow = new byte[0];
-        for (int i = 0; i < data.length; i++) {
+        int i = 0;
+        while (i < data.length) {
             byte b = data[i];
-            logger.trace("Receive - Processing byte: {}", Bytes.bytesToHex(b));
-            if (b == messageHandler.getStxValue()) {
-                if (i + 1 < data.length && data[i + 1] < MIN_MESSAGE_LENGTH) {
-                    if (logger.isWarnEnabled()) {
-                        logger.warn("Receive - Skipping STX followed by impossible length: {}", Bytes.bytesToHex(data[i + 1]));
-                    }
-                } else if (i + 1 == data.length || i + data[i + 1] + 1 > data.length) {
-                    overflow = Arrays.copyOfRange(data, i, data.length);
-                    i = data.length - 1;
-
-                    logger.trace("Receive - Overflowing following byte[]: {}", Bytes.bytesToHex(overflow));
-                } else {
-                    int eventLengthInclChkSum = data[i + 1] + 1; // +1 for checksum
-                    byte[] event = new byte[eventLengthInclChkSum];
-                    System.arraycopy(data, i, event, 0, eventLengthInclChkSum);
-
-                    i += eventLengthInclChkSum - 1;
-
-                    logger.trace("Receive - Found message bytes: {}", Bytes.bytesToHex(event));
-                    try {
-                        MessageSupport parse = messageHandler.parse(centralUnit, event);
-                        if (parse != null) {
-                            responses.add(parse);
-                        }
-                    } catch (CentralUnit.ComponentNotFoundInConfigException e) {
-                        logger.debug("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage());
-                    } catch (Exception e) {
-                        logger.error("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage(), e);
-                    }
-                }
-            } else if (b == messageHandler.getAcknowledgeValue()) {
-                logger.trace("Received acknowledge");
-                if (currentlyRunningMessage != null) {
-                    currentlyRunningMessage.acknowledge();
-                } else {
-                    logger.trace("Received an acknowledge, but there is no currently running message");
-                }
+            logger.trace("Receive - Processing byte: {}", () -> Bytes.bytesToHex(b));
+            if (b != messageHandler.getStxValue()) {
+                handleNonStxByte(logger, messageHandler, b, currentlyRunningMessage);
+                i++;
+            } else if (hasImpossibleLength(data, i)) {
+                byte length = data[i + 1];
+                logger.warn("Receive - Skipping STX followed by impossible length: {}", () -> Bytes.bytesToHex(length));
+                i++;
+            } else if (isIncomplete(data, i)) {
+                byte[] overflow = Arrays.copyOfRange(data, i, data.length);
+                logger.trace("Receive - Overflowing following byte[]: {}", () -> Bytes.bytesToHex(overflow));
+                return overflow;
             } else {
-                logger.warn("Receive - Found byte, but don't know how to handle it: {}", Bytes.bytesToHex(b));
+                int eventLengthInclChkSum = data[i + 1] + 1; // +1 for checksum
+                byte[] event = Arrays.copyOfRange(data, i, i + eventLengthInclChkSum);
+                logger.trace("Receive - Found message bytes: {}", () -> Bytes.bytesToHex(event));
+                parseMessage(logger, centralUnit, messageHandler, event, responses);
+                i += eventLengthInclChkSum;
             }
         }
-        return overflow;
+        return new byte[0];
+    }
+
+    private static boolean hasImpossibleLength(byte[] data, int stxIndex) {
+        return stxIndex + 1 < data.length && data[stxIndex + 1] < MIN_MESSAGE_LENGTH;
+    }
+
+    private static boolean isIncomplete(byte[] data, int stxIndex) {
+        return stxIndex + 1 == data.length || stxIndex + data[stxIndex + 1] + 1 > data.length;
+    }
+
+    private static void parseMessage(Logger logger, CentralUnit centralUnit, MessageHandler messageHandler, byte[] event, Collection<MessageSupport> responses) {
+        try {
+            MessageSupport parse = messageHandler.parse(centralUnit, event);
+            if (parse != null) {
+                responses.add(parse);
+            }
+        } catch (CentralUnit.ComponentNotFoundInConfigException e) {
+            logger.debug("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage());
+        } catch (Exception e) {
+            logger.error("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage(), e);
+        }
+    }
+
+    private static void handleNonStxByte(Logger logger, MessageHandler messageHandler, byte b, MessageSupport currentlyRunningMessage) {
+        if (b == messageHandler.getAcknowledgeValue()) {
+            logger.trace("Received acknowledge");
+            if (currentlyRunningMessage != null) {
+                currentlyRunningMessage.acknowledge();
+            } else {
+                logger.trace("Received an acknowledge, but there is no currently running message");
+            }
+        } else {
+            logger.warn("Receive - Found byte, but don't know how to handle it: {}", () -> Bytes.bytesToHex(b));
+        }
     }
 
     public static void send(OutputStream outputStream, byte[] message) throws IOException {

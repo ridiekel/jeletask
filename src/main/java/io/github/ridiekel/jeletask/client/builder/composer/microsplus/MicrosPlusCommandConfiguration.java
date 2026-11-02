@@ -16,15 +16,18 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import java.util.List;
 
 public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command, CommandConfigurable<?>, Integer> {
+    private static final String CENTRAL_UNIT = "Central Unit";
+    private static final String NUMBER = "Number";
+
     public MicrosPlusCommandConfiguration() {
         super(List.of(
                 new MicrosPlusSetCommandConfigurable(),
                 new MicrosPlusGetCommandConfigurable(),
-                new GroupGetCommandConfigurable(9, true, "Central Unit", "Fnc", "Number", "Number"),
+                new GroupGetCommandConfigurable(9, true, CENTRAL_UNIT, "Fnc", NUMBER, NUMBER),
                 new LogCommandConfigurable(3, false, "Fnc", "State"),
                 new MicrosPlusEventCommandConfigurable(),
                 new KeepAliveCommandConfigurable(11, true),
-                new DisplayMessageCommandConfigurable(4, true, "Central Unit")            
+                new DisplayMessageCommandConfigurable(4, true, CENTRAL_UNIT)            
         ));
     }
 
@@ -35,7 +38,7 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
 
     private static class MicrosPlusEventCommandConfigurable extends EventCommandConfigurable {
         public MicrosPlusEventCommandConfigurable() {
-            super(16, true, "Central Unit", "Fnc", "Number", "Number", "Err State");
+            super(16, true, CENTRAL_UNIT, "Fnc", NUMBER, NUMBER, "Err State");
         }
 
         @Override
@@ -49,7 +52,7 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
 
     private static class MicrosPlusGetCommandConfigurable extends GetCommandConfigurable {
         public MicrosPlusGetCommandConfigurable() {
-            super(6, true, "Central Unit", "Fnc", "Number", "Number");
+            super(6, true, CENTRAL_UNIT, "Fnc", NUMBER, NUMBER);
         }
 
         @Override
@@ -60,7 +63,7 @@ public class MicrosPlusCommandConfiguration extends ConfigurationSupport<Command
 
     private static class MicrosPlusSetCommandConfigurable extends SetCommandConfigurable {
         public MicrosPlusSetCommandConfigurable() {
-            super(7, true, "Central Unit", "Fnc", "Number", "Number", "State");
+            super(7, true, CENTRAL_UNIT, "Fnc", NUMBER, NUMBER, "State");
         }
 
         @Override
