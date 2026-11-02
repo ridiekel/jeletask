@@ -221,7 +221,7 @@ class MqttTlsTest {
                 try {
                     Socket socket = server.accept();
                     Thread.ofVirtual().start(() -> answer((SSLSocket) socket));
-                } catch (IOException e) {
+                } catch (IOException _) {
                     return;
                 }
             }
@@ -245,7 +245,7 @@ class MqttTlsTest {
                         out.flush();
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException _) {
                 // A refused handshake or a closed connection: both end this exchange.
             }
         }
