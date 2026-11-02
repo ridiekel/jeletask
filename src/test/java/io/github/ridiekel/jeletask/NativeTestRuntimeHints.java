@@ -82,10 +82,11 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
 
     //Needed for now because otherwise the test containers library does not create a network alias for mqtt
     //docker-java's api classes are the Docker responses that the shaded jackson in test containers deserializes reflectively
+    //toxiproxy-java is the client of the Resilience tests
     private static void registerTestContainersHints(RuntimeHints hints) {
         hints.resources().registerPattern("org/testcontainers/**");
 
-        try (var result = new ClassGraph().enableClasspath().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne").enableClassInfo().scan()) {
+        try (var result = new ClassGraph().enableClasspath().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne", "eu.rekawek.toxiproxy").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
                     hints.reflection().registerType(Class.forName(classInfo.getName(), false, NativeTestRuntimeHints.class.getClassLoader()), MemberCategory.values());

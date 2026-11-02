@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
-import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.testcontainers.DockerClientFactory;
 
@@ -9,7 +8,6 @@ import java.io.IOException;
 /**
  * The resilience scenarios against Toxiproxy and mosquitto in containers. Skipped without Docker.
  */
-@DisabledInNativeImage
 @EnabledIf("dockerAvailable")
 class ResilienceToxiproxyTest extends ResilienceScenarios {
     static boolean dockerAvailable() {
