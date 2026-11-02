@@ -3,6 +3,7 @@ package io.github.ridiekel.jeletask.mqtt.listener;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.ridiekel.jeletask.HealthCheck;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
+import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.FakeTeletaskClient;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
@@ -39,6 +40,8 @@ class MqttProcessorTest {
     private static final String STOP_TOPIC = BASE_TOPIC + "/stop";
     private static final String REFRESH_TOPIC = BASE_TOPIC + "/refresh";
     private static final String DISCOVERY_TOPICS_TOPIC = "teletask2mqtt/bridges/fixture_client/discovery";
+    private static final String RELAY_1_CONFIG_TOPIC = "homeassistant/light/fixture_central/relay_1/config";
+    private static final String BRIDGE_CONFIG_TOPIC = "homeassistant/sensor/fixture_central/sensor_-1/config";
     private static final Duration AWAIT = Duration.ofSeconds(10);
 
     private final FakeTeletaskClient teletask = new FakeTeletaskClient();
@@ -54,6 +57,151 @@ class MqttProcessorTest {
     );
 
     private final Map<String, String> retainedOnBroker = new ConcurrentHashMap<>();
+    // Published by someone else while the bridge subscribes, so not retained
+    private final Map<String, String> liveOnBroker = new ConcurrentHashMap<>();
+
+    @Test
+    void startupFailsWhenNoMqttClientCanBeCreated() {
+        MqttException cause = new MqttException(MqttException.REASON_CODE_INVALID_CLIENT_ID);
+        MqttProcessor failing = new MqttProcessor(MqttProcessorFixtures.centralUnit(), teletask, configuration, exitCodes::add, (_, _) -> {
+            throw cause;
+        });
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class, failing::startup);
+
+        assertThat(failure).hasCause(cause);
+    }
+
+    @Test
+    void blankCentralIdAndPrefixFallBackToTheCentralUnitAddressAndTheClientId() {
+        configuration.getCentral().setId("  ");
+        configuration.getMqtt().setPrefix(" ");
+        CentralUnit centralUnit = MqttProcessorFixtures.centralUnit();
+        centralUnit.setHost("192.168.0.5");
+        centralUnit.setPort(55000);
+
+        MqttProcessor fallback = new MqttProcessor(centralUnit, teletask, configuration, exitCodes::add, (_, _) -> new FakeMqttClient());
+
+        assertThat(fallback.getTeletaskIdentifier()).isEqualTo("192_168_0_5_55000");
+        assertThat(fallback.getPrefix()).isEqualTo("fixture_client");
+        assertThat(fallback.getAvailabilityTopic()).isEqualTo("fixture_client/192_168_0_5_55000/state");
+    }
+
+    @Test
+    void blankUsernameConnectsWithoutUsernameButWithThePassword() {
+        configuration.getMqtt().setUsername("  ");
+        configuration.getMqtt().setPassword("secret");
+
+        processor.startup();
+
+        assertThat(mqtt.options.getUserName()).isNull();
+        assertThat(mqtt.options.getPassword()).containsExactly("secret".toCharArray());
+    }
+
+    @Test
+    void usernameIsTrimmedAndNoPasswordIsSentWhenNoneIsConfigured() {
+        configuration.getMqtt().setUsername(" bridge ");
+
+        processor.startup();
+
+        assertThat(mqtt.options.getUserName()).isEqualTo("bridge");
+        assertThat(mqtt.options.getPassword()).isNull();
+    }
+
+    @Test
+    void messagesOnTheClientCallbackAreLeftToTheSubscriptions() throws Exception {
+        processor.startup();
+        mqtt.clearRecordings();
+
+        mqtt.callback.messageArrived(STOP_TOPIC, new MqttMessage("maintenance".getBytes()));
+        mqtt.callback.deliveryComplete(null);
+
+        assertThat(exitCodes).isEmpty();
+        assertThat(mqtt.published).isEmpty();
+    }
+
+    @Test
+    void aPingAnswerBeforeAnyPingWasSentIsIgnored() {
+        processor.startup();
+
+        assertDoesNotThrow(() -> mqtt.deliver(BASE_TOPIC + "/ping", "{}"));
+        processor.pingMqtt();
+        awaitHealth("mqtt=UP");
+    }
+
+    @Test
+    void homeAssistantGoingOfflineDoesNotRepublishTheConfig() {
+        processor.startup();
+        mqtt.clearRecordings();
+
+        assertDoesNotThrow(() -> mqtt.deliver("homeassistant/status", "offline"));
+
+        // Coming online republishes after two to five seconds
+        Awaitility.await("no republished config")
+                .during(Duration.ofMillis(5500))
+                .atMost(Duration.ofSeconds(7))
+                .until(() -> mqtt.published.isEmpty());
+    }
+
+    @Test
+    void anInterruptedStartupSkipsTheWaitsButStillDoesEverythingAndKeepsTheInterrupt() {
+        String stale = "homeassistant/switch/fixture_central/relay_998/config";
+        retainedOnBroker.put(stale, "{}");
+
+        Thread.currentThread().interrupt();
+        processor.startup();
+
+        assertThat(Thread.interrupted()).isTrue();
+        assertThat(clearedTopics()).containsExactly(stale);
+        assertThat(mqtt.published).extracting(Published::topic).contains(RELAY_1_CONFIG_TOPIC);
+        assertThat(mqtt.subscribed).contains(STOP_TOPIC);
+    }
+
+    @Test
+    void removeConfigClearsTheRetainedConfigOfEveryComponent() {
+        configuration.getLog().setHaconfigEnabled(true);
+        processor.startup();
+        mqtt.clearRecordings();
+
+        processor.removeConfig();
+
+        assertThat(clearedTopics()).containsExactly(RELAY_1_CONFIG_TOPIC, BRIDGE_CONFIG_TOPIC);
+    }
+
+    @Test
+    void anInterruptedRemoveConfigStillClearsEverythingAndKeepsTheInterrupt() {
+        processor.startup();
+        mqtt.clearRecordings();
+
+        Thread.currentThread().interrupt();
+        processor.removeConfig();
+
+        assertThat(Thread.interrupted()).isTrue();
+        assertThat(clearedTopics()).containsExactly(RELAY_1_CONFIG_TOPIC, BRIDGE_CONFIG_TOPIC);
+    }
+
+    @Test
+    void onlyRetainedConfigAndDiscoveryTopicsCountAsPreviouslyPublished() throws IOException {
+        retainedOnBroker.put(DISCOVERY_TOPICS_TOPIC, "");
+        liveOnBroker.put(DISCOVERY_TOPICS_TOPIC, "[\"homeassistant/switch/old_central/relay_5/config\"]");
+        liveOnBroker.put("homeassistant/switch/fixture_central/relay_996/config", "{}");
+
+        processor.startup();
+
+        assertThat(clearedTopics()).isEmpty();
+        assertThat(publishedDiscoveryTopics()).containsExactly(RELAY_1_CONFIG_TOPIC, BRIDGE_CONFIG_TOPIC);
+    }
+
+    @Test
+    void stoppingTheTeletaskClientKeepsTheMqttConnection() {
+        processor.startup();
+        mqtt.clearRecordings();
+
+        processor.stop();
+
+        assertThat(mqtt.isConnected()).isTrue();
+        assertThat(mqtt.published).isEmpty();
+    }
 
     @Test
     void connectionLostExitsWithStatus5WhenConfigured() {
@@ -351,6 +499,7 @@ class MqttProcessorTest {
         final List<Published> published = new CopyOnWriteArrayList<>();
         private final Map<String, IMqttMessageListener> listeners = new ConcurrentHashMap<>();
         volatile MqttCallbackExtended callback;
+        volatile MqttConnectOptions options;
         volatile boolean connected;
         volatile boolean echoPublishes = true;
         volatile String failSubscribeTo;
@@ -373,6 +522,7 @@ class MqttProcessorTest {
 
         @Override
         public void connect(MqttConnectOptions options) {
+            this.options = options;
             connected = true;
             callback.connectComplete(false, getServerURI());
         }
@@ -389,12 +539,17 @@ class MqttProcessorTest {
             }
             subscribed.add(topicFilter);
             listeners.put(topicFilter, listener);
-            for (Map.Entry<String, String> retained : retainedOnBroker.entrySet()) {
-                if (MqttTopic.isMatched(topicFilter, retained.getKey())) {
-                    MqttMessage message = new MqttMessage(retained.getValue().getBytes());
-                    message.setRetained(true);
+            deliverOnSubscribe(topicFilter, listener, retainedOnBroker, true);
+            deliverOnSubscribe(topicFilter, listener, liveOnBroker, false);
+        }
+
+        private static void deliverOnSubscribe(String topicFilter, IMqttMessageListener listener, Map<String, String> messages, boolean retained) {
+            for (Map.Entry<String, String> entry : messages.entrySet()) {
+                if (MqttTopic.isMatched(topicFilter, entry.getKey())) {
+                    MqttMessage message = new MqttMessage(entry.getValue().getBytes());
+                    message.setRetained(retained);
                     try {
-                        listener.messageArrived(retained.getKey(), message);
+                        listener.messageArrived(entry.getKey(), message);
                     } catch (Exception e) {
                         throw new IllegalStateException("Paho would drop the connection on this", e);
                     }
