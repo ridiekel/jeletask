@@ -52,6 +52,18 @@ public class Teletask2MqttConfigurationProperties {
         private String discoveryPrefix;
         @Getter
         private boolean exitOnDisconnect = false;
+        /**
+         * Connect over TLS (ssl://) instead of plain tcp://. The broker certificate is checked against the
+         * trust store of the JVM, or against {@link #caFile} when that is set, and its name must match the host.
+         */
+        @Getter
+        private boolean ssl = false;
+        /**
+         * PEM file with the certificate(s) of the CA that signed the broker certificate. Only used with ssl; when
+         * set, only these certificates are trusted instead of the trust store of the JVM.
+         */
+        @Getter
+        private String caFile;
 
 
         public String getHost() {

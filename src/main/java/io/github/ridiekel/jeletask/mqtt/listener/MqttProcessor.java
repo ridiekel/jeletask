@@ -34,6 +34,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -151,13 +152,13 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     private void configureAndConnectMqtt() throws MqttException {
-        String brokerUrl = "tcp://" + this.configuration.getMqtt().getHost() + ":" + this.configuration.getMqtt().getPort();
+        String brokerUrl = MqttTls.brokerUrl(this.configuration.getMqtt());
         String clientId = this.configuration.getMqtt().getClientId();
 
         String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
         char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
 
-        log(LOG::info, What.CONNECTION, "STATUS", String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", brokerUrl, clientId, username, password != null));
+        log(LOG::info, What.CONNECTION, "STATUS", String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s, ca_file=%s)...)", brokerUrl, clientId, username, password != null, !this.configuration.getMqtt().isSsl() ? "-" : MqttTls.caFile(this.configuration.getMqtt()).map(Path::toString).orElse("<jvm trust store>")));
 
         this.mqttClient = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
 
@@ -218,6 +219,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         options.setConnectionTimeout(5);
         options.setMaxReconnectDelay(10000);
         options.setWill(this.getAvailabilityTopic(), OFFLINE.getBytes(), 1, true);
+        MqttTls.apply(this.configuration.getMqtt(), options);
         return options;
     }
 
