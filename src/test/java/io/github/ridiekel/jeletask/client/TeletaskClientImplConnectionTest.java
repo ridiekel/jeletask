@@ -13,9 +13,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.io.FilterInputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -344,10 +350,155 @@ class TeletaskClientImplConnectionTest {
         }
     }
 
+    @Test
+    void aSocketThatFailsToCloseAfterAFailedConnectKeepsTheConnectFailure() {
+        IOException closeFailure = new IOException("close");
+        Socket socket = new Socket() {
+            @Override
+            public void connect(SocketAddress endpoint, int timeout) throws IOException {
+                throw new IOException("connect");
+            }
+
+            @Override
+            public synchronized void close() throws IOException {
+                throw closeFailure;
+            }
+        };
+
+        IOException failure = assertThrows(IOException.class, () -> TeletaskClientImpl.connectOrClose(socket, new InetSocketAddress("127.0.0.1", this.central.port())));
+
+        assertEquals("connect", failure.getMessage());
+        assertThat(failure.getSuppressed()).containsExactly(closeFailure);
+    }
+
+    @Test
+    void aConnectionWithoutStreamsIsClosedAndTheNextAttemptIsUsed() {
+        this.central.goOnline();
+        List<WrappedSocket> sockets = new CopyOnWriteArrayList<>();
+        TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()), (host, port) -> {
+            WrappedSocket socket = new WrappedSocket(TeletaskClientImpl.connectOrClose(new Socket(), new InetSocketAddress(host, port)));
+            socket.streamsUnavailable = sockets.isEmpty();
+            sockets.add(socket);
+            return socket;
+        });
+
+        client.start();
+
+        assertTrue(client.isConnected());
+        assertThat(sockets).hasSize(2);
+        assertTrue(sockets.getFirst().isClosed());
+        assertFalse(sockets.getLast().isClosed());
+        awaitLogMessagesOn(1);
+    }
+
+    @Test
+    void streamsAndSocketThatFailToCloseAreLoggedAndStillAllClosed() {
+        this.central.goOnline();
+        WrappedSocket[] socket = new WrappedSocket[1];
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()), (host, port) -> {
+            socket[0] = new WrappedSocket(TeletaskClientImpl.connectOrClose(new Socket(), new InetSocketAddress(host, port)));
+            socket[0].closeFails = true;
+            return socket[0];
+        });
+        client.start();
+        awaitLogMessagesOn(0);
+
+        try (LogCapture log = LogCapture.of(TeletaskClientImpl.class, Level.ERROR)) {
+            client.disconnect();
+
+            assertThat(log.messages(Level.ERROR)).containsExactly(
+                    "Exception (java.io.IOException) caught in stop: input stream",
+                    "Exception (java.io.IOException) caught in stop: output stream",
+                    "Exception (java.io.IOException) caught in stop: socket"
+            );
+        }
+        assertNull(client.getInputStream());
+        assertNull(client.getOutputStream());
+        assertTrue(socket[0].isClosed());
+        eventually().until(() -> this.central.closedByClient(0));
+    }
+
     private TeletaskClientImpl client(TestCentralUnit unit) {
-        TeletaskClientImpl client = new TeletaskClientImpl(unit);
+        return client(unit, (host, port) -> TeletaskClientImpl.connectOrClose(new Socket(), new InetSocketAddress(host, port)));
+    }
+
+    private TeletaskClientImpl client(TestCentralUnit unit, TeletaskClientImpl.SocketFactory socketFactory) {
+        TeletaskClientImpl client = new TeletaskClientImpl(unit, socketFactory);
         this.clients.add(client);
         return client;
+    }
+
+    /**
+     * A connected socket that can refuse its streams, or fail every close after it really closed.
+     */
+    private static final class WrappedSocket extends Socket {
+        private final Socket socket;
+        volatile boolean streamsUnavailable;
+        volatile boolean closeFails;
+
+        WrappedSocket(Socket socket) {
+            this.socket = socket;
+        }
+
+        @Override
+        public void setKeepAlive(boolean on) throws SocketException {
+            this.socket.setKeepAlive(on);
+        }
+
+        @Override
+        public synchronized void setSoTimeout(int timeout) throws SocketException {
+            this.socket.setSoTimeout(timeout);
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            if (this.streamsUnavailable) {
+                throw new IOException("no streams");
+            }
+            return new FilterInputStream(this.socket.getInputStream()) {
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    failCloseIfAsked("input stream");
+                }
+            };
+        }
+
+        @Override
+        public OutputStream getOutputStream() throws IOException {
+            if (this.streamsUnavailable) {
+                throw new IOException("no streams");
+            }
+            return new FilterOutputStream(this.socket.getOutputStream()) {
+                @Override
+                public void write(byte[] bytes, int offset, int length) throws IOException {
+                    this.out.write(bytes, offset, length);
+                }
+
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    failCloseIfAsked("output stream");
+                }
+            };
+        }
+
+        @Override
+        public synchronized void close() throws IOException {
+            this.socket.close();
+            failCloseIfAsked("socket");
+        }
+
+        @Override
+        public boolean isClosed() {
+            return this.socket.isClosed();
+        }
+
+        private void failCloseIfAsked(String what) throws IOException {
+            if (this.closeFails) {
+                throw new IOException(what);
+            }
+        }
     }
 
     private void awaitLogMessagesOn(int connection) {

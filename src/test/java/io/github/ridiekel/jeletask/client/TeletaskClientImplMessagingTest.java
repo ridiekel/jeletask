@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client;
 
 import ch.qos.logback.classic.Level;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator.ValidOnOffToggle;
+import io.github.ridiekel.jeletask.client.builder.message.messages.impl.GetMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
@@ -233,6 +234,14 @@ class TeletaskClientImplMessagingTest {
 
         eventually().until(() -> !this.listener.received().isEmpty());
         assertThat(this.listener.received()).containsExactly(component(Function.RELAY, RELAY_2));
+        assertEquals(OFF, component(Function.RELAY, RELAY_1).getState());
+    }
+
+    @Test
+    void receivedMessagesThatAreNoEventsDoNotNotifyTheListeners() {
+        this.client.handleReceiveEvents(List.of(new GetMessage(this.unit, Function.RELAY, RELAY_1)));
+
+        assertThat(this.listener.received()).isEmpty();
         assertEquals(OFF, component(Function.RELAY, RELAY_1).getState());
     }
 

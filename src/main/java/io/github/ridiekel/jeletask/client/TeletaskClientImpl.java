@@ -64,25 +64,32 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private final AtomicBoolean starting = new AtomicBoolean(false);
     private final AtomicBoolean stopping = new AtomicBoolean(false);
     private final AtomicBoolean eventListenerQueued = new AtomicBoolean(false);
+    private final SocketFactory socketFactory;
 
     @Autowired
     public TeletaskClientImpl(CentralUnit centralUnit) {
+        this(centralUnit, (host, port) -> connectOrClose(new Socket(), new InetSocketAddress(host, port)));
+    }
+
+    TeletaskClientImpl(CentralUnit centralUnit, SocketFactory socketFactory) {
         this.centralUnit = centralUnit;
+        this.socketFactory = socketFactory;
+    }
+
+    @FunctionalInterface
+    interface SocketFactory {
+        Socket connect(String host, int port) throws IOException;
     }
 
 // ################################################ PUBLIC API FUNCTIONS
 
     @Override
     public void get(ComponentSpec component, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-        withStarted(() -> {
-            if (this.started.get()) {
-                this.execute(
-                        new GetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber()),
-                        m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
-                        (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-                );
-            }
-        });
+        withStarted(() -> this.execute(
+                new GetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber()),
+                m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+        ));
     }
 
     @Override
@@ -352,7 +359,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         LOG.info(() -> String.format("(Re)connecting to %s:%s", host, port));
 
         try {
-            this.socket = createSocket(host, port);
+            this.socket = this.socketFactory.connect(host, port);
             this.socket.setKeepAlive(true);
             this.socket.setSoTimeout(2000);
             connected = true;
@@ -389,10 +396,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         }
 
         return connected;
-    }
-
-    private Socket createSocket(String host, int port) throws IOException {
-        return connectOrClose(new Socket(), new InetSocketAddress(host, port));
     }
 
     static Socket connectOrClose(Socket socket, InetSocketAddress address) throws IOException {
@@ -465,25 +468,20 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
 
     private void handleReceiveEvent(CentralUnit centralUnit, EventMessage eventMessage) {
+        // Never null: getComponent throws for a component that is not configured, and parsing already drops such events
         ComponentSpec component = centralUnit.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
-        if (component != null) {
-            LOG.debug(() ->
-                    String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_CYAN, "%s - ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
-                            StringUtils.rightPad("EVENT", 10),
-                            StringUtils.rightPad(component.getFunction().toString(), 10),
-                            StringUtils.leftPad(String.valueOf(component.getNumber()), 3),
-                            StringUtils.leftPad(component.getDescription(), 40),
-                            Bytes.bytesToHex(eventMessage.getRawBytes()),
-                            component.getState(),
-                            eventMessage.getState()
-                    )
-            );
-            component.setState(eventMessage.getState());
-        } else {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(() -> String.format("Event: %nComponent: not found in configuration %s", eventMessage.getLogInfo(eventMessage.getRawBytes())));
-            }
-        }
+        LOG.debug(() ->
+                String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_CYAN, "%s - ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
+                        StringUtils.rightPad("EVENT", 10),
+                        StringUtils.rightPad(component.getFunction().toString(), 10),
+                        StringUtils.leftPad(String.valueOf(component.getNumber()), 3),
+                        StringUtils.leftPad(component.getDescription(), 40),
+                        Bytes.bytesToHex(eventMessage.getRawBytes()),
+                        component.getState(),
+                        eventMessage.getState()
+                )
+        );
+        component.setState(eventMessage.getState());
     }
 
     private void runRunnables(Iterable<Runnable> runnables) {
