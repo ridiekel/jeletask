@@ -12,7 +12,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.testcontainers.DockerClientFactory;
 
@@ -30,7 +29,6 @@ import static io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.BA
  * Real Paho client against a real broker that restarts and loses all its sessions and retained messages: mosquitto-no-auth.conf
  * has no persistence. Skipped without Docker, and not an End2End test: no Home Assistant or browser involved.
  */
-@DisabledInNativeImage
 @EnabledIf("dockerAvailable")
 class MqttProcessorBrokerReconnectTest {
     private static final Duration AWAIT = Duration.ofSeconds(60);

@@ -76,6 +76,8 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(Entity.class, MemberCategory.values());
         hints.reflection().registerType(HAObject.class, MemberCategory.values());
         hints.reflection().registerType(Entity.Attributes.class, MemberCategory.values());
+        // MqttProcessorWiringTest lets Spring choose and call the constructor reflectively, as it does without AOT
+        hints.reflection().registerType(MqttProcessor.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
     }
 
     //Needed for now because otherwise the test containers library does not create a network alias for mqtt

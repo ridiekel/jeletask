@@ -4,7 +4,6 @@ import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RegisteredBean;
@@ -14,8 +13,7 @@ import java.lang.reflect.Constructor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Reads the constructors reflectively, which the native test image has no metadata for.
-@DisabledInNativeImage
+// Reads the constructors reflectively: NativeTestRuntimeHints registers them for the native test image.
 class MqttProcessorWiringTest {
     private final DefaultListableBeanFactory beanFactory = beanFactory();
 
