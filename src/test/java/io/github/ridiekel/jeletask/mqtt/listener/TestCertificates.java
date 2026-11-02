@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  */
 public final class TestCertificates {
     private static final AtomicLong SERIAL = new AtomicLong(System.currentTimeMillis());
-    private static final Pattern IP = Pattern.compile("^[0-9.]+$|^[0-9a-fA-F:]+:[0-9a-fA-F:]*$");
+    private static final Pattern IPV4 = Pattern.compile("[0-9.]+");
     private static final char[] PASSWORD = "test".toCharArray();
 
     private TestCertificates() {
@@ -104,7 +104,7 @@ public final class TestCertificates {
             if (names.length > 0) {
                 GeneralName[] alternatives = new GeneralName[names.length];
                 for (int i = 0; i < names.length; i++) {
-                    alternatives[i] = new GeneralName(IP.matcher(names[i]).matches() ? GeneralName.iPAddress : GeneralName.dNSName, names[i]);
+                    alternatives[i] = new GeneralName(isIpAddress(names[i]) ? GeneralName.iPAddress : GeneralName.dNSName, names[i]);
                 }
                 builder.addExtension(Extension.subjectAlternativeName, false, new GeneralNames(alternatives));
             }
@@ -137,5 +137,13 @@ public final class TestCertificates {
     private static String pem(String type, byte[] der) {
         String body = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(der);
         return "-----BEGIN " + type + "-----\n" + body + "\n-----END " + type + "-----\n";
+    }
+
+    /**
+     * IPv4 is only digits and dots; IPv6 only hex digits and colons, with at least one colon. Anything else is a host name.
+     */
+    private static boolean isIpAddress(String name) {
+        return IPV4.matcher(name).matches()
+                || name.indexOf(':') >= 0 && name.chars().allMatch(c -> c == ':' || Character.digit(c, 16) >= 0);
     }
 }
