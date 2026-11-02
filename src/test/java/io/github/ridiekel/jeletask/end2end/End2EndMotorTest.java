@@ -20,10 +20,8 @@ class End2EndMotorTest extends MockingTeletaskTestSupport {
                 .shouldHaveValidSliderRange()
                 .shouldHaveHeaderStateText("Closing");
 
-        Selenide.sleep(4000);
-
         ha().web().motor(7)
-                .shouldHaveSliderState("0")
+                .shouldEndAtSliderState("0")
                 .shouldHaveHeaderStateText("Closed");
 
         ha().web().motor(7).slideToValue44();
@@ -32,7 +30,7 @@ class End2EndMotorTest extends MockingTeletaskTestSupport {
 
         ha().web().motor(7).shouldHaveHeaderStateText("Opening");
         ha().web().motor(7)
-                .shouldHaveSliderState("44")
+                .shouldEndAtSliderState("44")
                 .shouldHaveHeaderStateText("Open");
 
         teletask().motor(7).up();
@@ -41,10 +39,8 @@ class End2EndMotorTest extends MockingTeletaskTestSupport {
 
         ha().web().motor(7).shouldHaveHeaderStateText("Opening");
 
-        Selenide.sleep(4000);
-
         ha().web().motor(7)
-                .shouldHaveSliderState("100")
+                .shouldEndAtSliderState("100")
                 .shouldHaveHeaderStateText("Open");
 
         ha().web().motor(7).closeDetails();

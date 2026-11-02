@@ -30,6 +30,7 @@ import java.math.RoundingMode;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -56,6 +57,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     private OutputStream outputStream;
     private final Timer timer = new Timer();
     private Map<String, List<Supplier<MockServerResponse>>> mocks;
+    // The last run of every motor, so a group get answers with where the motor is now, like a real central unit
+    private final Map<Integer, MotorRun> motorRuns = new ConcurrentHashMap<>();
 
     public TeletaskMockServer(int port, CentralUnit centralUnit) {
         this.port = port;
@@ -210,7 +213,44 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         this.centralUnit.getAllComponents().forEach(c -> e.with(c.getFunction(), c.getNumber()).when(get()).thenRespondFunctional(Collections.singletonList(cachedState())));
     }
 
-    private static @NotNull State<?> responseMotorState(ComponentSpec componentSpec, MotorState requestedState) {
+    private @NotNull State<?> startMotorRun(ComponentSpec componentSpec, MotorState requestedState) {
+        MotorState response = responseMotorState(componentSpec, requestedState);
+        this.motorRuns.put(componentSpec.getNumber(), new MotorRun(response, System.currentTimeMillis()));
+        return response;
+    }
+
+    private State<?> currentMotorState(ComponentSpec componentSpec) {
+        return Optional.ofNullable(this.motorRuns.get(componentSpec.getNumber()))
+                .<State<?>>map(run -> run.at(System.currentTimeMillis()))
+                .orElseGet(componentSpec::getState);
+    }
+
+    /**
+     * A motor moving at a constant speed from where it was to the requested position, as the response promised.
+     */
+    record MotorRun(MotorState response, long startMillis) {
+        MotorState at(long nowMillis) {
+            MotorState state = new MotorState(response.getState());
+            state.setProtection(response.getProtection());
+            state.setRequestedPosition(response.getRequestedPosition());
+            Integer from = response.getCurrentPosition();
+            Integer to = response.getRequestedPosition();
+            long durationMillis = Optional.ofNullable(response.getSecondsToFinish()).map(seconds -> seconds.movePointRight(3).longValue()).orElse(0L);
+            long elapsedMillis = nowMillis - startMillis;
+            if (response.getPower() != OnOffToggleStateCalculator.ValidOnOffToggle.ON || from == null || to == null || elapsedMillis >= durationMillis) {
+                state.setState(MotorStateCalculator.ValidMotorDirectionState.STOP);
+                state.setPower(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
+                state.setCurrentPosition(to == null ? from : to);
+                return state;
+            }
+            state.setPower(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
+            state.setCurrentPosition((int) (from + (to - from) * elapsedMillis / durationMillis));
+            state.setSecondsToFinish(BigDecimal.valueOf(durationMillis - elapsedMillis).movePointLeft(3));
+            return state;
+        }
+    }
+
+    private static @NotNull MotorState responseMotorState(ComponentSpec componentSpec, MotorState requestedState) {
         MotorState responseState = new MotorState();
         responseState.setState(requestedState.getState());
         responseState.setRequestedPosition(requestedState.getRequestedPosition());
@@ -234,27 +274,29 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             e.with(c.getFunction(), c.getNumber()).when(set(new MotorState(MotorStateCalculator.ValidMotorDirectionState.UP))).thenRespondFunctional(() -> {
                 MotorState requestedState = new MotorState(MotorStateCalculator.ValidMotorDirectionState.UP);
                 requestedState.setRequestedPosition(0);
-                return responseMotorState(c, requestedState);
+                return startMotorRun(c, requestedState);
             });
             e.with(c.getFunction(), c.getNumber()).when(set(new MotorState(MotorStateCalculator.ValidMotorDirectionState.DOWN))).thenRespondFunctional(() -> {
                 MotorState requestedState = new MotorState(MotorStateCalculator.ValidMotorDirectionState.DOWN);
                 requestedState.setRequestedPosition(100);
-                return responseMotorState(c, requestedState);
+                return startMotorRun(c, requestedState);
             });
             e.with(c.getFunction(), c.getNumber()).when(set(new MotorState(MotorStateCalculator.ValidMotorDirectionState.STOP))).thenRespondFunctional(() -> {
                 MotorState requestedState = new MotorState(MotorStateCalculator.ValidMotorDirectionState.STOP);
                 requestedState.setPower(OnOffToggleStateCalculator.ValidOnOffToggle.OFF);
-                return responseMotorState(c, requestedState);
+                return startMotorRun(c, requestedState);
             });
             IntStream.range(0, 101).forEach(requestedPosition -> {
                 MotorState state = new MotorState(MotorStateCalculator.ValidMotorDirectionState.MOTOR_GO_TO_POSITION);
                 state.setPower(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
                 state.setRequestedPosition(requestedPosition);
-                e.with(c.getFunction(), c.getNumber()).when(set(state)).thenRespondFunctional(() -> responseMotorState(c, state));
+                e.with(c.getFunction(), c.getNumber()).when(set(state)).thenRespondFunctional(() -> startMotorRun(c, state));
             });
         });
         e.when(groupGet(Function.MOTOR, this.centralUnit.getComponents(Function.MOTOR).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.MOTOR).map(component -> ExpectationBuilder.WhenBuilder.state(Function.MOTOR, component.getNumber(), component.getState())).toList()
+                this.centralUnit.getComponents(Function.MOTOR)
+                        .map(component -> (MockServerResponse) (unit, message) -> ExpectationBuilder.WhenBuilder.state(Function.MOTOR, component.getNumber(), currentMotorState(component)).create(unit, message))
+                        .toList()
         );
     }
 
@@ -303,6 +345,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             this.inputStream = this.socket.getInputStream();
             this.outputStream = this.socket.getOutputStream();
             this.timer.schedule(new TimerTask() {
+                // False positive: both caught exceptions are wrapped in the RuntimeException they throw, so neither is unused
+                @SuppressWarnings("java:S7467")
                 @Override
                 public void run() {
                     try {
