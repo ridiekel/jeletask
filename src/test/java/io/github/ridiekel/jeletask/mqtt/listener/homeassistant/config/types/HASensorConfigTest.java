@@ -37,7 +37,7 @@ class HASensorConfigTest {
         centralUnit.setComponentsTypes(components);
         centralUnit.getAllComponents();
 
-        HAConfigParameters parameters = new HAConfigParameters(new Teletask2MqttConfigurationProperties(), centralUnit, component, "teletask2mqtt/" + IDENTIFIER, null, IDENTIFIER, deviceType, null);
+        HAConfigParameters parameters = new HAConfigParameters(new Teletask2MqttConfigurationProperties(), centralUnit, component, "teletask2mqtt/" + IDENTIFIER, IDENTIFIER, deviceType, null);
         return new HASensorConfig(parameters).getConfig();
     }
 
@@ -315,8 +315,8 @@ class HASensorConfigTest {
         components.put(Function.SENSOR, List.of(sensor1));
         centralUnit.setComponentsTypes(components);
 
-        String bridge = new HASensorConfig(new HAConfigParameters(new Teletask2MqttConfigurationProperties(), centralUnit, centralUnit.getBridge(), "teletask2mqtt/" + IDENTIFIER, null, IDENTIFIER, HomeAssistentAutoConfig.HADeviceType.SENSOR, null)).getConfig().get("default_entity_id").asText();
-        String sensor = new HASensorConfig(new HAConfigParameters(new Teletask2MqttConfigurationProperties(), centralUnit, sensor1, "teletask2mqtt/" + IDENTIFIER, null, IDENTIFIER, HomeAssistentAutoConfig.HADeviceType.SENSOR, null)).getConfig().get("default_entity_id").asText();
+        String bridge = new HASensorConfig(new HAConfigParameters(new Teletask2MqttConfigurationProperties(), centralUnit, centralUnit.getBridge(), "teletask2mqtt/" + IDENTIFIER, IDENTIFIER, HomeAssistentAutoConfig.HADeviceType.SENSOR, null)).getConfig().get("default_entity_id").asText();
+        String sensor = new HASensorConfig(new HAConfigParameters(new Teletask2MqttConfigurationProperties(), centralUnit, sensor1, "teletask2mqtt/" + IDENTIFIER, IDENTIFIER, HomeAssistentAutoConfig.HADeviceType.SENSOR, null)).getConfig().get("default_entity_id").asText();
 
         Assertions.assertThat(bridge).isEqualTo("sensor.teletask_MAN_TEST_localhost_bridge");
         Assertions.assertThat(sensor).isEqualTo("sensor.teletask-MAN_TEST_localhost-sensor-1");

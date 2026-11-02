@@ -91,9 +91,6 @@ public class Teletask2MqttConfigurationProperties {
         private String host;
         private String id;
         private int port;
-
-        public CentralConfiguration() {
-        }
     }
 
     @Setter

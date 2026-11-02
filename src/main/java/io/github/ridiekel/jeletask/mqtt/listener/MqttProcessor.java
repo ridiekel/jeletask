@@ -58,6 +58,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private static final String ONLINE = "online";
     private static final String OFFLINE = "offline";
+    private static final String STATUS = "STATUS";
 
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9_-]");
 
@@ -184,7 +185,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
         char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
 
-        log(LOG::info, What.CONNECTION, "STATUS", String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", brokerUrl, clientId, username, password != null));
+        log(LOG::info, What.CONNECTION, STATUS, String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", brokerUrl, clientId, username, password != null));
 
         this.mqttClient = this.mqttClientFactory.create(brokerUrl, clientId);
 
@@ -193,7 +194,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         this.mqttClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectionLost(Throwable cause) {
-                log(LOG::warn, What.CONNECTION, "STATUS", "Connection lost!");
+                log(LOG::warn, What.CONNECTION, STATUS, "Connection lost!");
                 if (configuration.getMqtt().isExitOnDisconnect()) {
                     exitHandler.accept(5);
                 }
@@ -201,7 +202,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
-                log(LOG::info, What.CONNECTION, "STATUS", String.format("Connected to MQTT (reconnect=%s, brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", reconnect, brokerUrl, clientId, username, password != null));
+                log(LOG::info, What.CONNECTION, STATUS, String.format("Connected to MQTT (reconnect=%s, brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", reconnect, brokerUrl, clientId, username, password != null));
                 if (reconnect) {
                     // A restarted broker may have lost our session. Subscribing again is harmless when it did not.
                     // Not in this callback thread: blocking client calls from a callback can deadlock.
@@ -209,7 +210,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                         try {
                             subscribe();
                         } catch (MqttException e) {
-                            log(LOG::error, What.CONNECTION, "STATUS", "Could not subscribe again after reconnect: " + e.getMessage());
+                            log(LOG::error, What.CONNECTION, STATUS, "Could not subscribe again after reconnect: " + e.getMessage());
                         }
                         // The broker published our last will when the connection dropped, so overwrite it right away.
                         publishConnectionStatus();
@@ -219,10 +220,12 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) {
+                // Not used: every subscription has its own IMqttMessageListener.
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
+                // Nothing to do: publishing is fire-and-forget (QoS 0), nothing waits for delivery.
             }
         });
 
@@ -249,11 +252,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     private void subscribe() throws MqttException {
-        this.subscribe(this.getBaseTopic() + "/+/+/set", (topic, message) -> {
-            EXECUTOR.execute(() -> {
-                new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message);
-            });
-        });
+        this.subscribe(this.getBaseTopic() + "/+/+/set", (topic, message) ->
+                EXECUTOR.execute(() -> new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message)));
         this.subscribe(getPingTopic(), (_, _) -> {
             if (this.pingMesage != null) {
                 this.pingMesage.setReceived(Instant.now());
@@ -269,7 +269,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         });
         this.subscribe("homeassistant/status", (_, message) -> {
             LOG.debug(() -> String.format("Home assistent 'birth'/'last will' message: %s", message));
-            if (message != null && Objects.equals(message.toString(), "online")) {
+            if (message != null && Objects.equals(message.toString(), ONLINE)) {
                 long seconds = ThreadLocalRandom.current().nextInt(2, 6);
                 LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_WHITE, "Received online message from Home Assistant, sending config and refreshing states in " + seconds + " seconds", AnsiColor.DEFAULT));
                 EXECUTOR.schedule(() -> {
@@ -312,14 +312,12 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             );
             try {
                 Thread.sleep(100);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException _) {
                 Thread.currentThread().interrupt();
             }
         });
         checkAndPublishConnectedStatus();
-        this.centralUnit.getAllComponents().stream().filter(c -> c.getNumber() < 0).sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> {
-            this.publishState(component, component.getState());
-        });
+        this.centralUnit.getAllComponents().stream().filter(c -> c.getNumber() < 0).sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> this.publishState(component, component.getState()));
     }
 
     public void refreshStates() {
@@ -356,7 +354,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         try {
             // The broker sends the retained messages right after subscribing, give it a moment to send them all
             Thread.sleep(STALE_CONFIG_COLLECT_MILLIS);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         } finally {
             this.mqttClient.unsubscribe(new String[]{filter, discoveryTopicsTopic});
@@ -411,7 +409,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             );
             try {
                 Thread.sleep(100);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException _) {
                 Thread.currentThread().interrupt();
             }
         });
@@ -477,7 +475,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     public void publishConnectionStatus() {
         try {
-            LOG.debug("Publishing connection status: " + State.OBJECT_MAPPER.writeValueAsString(connectedStatus));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Publishing connection status: {}", State.OBJECT_MAPPER.writeValueAsString(connectedStatus));
+            }
             // Always retained, otherwise a retained last will keeps saying offline.
             this.publish(What.ONLINE, () -> padded("BRIDGE"), this.getAvailabilityTopic(), connectedStatus.getState(), true, LOG::debug);
         } catch (JsonProcessingException e) {
@@ -523,7 +523,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                 LOG.warn(() -> String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message) + AnsiOutput.toString(AnsiColor.RED, " : MQTT Client disconnected", AnsiColor.DEFAULT)));
             }
         } catch (Exception e) {
-            LOG.warn("Could not publish to MQTT: " + e.getMessage());
+            LOG.warn("Could not publish to MQTT: {}", e.getMessage());
         }
     }
 
@@ -537,11 +537,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     @Override
     public void stop() {
-//        try {
-//            this.mqttClient.disconnect();
-//        } catch (MqttException e) {
-//            LOG.debug(e::getMessage);
-//        }
+        // Keep the MQTT connection when the Teletask client stops: the shutdown hook still publishes the offline status,
+        // and the broker's last will covers the case where we never get to that.
     }
 
     public static class ConnectedStatus {

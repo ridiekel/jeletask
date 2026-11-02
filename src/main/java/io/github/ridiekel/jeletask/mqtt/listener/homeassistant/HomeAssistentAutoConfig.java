@@ -42,6 +42,8 @@ public class HomeAssistentAutoConfig {
         return Optional.ofNullable(configuration.getMqtt().getDiscoveryPrefix()).orElse("homeassistant");
     }
 
+    // The concrete config type (light, sensor, climate, ...) depends on the component at runtime, so there is no single type argument.
+    @SuppressWarnings("java:S1452")
     public HAConfig<?> toConfig(ComponentSpec component) {
         return Optional.ofNullable(component)
                 .flatMap(c -> Optional.ofNullable(FUNCTION_TO_TYPE.get(c.getFunction()))
@@ -137,6 +139,8 @@ public class HomeAssistentAutoConfig {
             return this.type.apply(componentSpec);
         }
 
+        // The concrete config type depends on the component at runtime, see toConfig.
+        @SuppressWarnings("java:S1452")
         public HAConfig<?> getHaConfig(Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit, ComponentSpec componentSpec, String baseTopic, String teletaskIdentifier) {
             String configTopic = createConfigTopic(configuration, componentSpec, teletaskIdentifier);
             HAConfigParameters params = new HAConfigParameters(
@@ -144,7 +148,6 @@ public class HomeAssistentAutoConfig {
                     centralUnit,
                     componentSpec,
                     baseTopic,
-                    configTopic,
                     teletaskIdentifier,
                     HADeviceType.valueOf(this.getHAType(componentSpec).toUpperCase()),
                     (HASensorConfig) centralUnit.getBridge().getHaPublishedConfig()
