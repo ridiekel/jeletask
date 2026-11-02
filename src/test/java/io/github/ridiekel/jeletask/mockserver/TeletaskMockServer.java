@@ -345,6 +345,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             this.inputStream = this.socket.getInputStream();
             this.outputStream = this.socket.getOutputStream();
             this.timer.schedule(new TimerTask() {
+                // False positive: both caught exceptions are wrapped in the RuntimeException they throw, so neither is unused
+                @SuppressWarnings("java:S7467")
                 @Override
                 public void run() {
                     try {
