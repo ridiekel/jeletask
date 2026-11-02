@@ -140,7 +140,7 @@ class MqttProcessorTest {
         Awaitility.await("no republished config")
                 .during(Duration.ofMillis(5500))
                 .atMost(Duration.ofSeconds(7))
-                .until(() -> mqtt.published.isEmpty());
+                .until(mqtt.published::isEmpty);
     }
 
     @Test
