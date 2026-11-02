@@ -86,8 +86,8 @@ public class HAConfig<T extends HAConfig<T>> {
         return this.put(this.deviceIdentifiers, identifier);
     }
 
-    public T deviceSuggestedArea(String suggested_area) {
-        return this.putDeviceProperty("suggested_area", suggested_area);
+    public T deviceSuggestedArea(String suggestedArea) {
+        return this.putDeviceProperty("suggested_area", suggestedArea);
     }
 
     public T viaDevice(String identifier) {

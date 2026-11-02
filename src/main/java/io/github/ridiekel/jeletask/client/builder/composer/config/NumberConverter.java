@@ -48,7 +48,7 @@ public enum NumberConverter {
 
     UNSIGNED_INT(4, new Converter() {
         @Override
-        public Number toNumber(ByteBuffer buffer) { return buffer.getInt() & 0xffffffff; }
+        public Number toNumber(ByteBuffer buffer) { return buffer.getInt() & 0xffffffffL; }
 
         @Override
         public Number convert(String value) { return value == null ? null : Integer.valueOf(value); }
@@ -58,7 +58,7 @@ public enum NumberConverter {
 
         @Override
         public ByteBuffer putBytes(ByteBuffer buffer, Number number) {
-            return buffer.putInt((int) (number.intValue() & 0xffffffff));
+            return buffer.putInt(number.intValue());
         }
     });
 

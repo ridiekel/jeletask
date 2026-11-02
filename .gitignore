@@ -1,5 +1,6 @@
 .node/
 .data/
+.env
 .idea/
 target/
 *.iml

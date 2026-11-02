@@ -572,10 +572,17 @@ Running tests is done using:
 ```
 
 The `End2End*` tests need Docker. Without a Docker daemon they fail at context startup instead of being skipped, which is not a regression.
+The `Resilience*` tests disturb the connections of the bridge through Toxiproxy. They also need Docker, but are skipped without it.
 To run only the other tests:
 
 ```shell
 ./mvnw test -Dtest='!End2End*'
+```
+
+Mutation testing with PIT covers the fast, deterministic core and needs no Docker. The report ends up in `target/pit-reports`:
+
+```shell
+./mvnw -Pmutation test-compile org.pitest:pitest-maven:mutationCoverage
 ```
 
 `MockingTeletaskTestSupport` is not a base class for unit tests: it is a `@SpringBootTest`, and its `@BeforeEach` drives Chrome against the Home Assistant container.

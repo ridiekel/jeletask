@@ -52,15 +52,15 @@ public abstract class MessageSupport {
             if (messageHandler.knows(this.getCommand())) {
                 byte[] message = messageHandler.compose(this.getCommand(), this.getPayload());
 
-                LOG.debug(AnsiOutput.toString(toColoredLogLine(AnsiColor.GREEN, "COMMAND"), AnsiColor.GREEN, " -> ", AnsiColor.CYAN, Bytes.bytesToHex(message), AnsiColor.DEFAULT));
+                LOG.debug(() -> AnsiOutput.toString(toColoredLogLine(AnsiColor.GREEN, "COMMAND"), AnsiColor.GREEN, " -> ", AnsiColor.CYAN, Bytes.bytesToHex(message), AnsiColor.DEFAULT));
 
                 client.send(message, this::getLogInfo);
 
-                LOG.trace(toColoredLogLine(AnsiColor.GREEN, "SENT"));
+                LOG.trace(() -> toColoredLogLine(AnsiColor.GREEN, "SENT"));
 
                 this.waitForAcknowledge(client);
 
-                LOG.trace(toColoredLogLine(AnsiColor.BLUE, "ACKED"));
+                LOG.trace(() -> toColoredLogLine(AnsiColor.BLUE, "ACKED"));
             } else {
                 LOG.warn("Message handler '{}' does not know of command '{}'", this.getMessageHandler().getClass().getSimpleName(), this.getCommand());
             }
@@ -86,6 +86,9 @@ public abstract class MessageSupport {
                         LOG.debug(AnsiOutput.toString(toColoredLogLine(AnsiColor.GREEN, "WAIT_ACK"), AnsiColor.BLUE, " - Waiting: " + (System.currentTimeMillis() - startWaitingTime) + "ms", AnsiColor.DEFAULT));
                         try {
                             client.handleReceiveEvents(MessageUtilities.receive(LOG, client, this));
+                        } catch (InterruptedException _) {
+                            // Keep the interrupt: the next poll of Awaitility then stops waiting for the acknowledge
+                            Thread.currentThread().interrupt();
                         } catch (Exception e) {
                             LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
                         }
@@ -118,7 +121,7 @@ public abstract class MessageSupport {
 
         StringBuilder table = this.getHeader(hexParts);
         String hexLine = this.getMessageAsTableContent(hexParts, table);
-        String seperatorLine = this.getTableSeperatorLine(table.length());
+        String seperatorLine = getTableSeperatorLine(table.length());
         table.append(System.lineSeparator()).append(seperatorLine);
         table.append(System.lineSeparator()).append(hexLine);
         table.append(System.lineSeparator()).append(seperatorLine);

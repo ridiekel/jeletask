@@ -4,15 +4,10 @@ import com.codeborne.selenide.SelenideElement;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
 import io.github.classgraph.ScanResult;
-import io.github.ridiekel.jeletask.client.spec.*;
-import io.github.ridiekel.jeletask.client.spec.state.State;
-import io.github.ridiekel.jeletask.client.spec.state.impl.*;
 import io.github.ridiekel.jeletask.mqtt.container.ha.Config;
 import io.github.ridiekel.jeletask.mqtt.container.ha.Entity;
 import io.github.ridiekel.jeletask.mqtt.container.ha.HAObject;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
-import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
-import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.Progress;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -76,14 +71,17 @@ public class NativeTestRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(Entity.class, MemberCategory.values());
         hints.reflection().registerType(HAObject.class, MemberCategory.values());
         hints.reflection().registerType(Entity.Attributes.class, MemberCategory.values());
+        // MqttProcessorWiringTest lets Spring choose and call the constructor reflectively, as it does without AOT
+        hints.reflection().registerType(MqttProcessor.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
     }
 
     //Needed for now because otherwise the test containers library does not create a network alias for mqtt
     //docker-java's api classes are the Docker responses that the shaded jackson in test containers deserializes reflectively
+    //toxiproxy-java is the client of the Resilience tests
     private static void registerTestContainersHints(RuntimeHints hints) {
         hints.resources().registerPattern("org/testcontainers/**");
 
-        try (var result = new ClassGraph().enableClasspath().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne").enableClassInfo().scan()) {
+        try (var result = new ClassGraph().enableClasspath().acceptPackages("org.testcontainers", "com.github.dockerjava.api", "com.codeborne", "eu.rekawek.toxiproxy").enableClassInfo().scan()) {
             result.getAllClasses().forEach(classInfo -> {
                 try {
                     hints.reflection().registerType(Class.forName(classInfo.getName(), false, NativeTestRuntimeHints.class.getClassLoader()), MemberCategory.values());

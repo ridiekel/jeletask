@@ -13,6 +13,8 @@ import java.math.BigDecimal;
  */
 @Setter
 @Getter
+// The snake_case and HA_* field names are the keys of the user's JSON config file (via the Lombok accessors); renaming them breaks existing configs
+@SuppressWarnings("java:S116")
 public class ComponentSpec {
     private String description;
     private Function function;
@@ -84,8 +86,8 @@ public class ComponentSpec {
         return this.haType;
     }
 
-    public void setHAType(String HAtype) {
-        this.haType = HAtype;
+    public void setHAType(String haType) {
+        this.haType = haType;
     }
 
     public String getAddressNumbers() {

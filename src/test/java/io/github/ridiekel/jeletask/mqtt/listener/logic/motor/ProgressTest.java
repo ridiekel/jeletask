@@ -1,10 +1,13 @@
 package io.github.ridiekel.jeletask.mqtt.listener.logic.motor;
 
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.MotorStateCalculator;
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -286,6 +289,142 @@ class ProgressTest {
         progress.update();
 
         assertEquals(BigDecimal.ZERO.setScale(3, RoundingMode.UNNECESSARY), motorState.getSecondsToFinish());
+    }
+
+    private static MotorState moving(int from, int to, String secondsToFinish) {
+        MotorState motorState = new MotorState(MotorStateCalculator.ValidMotorDirectionState.MOTOR_GO_TO_POSITION);
+        motorState.setPower(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
+        motorState.setCurrentPosition(from);
+        motorState.setRequestedPosition(to);
+        motorState.setSecondsToFinish(new BigDecimal(secondsToFinish));
+        return motorState;
+    }
+
+    private static Progress progress(MotorState motorState, int interval, long elapsedMillis) {
+        Progress progress = new Progress(interval, motorState, CLOCK);
+        progress.setStartTimeMillis(NOW - elapsedMillis);
+        return progress;
+    }
+
+    @Test
+    void update_whileMovingKeepsPowerOnAndReportsTheDirection() {
+        MotorState down = moving(10, 20, "10.0");
+        progress(down, 500, 3000L).update();
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.ON, down.getPower());
+        assertEquals(MotorStateCalculator.ValidMotorDirectionState.DOWN, down.getState());
+
+        MotorState up = moving(20, 10, "10.0");
+        progress(up, 500, 3000L).update();
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.ON, up.getPower());
+        assertEquals(MotorStateCalculator.ValidMotorDirectionState.UP, up.getState());
+    }
+
+    @Test
+    void update_whenTheTimeIsUpFinishesAtTheRequestedPosition() {
+        MotorState motorState = moving(10, 20, "10.0");
+
+        progress(motorState, 500, 10_000L).update();
+
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.OFF, motorState.getPower());
+        assertEquals(20, motorState.getCurrentPosition());
+        assertEquals(BigDecimal.ZERO.setScale(3, RoundingMode.UNNECESSARY), motorState.getSecondsToFinish());
+    }
+
+    @Test
+    void update_whenThePositionIsReachedFinishesEvenWithTimeLeft() {
+        MotorState motorState = moving(10, 20, "10.0");
+
+        // 9.96 steps rounds up to the requested position, 40 ms is more than the interval
+        progress(motorState, 10, 9_960L).update();
+
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.OFF, motorState.getPower());
+        assertEquals(20, motorState.getCurrentPosition());
+        assertEquals(BigDecimal.ZERO.setScale(3, RoundingMode.UNNECESSARY), motorState.getSecondsToFinish());
+    }
+
+    @Test
+    void update_withExactlyOneIntervalLeftKeepsRunning() {
+        MotorState motorState = moving(0, 100, "10.0");
+
+        progress(motorState, 500, 9_500L).update();
+
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.ON, motorState.getPower());
+        assertEquals(0, new BigDecimal("0.5").compareTo(motorState.getSecondsToFinish()));
+        assertEquals(95, motorState.getCurrentPosition());
+    }
+
+    @Test
+    void update_withLessThanOneIntervalLeftFinishes() {
+        MotorState motorState = moving(0, 100, "10.0");
+
+        progress(motorState, 500, 9_501L).update();
+
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.OFF, motorState.getPower());
+        assertEquals(100, motorState.getCurrentPosition());
+    }
+
+    @Test
+    void update_followsTheClockOverSeveralUpdates() {
+        MotorState motorState = moving(0, 10, "10.0");
+        AtomicLong now = new AtomicLong(NOW);
+        Progress progress = new Progress(100, motorState, now::get);
+
+        now.addAndGet(2000L);
+        progress.update();
+        assertEquals(2, motorState.getCurrentPosition());
+        assertEquals(0, new BigDecimal("8.0").compareTo(motorState.getSecondsToFinish()));
+
+        now.addAndGet(5000L);
+        progress.update();
+        assertEquals(7, motorState.getCurrentPosition());
+        assertEquals(0, new BigDecimal("3.0").compareTo(motorState.getSecondsToFinish()));
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.ON, motorState.getPower());
+
+        now.addAndGet(3000L);
+        progress.update();
+        assertEquals(10, motorState.getCurrentPosition());
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.OFF, motorState.getPower());
+    }
+
+    @Test
+    void stoppedMotorStaysWhereItIsEvenWithAnotherPositionRequested() {
+        MotorState motorState = moving(30, 80, "10.0");
+        motorState.setState(MotorStateCalculator.ValidMotorDirectionState.STOP);
+
+        Progress progress = progress(motorState, 500, 3000L);
+        progress.update();
+
+        assertSame(Progress.Direction.STOP, progress.getDirection());
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.OFF, motorState.getPower());
+        assertEquals(30, motorState.getCurrentPosition());
+        assertEquals(MotorStateCalculator.ValidMotorDirectionState.STOP, motorState.getState());
+    }
+
+    @Test
+    void alreadyAtThePositionNeedsNoTimeToFinish() {
+        // An event may report a position without the bytes for the time left
+        MotorState motorState = moving(30, 30, "0");
+        motorState.setSecondsToFinish(null);
+
+        new Progress(500, motorState, CLOCK).update();
+
+        assertEquals(OnOffToggleStateCalculator.ValidOnOffToggle.OFF, motorState.getPower());
+        assertEquals(30, motorState.getCurrentPosition());
+    }
+
+    @Test
+    void movingWithoutATimeOrPositionCannotBeTracked() {
+        MotorState noTime = moving(10, 20, "0");
+        noTime.setSecondsToFinish(null);
+        assertThrows(NullPointerException.class, () -> new Progress(500, noTime, CLOCK));
+
+        MotorState noCurrent = moving(10, 20, "1");
+        noCurrent.setCurrentPosition(null);
+        assertThrows(NullPointerException.class, () -> new Progress(500, noCurrent, CLOCK));
+
+        MotorState noRequested = moving(10, 20, "1");
+        noRequested.setRequestedPosition(null);
+        assertThrows(NullPointerException.class, () -> new Progress(500, noRequested, CLOCK));
     }
 
     @Test

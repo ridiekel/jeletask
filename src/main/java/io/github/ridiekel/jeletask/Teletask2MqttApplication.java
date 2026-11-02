@@ -20,7 +20,7 @@ public class Teletask2MqttApplication {
 
     static void main(String[] args) {
         if (Arrays.asList(args).contains(HealthCheck.ARGUMENT)) {
-            System.exit(HealthCheck.getDefault().check(System.out));
+            exitWithHealthStatus();
         }
 
         handleDeprecations();
@@ -43,12 +43,18 @@ public class Teletask2MqttApplication {
         copyDeprecatedVariable("TELETASK_ID");
     }
 
+    // Not a logger: this runs before Spring configures logging, and Docker keeps what the check prints as the health status.
+    @SuppressWarnings("java:S106")
+    private static void exitWithHealthStatus() {
+        System.exit(HealthCheck.getDefault().check(System.out));
+    }
+
     private static void copyDeprecatedVariable(String variable) {
         String value = System.getenv(variable);
         if (value != null) {
-            String newVariable = variable.replaceAll("TELETASK", "TELETASK_CENTRAL");
+            String newVariable = variable.replace("TELETASK", "TELETASK_CENTRAL");
             LOG.warn(() -> String.format("Environment variable '%s' is being used, please update your config to use '%s'. Support for '%s' will be removed in a later release.", variable, newVariable, variable));
-            System.setProperty(newVariable.toLowerCase().replaceAll("_", "."), value);
+            System.setProperty(newVariable.toLowerCase().replace("_", "."), value);
         }
     }
 }

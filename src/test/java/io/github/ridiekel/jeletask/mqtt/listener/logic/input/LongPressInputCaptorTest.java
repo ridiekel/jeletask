@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttPublisher;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Timeout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,7 +40,7 @@ class LongPressInputCaptorTest {
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.CLOSED));
 
         captor.update(testComponent);
-        Thread.sleep(100);
+        holdButtonFor(100);
 
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.OPEN));
         captor.update(testComponent);
@@ -94,7 +96,7 @@ class LongPressInputCaptorTest {
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.OPEN));
         captor.update(testComponent);
 
-        Thread.sleep(100);
+        staysAt(2, 100);
 
         List<InputState> published = testProcessor.getPublishedStates();
         assertEquals(2, published.size(),
@@ -108,7 +110,7 @@ class LongPressInputCaptorTest {
     void testConsecutivePresses_EachResetsCorrectly() throws InterruptedException {
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.CLOSED));
         captor.update(testComponent);
-        Thread.sleep(100);
+        holdButtonFor(100);
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.OPEN));
         captor.update(testComponent);
 
@@ -131,11 +133,11 @@ class LongPressInputCaptorTest {
 
     @Test
     @Timeout(2)
-    void testCancelledPress_NoPublicationIfNeverStarted() throws InterruptedException {
+    void testCancelledPress_NoPublicationIfNeverStarted() {
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.OPEN));
 
         captor.update(testComponent);
-        Thread.sleep(200);
+        staysAt(0, 200);
 
         assertTrue(testProcessor.getPublishedStates().isEmpty(),
                 "Should not publish anything if button was never pressed");
@@ -147,7 +149,7 @@ class LongPressInputCaptorTest {
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.CLOSED));
 
         captor.update(testComponent);
-        Thread.sleep(10);
+        holdButtonFor(10);
         testComponent.setState(new InputState(InputStateCalculator.ValidInputState.OPEN));
         captor.update(testComponent);
 
@@ -159,6 +161,20 @@ class LongPressInputCaptorTest {
 
         Long pressDuration = ((LongPressInputCaptor.Captor) published.get(0)).getPressDurationMillis();
         assertTrue(pressDuration < 500, "Very short press should be < 500ms");
+    }
+
+    // The captor measures the press with System.currentTimeMillis() and has no injectable clock,
+    // so letting real time pass while the button is closed is the input of the test, not a wait for a result
+    @SuppressWarnings("java:S2925")
+    private static void holdButtonFor(long millis) throws InterruptedException {
+        Thread.sleep(millis);
+    }
+
+    private void staysAt(int count, long millis) {
+        Awaitility.await("publications stay at " + count)
+                .during(millis, TimeUnit.MILLISECONDS)
+                .atMost(millis + 500, TimeUnit.MILLISECONDS)
+                .until(() -> testProcessor.getPublishedStates().size() == count);
     }
 
     /**

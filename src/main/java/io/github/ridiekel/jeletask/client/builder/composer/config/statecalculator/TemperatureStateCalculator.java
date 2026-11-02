@@ -40,9 +40,9 @@ public class TemperatureStateCalculator extends StateCalculatorSupport<Temperatu
 
     @Override
     public TemperatureState fromEvent(ComponentSpec component, byte[] dataBytes) {
-        BigDecimal rounded_value = bytesToBigDecimal(component, dataBytes);
+        BigDecimal roundedValue = bytesToBigDecimal(component, dataBytes);
 
-        return new TemperatureState(rounded_value);
+        return new TemperatureState(roundedValue);
     }
 
     @Override

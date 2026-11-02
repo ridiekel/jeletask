@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
@@ -61,14 +60,12 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
     private WebClient haWebClient;
     private final MqttContainer mqttContainer;
-    private final Teletask2MqttConfigurationProperties configuration;
     private final CentralUnit centralUnit;
 
-    public HomeAssistantContainer(MqttContainer mqttContainer, Teletask2MqttConfigurationProperties configuration, CentralUnit centralUnit) {
+    public HomeAssistantContainer(MqttContainer mqttContainer, CentralUnit centralUnit) {
         super(new ImageFromDockerfile()
                 .withDockerfile(Paths.get("src/test/resources/haconfig/Dockerfile")));
         this.mqttContainer = mqttContainer;
-        this.configuration = configuration;
         this.centralUnit = centralUnit;
 
         this.withExposedPorts(8123)
@@ -106,7 +103,8 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
             new WebDriverWait(driver, Duration.ofSeconds(5))
                     .until(ExpectedConditions.stalenessOf(rootEl));
             waitForHaReady(Duration.ofSeconds(30));
-        } catch (TimeoutException ignore) {
+        } catch (TimeoutException _) {
+            // HA did not reload the page within the window; carry on with the stability check on the current page
         }
 
         wait.until(d -> {
@@ -115,7 +113,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 Selenide.sleep((int) quietPeriod.toMillis());
                 el.isEnabled();
                 return true;
-            } catch (StaleElementReferenceException e) {
+            } catch (StaleElementReferenceException _) {
                 return false;
             }
         });
@@ -146,6 +144,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
 
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(300)
+    @Override
     public void start() {
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting Home Assistant", AnsiColor.DEFAULT));
 
@@ -285,7 +284,7 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
     }
 
     public HaWebFunctions web() {
-        return new HaWebFunctions(configuration, centralUnit);
+        return new HaWebFunctions(centralUnit);
     }
 
     public static class HomeAssistantExpectationBuilder {

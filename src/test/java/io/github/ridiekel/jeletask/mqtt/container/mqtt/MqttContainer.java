@@ -41,6 +41,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class MqttContainer extends GenericContainer<MqttContainer> {
+    public void closeCaptureClient() throws MqttException {
+        if (mqttClient != null) {
+            mqttClient.disconnectForcibly(0, 0, false);
+            mqttClient.close(true);
+        }
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Teletask2MqttConfigurationProperties properties;
@@ -64,6 +71,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
 
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(100)
+    @Override
     public void start() {
         LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting MQTT", AnsiColor.DEFAULT));
 
@@ -90,7 +98,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
                 options.setKeepAliveInterval(5);
                 mqttClient.connect(options);
                 connected = mqttClient.isConnected();
-            } catch (MqttException e) {
+            } catch (MqttException _) {
                 connected = false;
             }
             return connected;
@@ -124,7 +132,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             String prettyMessage;
             try {
                 prettyMessage = StringUtilities.prettyString(message);
-            } catch (Exception e) {
+            } catch (Exception _) {
                 prettyMessage = message;
             }
             prettyMessage = StringUtilities.indent(prettyMessage);

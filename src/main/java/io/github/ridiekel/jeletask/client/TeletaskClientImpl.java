@@ -43,6 +43,7 @@ import java.util.function.Consumer;
 public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClient {
     private static final Logger LOG = LogManager.getLogger();
     private static final int CONNECT_TIMEOUT_MILLIS = 5000;
+    private static final String EXCEPTION_IN_STOP = "Exception ({}) caught in stop: {}";
 
     private Socket socket;
     @Getter
@@ -62,25 +63,33 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicBoolean starting = new AtomicBoolean(false);
     private final AtomicBoolean stopping = new AtomicBoolean(false);
+    private final AtomicBoolean eventListenerQueued = new AtomicBoolean(false);
+    private final SocketFactory socketFactory;
 
     @Autowired
     public TeletaskClientImpl(CentralUnit centralUnit) {
+        this(centralUnit, (host, port) -> connectOrClose(new Socket(), new InetSocketAddress(host, port)));
+    }
+
+    TeletaskClientImpl(CentralUnit centralUnit, SocketFactory socketFactory) {
         this.centralUnit = centralUnit;
+        this.socketFactory = socketFactory;
+    }
+
+    @FunctionalInterface
+    interface SocketFactory {
+        Socket connect(String host, int port) throws IOException;
     }
 
 // ################################################ PUBLIC API FUNCTIONS
 
     @Override
     public void get(ComponentSpec component, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-        withStarted(() -> {
-            if (this.started.get()) {
-                this.execute(
-                        new GetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber()),
-                        m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
-                        (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-                );
-            }
-        });
+        withStarted(() -> this.execute(
+                new GetMessage(this.getCentralUnit(), component.getFunction(), component.getNumber()),
+                m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+        ));
     }
 
     @Override
@@ -116,13 +125,11 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     @Override
     public void displaymessage(ComponentSpec component, DisplayMessageState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-        withStarted(() -> {
-            this.execute(
-                    new DisplayMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
-                    m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
-                    (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
-            );
-        });
+        withStarted(() -> this.execute(
+                new DisplayMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
+                (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
+        ));
     }
 
     @Override
@@ -172,25 +179,26 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.starting.set(true);
         this.started.set(false);
 
-        LOG.info("Starting IO service...");
-        this.startIoService();
+        try {
+            LOG.info("Starting IO service...");
+            this.startIoService();
 
-        LOG.info("Connecting to central unit...");
-        connectAndWait();
+            LOG.info("Connecting to central unit...");
+            connectAndWait();
 
-        LOG.info("Starting event listener...");
-        this.startEventListener();
+            LOG.info("Starting event listener...");
+            this.startEventListener();
 
-        LOG.info("Performing group get...");
-        this.getIoService().execute(() -> {
-            this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
-        });
+            LOG.info("Performing group get...");
+            this.getIoService().execute(() -> this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON)));
 
-        LOG.info("Starting keepalive...");
-        this.startKeepAlive();
+            LOG.info("Starting keepalive...");
+            this.startKeepAlive();
 
-        this.started.set(true);
-        this.starting.set(false);
+            this.started.set(true);
+        } finally {
+            this.starting.set(false);
+        }
     }
 
     private void connectAndWait() {
@@ -209,21 +217,27 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     public void restart() {
+        // Also counts as starting: a call in the meantime has to wait for this reconnect, not begin a second one
+        this.starting.set(true);
         this.started.set(false);
 
-        this.closeInputStream();
-        this.closeOutputStream();
-        this.closeSocket();
+        try {
+            this.closeInputStream();
+            this.closeOutputStream();
+            this.closeSocket();
 
-        this.connectAndWait();
+            this.connectAndWait();
 
-        this.getIoService().execute(() -> {
-            this.groupGet();
+            this.getIoService().execute(() -> {
+                this.groupGet();
 
-            this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
-        });
+                this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
+            });
 
-        this.started.set(true);
+            this.started.set(true);
+        } finally {
+            this.starting.set(false);
+        }
     }
 
     @Override
@@ -289,7 +303,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     public void groupGet(Function function) {
-        List<? extends ComponentSpec> components = this.getCentralUnit().getComponents(function).filter(c -> c.getNumber() >= 0).toList();
+        List<ComponentSpec> components = this.getCentralUnit().getComponents(function).filter(c -> c.getNumber() >= 0).toList();
         if (!components.isEmpty()) {
             this.groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray());
         }
@@ -317,7 +331,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
                     .execute(new MessageExecutor(message, this));
             onSuccess.accept(message);
         } catch (Exception e) {
-            LOG.debug(() -> String.format("Exception ({}) caught in execute: %s", e.getClass().getName(), e.getMessage()));
+            LOG.debug(() -> String.format("Exception (%s) caught in execute: %s", e.getClass().getName(), e.getMessage()));
             onFailed.accept(message, e);
         }
     }
@@ -328,7 +342,13 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         this.eventListenerTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                TeletaskClientImpl.this.ioService.execute(TeletaskClientImpl.this.getEventMessageListener());
+                // The io thread can be busy for minutes, e.g. while reconnecting. A queue full of listeners would keep commands waiting afterwards.
+                if (TeletaskClientImpl.this.eventListenerQueued.compareAndSet(false, true)) {
+                    TeletaskClientImpl.this.ioService.execute(() -> {
+                        TeletaskClientImpl.this.eventListenerQueued.set(false);
+                        TeletaskClientImpl.this.getEventMessageListener().run();
+                    });
+                }
             }
         }, 0, 20);
     }
@@ -339,11 +359,11 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         LOG.info(() -> String.format("(Re)connecting to %s:%s", host, port));
 
         try {
-            this.socket = createSocket(host, port);
+            this.socket = this.socketFactory.connect(host, port);
             this.socket.setKeepAlive(true);
             this.socket.setSoTimeout(2000);
             connected = true;
-        } catch (IOException e) {
+        } catch (IOException _) {
             LOG.trace("Problem connecting to host: {}:{}", host, port);
         }
 
@@ -352,7 +372,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             try {
                 this.outputStream = this.socket.getOutputStream();
                 this.inputStream = this.socket.getInputStream();
-            } catch (IOException e) {
+            } catch (IOException _) {
                 connected = false;
                 LOG.trace("Couldn't get I/O for the connection to: {}:{}", host, port);
             }
@@ -361,7 +381,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         if (connected) {
             try {
                 this.getCentralUnit().getMessageHandler().getKeepAliveStrategy().execute(this);
-            } catch (Exception e) {
+            } catch (Exception _) {
                 connected = false;
                 LOG.trace("Could not send keepalive, assuming not yet connected: {}:{}", host, port);
             }
@@ -369,15 +389,27 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         if (connected) {
             LOG.info(() -> "Successfully (Re)connected");
+        } else {
+            this.closeInputStream();
+            this.closeOutputStream();
+            this.closeSocket();
         }
 
         return connected;
     }
 
-    private Socket createSocket(String host, int port) throws IOException {
-        Socket newSocket = new Socket();
-        newSocket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MILLIS);
-        return newSocket;
+    static Socket connectOrClose(Socket socket, InetSocketAddress address) throws IOException {
+        try {
+            socket.connect(address, CONNECT_TIMEOUT_MILLIS);
+            return socket;
+        } catch (IOException | RuntimeException e) {
+            try {
+                socket.close();
+            } catch (IOException closeFailure) {
+                e.addSuppressed(closeFailure);
+            }
+            throw e;
+        }
     }
 
     private void startKeepAlive() {
@@ -389,17 +421,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     private void sendLogEventMessage(Function function, LogState state) {
         new LogMessage(this.getCentralUnit(), function, state).execute(this);
-    }
-
-    /**
-     * Prevent cloning.
-     *
-     * @return Nothing really, because this will always result in an Exception.
-     * @throws CloneNotSupportedException when called.
-     */
-    @Override
-    public final TeletaskClientImpl clone() throws CloneNotSupportedException {
-        throw new CloneNotSupportedException();
     }
 
     private ExecutorService getIoService() {
@@ -416,6 +437,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         public void run() {
             try {
                 TeletaskClientImpl.this.handleReceiveEvents(MessageUtilities.receive(LOG, TeletaskClientImpl.this));
+            } catch (InterruptedException _) {
+                // The io service is shutting down; keep the interrupt so its thread can stop
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
                 LOG.trace(String.format("Exception (%s) caught in EventMessageListener: %s", e.getClass().getName(), e.getMessage()), e);
             }
@@ -425,8 +449,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     public void handleReceiveEvents(Iterable<MessageSupport> messages) {
         List<ComponentSpec> components = new ArrayList<>();
         for (MessageSupport message : messages) {
-            if (message instanceof EventMessage) {
-                EventMessage eventMessage = (EventMessage) message;
+            if (message instanceof EventMessage eventMessage) {
                 this.handleReceiveEvent(this.getCentralUnit(), eventMessage);
                 components.add(this.getComponent(eventMessage.getFunction(), eventMessage.getNumber()));
             }
@@ -445,25 +468,20 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
 
     private void handleReceiveEvent(CentralUnit centralUnit, EventMessage eventMessage) {
+        // Never null: getComponent throws for a component that is not configured, and parsing already drops such events
         ComponentSpec component = centralUnit.getComponent(eventMessage.getFunction(), eventMessage.getNumber());
-        if (component != null) {
-            LOG.debug(() ->
-                    String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_CYAN, "%s - ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
-                            StringUtils.rightPad("EVENT", 10),
-                            StringUtils.rightPad(component.getFunction().toString(), 10),
-                            StringUtils.leftPad(String.valueOf(component.getNumber()), 3),
-                            StringUtils.leftPad(component.getDescription(), 40),
-                            Bytes.bytesToHex(eventMessage.getRawBytes()),
-                            component.getState(),
-                            eventMessage.getState()
-                    )
-            );
-            component.setState(eventMessage.getState());
-        } else {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(() -> String.format("Event: %nComponent: not found in configuration %s", eventMessage.getLogInfo(eventMessage.getRawBytes())));
-            }
-        }
+        LOG.debug(() ->
+                String.format(AnsiOutput.toString(AnsiColor.BRIGHT_GREEN, "[TELETASK  ] - [%s] - [%s] - [%s] - [%s] - ", AnsiColor.BRIGHT_CYAN, "%s - ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.BRIGHT_GREEN, " -> ", AnsiColor.BRIGHT_YELLOW, "%s", AnsiColor.DEFAULT),
+                        StringUtils.rightPad("EVENT", 10),
+                        StringUtils.rightPad(component.getFunction().toString(), 10),
+                        StringUtils.leftPad(String.valueOf(component.getNumber()), 3),
+                        StringUtils.leftPad(component.getDescription(), 40),
+                        Bytes.bytesToHex(eventMessage.getRawBytes()),
+                        component.getState(),
+                        eventMessage.getState()
+                )
+        );
+        component.setState(eventMessage.getState());
     }
 
     private void runRunnables(Iterable<Runnable> runnables) {
@@ -497,6 +515,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             this.getIoService().awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             LOG.debug(() -> String.format("Exception (%s) caught in stop: %s", e.getClass().getName(), e.getMessage()));
+            Thread.currentThread().interrupt();
         } finally {
             this.ioService = null;
         }
@@ -531,7 +550,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         try {
             this.socket.close();
         } catch (IOException e) {
-            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
+            LOG.error(EXCEPTION_IN_STOP, e.getClass().getName(), e.getMessage(), e);
         } finally {
             this.socket = null;
         }
@@ -545,7 +564,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             this.getOutputStream().flush();
             this.getOutputStream().close();
         } catch (IOException e) {
-            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
+            LOG.error(EXCEPTION_IN_STOP, e.getClass().getName(), e.getMessage(), e);
         } finally {
             this.outputStream = null;
         }
@@ -558,7 +577,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         try {
             this.getInputStream().close();
         } catch (IOException e) {
-            LOG.error("Exception ({}) caught in stop: {}", e.getClass().getName(), e.getMessage(), e);
+            LOG.error(EXCEPTION_IN_STOP, e.getClass().getName(), e.getMessage(), e);
         } finally {
             this.inputStream = null;
         }
@@ -597,9 +616,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
         @Override
         public void run() {
-            getIoService().execute(() -> {
-                TeletaskClientImpl.this.getCentralUnit().getMessageHandler().getGroupGetStrategy().execute(TeletaskClientImpl.this, function, numbers);
-            });
+            getIoService().execute(() -> TeletaskClientImpl.this.getCentralUnit().getMessageHandler().getGroupGetStrategy().execute(TeletaskClientImpl.this, function, numbers));
         }
     }
 

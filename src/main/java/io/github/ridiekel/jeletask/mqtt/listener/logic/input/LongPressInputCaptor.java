@@ -99,18 +99,18 @@ public class LongPressInputCaptor {
     }
 
     private void log(Consumer<String> level, String what, String message) {
-        level.accept(AnsiOutput.toString(AnsiColor.BRIGHT_YELLOW, "[" + StringUtils.rightPad("PRESS", 10) + "] - [" + StringUtils.rightPad(what, 10) + "] - ", AnsiColor.GREEN, message, AnsiColor.DEFAULT));
+        level.accept(AnsiOutput.toString(AnsiColor.BRIGHT_YELLOW, String.format("[%s] - [%s] - ", StringUtils.rightPad("PRESS", 10), StringUtils.rightPad(what, 10)), AnsiColor.GREEN, message, AnsiColor.DEFAULT));
     }
 
     private void log(Consumer<String> level, String what, ComponentSpec motor, String message) {
-        log(level, what, AnsiOutput.toString(AnsiColor.BRIGHT_YELLOW, "[" + StringUtils.rightPad("INPUT", 10) + "] - [" + StringUtils.leftPad(String.valueOf(motor.getNumber()), 3) + "] - [" + StringUtils.leftPad(motor.getDescription(), 40) + "] - ", AnsiColor.GREEN, message, AnsiColor.DEFAULT));
+        log(level, what, AnsiOutput.toString(AnsiColor.BRIGHT_YELLOW, String.format("[%s] - [%s] - [%s] - ", StringUtils.rightPad("INPUT", 10), StringUtils.leftPad(String.valueOf(motor.getNumber()), 3), StringUtils.leftPad(motor.getDescription(), 40)), AnsiColor.GREEN, message, AnsiColor.DEFAULT));
     }
 
     private Captor getCaptor(ComponentSpec component) {
         return this.pressedInputs.computeIfAbsent(component, c -> new Captor(component.getLong_press_duration_millis()));
     }
 
-    static class Captor extends InputState {
+    public static class Captor extends InputState {
         @Getter
         private Long stopPressTime;
         @Getter

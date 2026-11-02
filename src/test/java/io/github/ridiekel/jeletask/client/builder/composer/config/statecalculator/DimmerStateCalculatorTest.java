@@ -35,7 +35,7 @@ class DimmerStateCalculatorTest {
 
         Integer actual = DimmerStateCalculator.determineTargetBrightness(component, new DimmerState(OFF, 60));
 
-        Assertions.assertThat(actual).isEqualTo(0);
+        Assertions.assertThat(actual).isZero();
     }
 
     @Test
@@ -63,7 +63,7 @@ class DimmerStateCalculatorTest {
         DimmerState actual = new DimmerStateCalculator().fromEvent(component, NumberConverter.UNSIGNED_BYTE.convert(0));
 
         Assertions.assertThat(actual.getState()).isEqualTo(OFF);
-        Assertions.assertThat(actual.getBrightness()).isEqualTo(0);
+        Assertions.assertThat(actual.getBrightness()).isZero();
     }
 
     static Stream<Arguments> brightnessValues() {

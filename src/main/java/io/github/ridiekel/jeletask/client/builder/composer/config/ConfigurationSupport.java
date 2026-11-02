@@ -22,10 +22,11 @@ public abstract class ConfigurationSupport<T, C extends Configurable<T>, K> {
     private Map<T, C> configByObject;
     private final Iterable<C> config;
 
-    public ConfigurationSupport(Iterable<C> config) {
+    protected ConfigurationSupport(Iterable<C> config) {
         this.config = config;
     }
 
+    @SuppressWarnings("java:S1452") // the concrete state type depends on the function at runtime
     public static State<?> getState(MessageHandler messageHandler, CentralUnit centralUnit, Function function, int number, byte[] payload, int startIndex, TriFunction<StateCalculator<State<?>>, ComponentSpec, byte[], State<?>> what) {
         ComponentSpec component = centralUnit.getComponent(function, number);
 
@@ -35,7 +36,7 @@ public abstract class ConfigurationSupport<T, C extends Configurable<T>, K> {
 
         State<?> state = what.apply(stateCalculator, component, dataBytes);
 
-        LOG.trace("Parsed state {} to {}", Bytes.bytesToHex(dataBytes), state);
+        LOG.trace("Parsed state {} to {}", () -> Bytes.bytesToHex(dataBytes), () -> state);
 
         if (state == null) {
             throw new IllegalStateException("Got state '" + Bytes.bytesToHex(dataBytes) + "' (null) for " + function + ":" + number + ", which resolved to <null> using '" + stateCalculator.getClass().getSimpleName() + "'");

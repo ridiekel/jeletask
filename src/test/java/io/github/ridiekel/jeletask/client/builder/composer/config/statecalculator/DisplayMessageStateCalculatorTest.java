@@ -119,12 +119,10 @@ class DisplayMessageStateCalculatorTest {
             byte[] result = calculator.toCommand(null, state);
 
             String line1 = new String(result, 2, 16, StandardCharsets.US_ASCII);
-            assertThat(line1).hasSize(16);
-            assertThat(line1).isEqualTo("This is a very l");
+            assertThat(line1).hasSize(16).isEqualTo("This is a very l");
 
             String line2 = new String(result, 18, 16, StandardCharsets.US_ASCII);
-            assertThat(line2).hasSize(16);
-            assertThat(line2).isEqualTo("Another long lin");
+            assertThat(line2).hasSize(16).isEqualTo("Another long lin");
         }
 
         @Test
@@ -254,7 +252,7 @@ class DisplayMessageStateCalculatorTest {
         DisplayMessageState result = calculator.fromEvent(null, new byte[]{0});
 
         assertThat(result).isNotNull();
-        assertThat(result.getState()).isEqualTo(0L);
+        assertThat(result.getState()).isZero();
     }
 
     @Test
@@ -273,8 +271,8 @@ class DisplayMessageStateCalculatorTest {
         byte[] withBom = message.getBytes(StandardCharsets.UTF_16);
         byte[] withoutBom = message.getBytes(StandardCharsets.UTF_16BE);
 
-        assertThat(withBom.length).isEqualTo(18);
-        assertThat(withoutBom.length).isEqualTo(16);
+        assertThat(withBom).hasSize(18);
+        assertThat(withoutBom).hasSize(16);
     }
 
 
@@ -334,8 +332,7 @@ class DisplayMessageStateCalculatorTest {
         byte[] line1Bytes = Arrays.copyOfRange(result, 2, 18);
         String decoded = new String(line1Bytes, StandardCharsets.UTF_16);
 
-        assertThat(decoded).contains("Hello");
-        assertThat(decoded).contains("世");
+        assertThat(decoded).contains("Hello").contains("世");
     }
 
     @Test

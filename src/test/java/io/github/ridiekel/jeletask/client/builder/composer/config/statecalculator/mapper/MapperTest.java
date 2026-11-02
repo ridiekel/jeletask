@@ -87,6 +87,12 @@ class MapperTest {
         assertNull(mapper.toEnumOrNull(converter.convert(0)));
     }
 
+    @Test
+    void mappedEnums_roundTripThroughBytes() {
+        assertRoundTrip(State.ON, 22);
+        assertRoundTrip(State.OFF, 23);
+    }
+
     private void assertRoundTrip(State state, int numeric) {
         // toBytes should encode the numeric value with our converter
         byte[] expected = converter.convert(numeric);

@@ -38,7 +38,10 @@ public final class HealthCheck {
         return DEFAULT;
     }
 
-    static void main(String[] args) {
+    // Java 25 launches a main without parameters; the Docker HEALTHCHECK passes none.
+    // Not a logger: this class must stay JDK-only, and Docker keeps what the check prints as the health status.
+    @SuppressWarnings("java:S106")
+    static void main() {
         System.exit(DEFAULT.check(System.out));
     }
 
@@ -55,7 +58,7 @@ public final class HealthCheck {
         Properties status = new Properties();
         try (var reader = Files.newBufferedReader(file)) {
             status.load(reader);
-        } catch (NoSuchFileException e) {
+        } catch (NoSuchFileException _) {
             out.println("UNHEALTHY: no status written yet (" + file + ")");
             return 1;
         } catch (IOException e) {
@@ -68,7 +71,7 @@ public final class HealthCheck {
         Instant updated;
         try {
             updated = Instant.parse(status.getProperty("updated", ""));
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _) {
             out.println("UNHEALTHY: invalid status file (" + summary + ")");
             return 1;
         }

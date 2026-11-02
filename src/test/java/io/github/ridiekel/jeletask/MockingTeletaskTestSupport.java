@@ -26,6 +26,7 @@ import static com.codeborne.selenide.Selenide.$$;
 
 @SpringBootTest(classes = {Teletask2MqttTestApplication.class})
 @ActiveProfiles("test")
+@SuppressWarnings("java:S5786") // base class of the End2End tests in another package, so it has to stay public
 public class MockingTeletaskTestSupport extends TeletaskTestSupport {
     static {
         System.setProperty("teletask.test.startbrowser", "false");

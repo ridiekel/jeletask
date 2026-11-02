@@ -18,6 +18,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class MicrosPlusMessageHandler extends MessageHandlerSupport {
     public static final MicrosPlusKeepAliveStrategy KEEP_ALIVE_STRATEGY = new MicrosPlusKeepAliveStrategy();
@@ -67,7 +68,8 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
         int number = ByteBuffer.wrap(new byte[]{message[++counter], message[++counter]}).getShort();
         ++counter; // This is the ErrorState, not used at this time
 
-        State<?> state = ConfigurationSupport.getState(this, centralUnit, function, number, message, counter, StateCalculator::fromEvent);
+        byte[] withoutChecksum = Arrays.copyOf(message, message.length - 1);
+        State<?> state = ConfigurationSupport.getState(this, centralUnit, function, number, withoutChecksum, counter + 1, StateCalculator::fromEvent);
 
         return new EventMessage(centralUnit, message, function, number, state);
     }

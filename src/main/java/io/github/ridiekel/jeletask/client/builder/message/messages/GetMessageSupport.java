@@ -4,7 +4,6 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.utilities.Bytes;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -45,15 +44,6 @@ public abstract class GetMessageSupport extends FunctionBasedMessageSupport {
         return "GET " + super.getId() + "(" + Arrays.stream(this.numbers).mapToObj(String::valueOf).collect(Collectors.joining(",")) + ")";
     }
 
-    @Override
-    protected String toLogLine(String message) {
-        return String.format("[%s] - [%s] - [%s] - [%s]",
-                StringUtils.rightPad(message, 10),
-                StringUtils.rightPad(this.getFunction().toString(), 10),
-                StringUtils.leftPad(Arrays.stream(this.getNumbers()).mapToObj(String::valueOf).collect(Collectors.joining(", ")), 3),
-                StringUtils.rightPad(this.getCommand().toString(), 10)
-                );
-    }
 
     @Override
     public boolean equals(Object o) {

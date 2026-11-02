@@ -35,10 +35,11 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
 
     private static byte[] toMessageLineBytes(DisplayMessageState state, Function<DisplayMessageState, String> extractor) {
         int length = state.isAscii() ? 16 : 8;
-        return String.format("%-" + length + "s",
+        return StringUtils.rightPad(
                 Optional.ofNullable(extractor.apply(state))
                         .map(m -> StringUtils.left(m, length))
-                        .orElseGet(() -> StringUtils.repeat(' ', length))
+                        .orElseGet(() -> StringUtils.repeat(' ', length)),
+                length
         ).getBytes(state.isAscii() ? StandardCharsets.US_ASCII : StandardCharsets.UTF_16BE);
     }
 

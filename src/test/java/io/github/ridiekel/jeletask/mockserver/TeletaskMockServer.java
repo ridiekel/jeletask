@@ -95,7 +95,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     private void mockSensorGroupGet(ExpectationBuilder e) {
         List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(s -> s.getNumber() >= 0).toList();
         e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).toList()
         );
     }
 
@@ -109,7 +109,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         });
     }
 
-    private void mockTemperatureSensor(ExpectationBuilder e) {
+    private void mockTemperatureSensor() {
         List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("temperature")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
@@ -132,9 +132,9 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             mockKeepAlive(e);
             mockGet(e);
             mockLightSensor(e);
-            mockTemperatureSensor(e);
-            mockTemperatureControlSensor(e);
-            mockHumiditySensor(e);
+            mockTemperatureSensor();
+            mockTemperatureControlSensor();
+            mockHumiditySensor();
             mockGasSensor(e);
             mockInput(e);
             mockDisplayMessage(e);
@@ -143,13 +143,13 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         LOG.info("Finsihed creating mocks ({})!", mocks.size());
     }
 
-    private void mockTemperatureControlSensor(ExpectationBuilder e) {
+    private void mockTemperatureControlSensor() {
         this.centralUnit.getComponents(Function.SENSOR)
                 .filter(c -> "temperaturecontrol".equalsIgnoreCase(c.getType()))
                 .forEach(c -> c.setState(defaultTemperatureControlStateBuilder().build()));
     }
 
-    private void mockHumiditySensor(ExpectationBuilder e) {
+    private void mockHumiditySensor() {
         List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(c -> c.getType().equalsIgnoreCase("humidity")).toList();
         components.forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
@@ -165,12 +165,12 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         });
     }
 
-    private void mockDisplayMessage(ExpectationBuilder e) {
+    void mockDisplayMessage(ExpectationBuilder e) {
         this.centralUnit.getComponents(Function.DISPLAYMESSAGE).forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
         });
         e.when(groupGet(Function.DISPLAYMESSAGE, this.centralUnit.getComponents(Function.DISPLAYMESSAGE).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.DISPLAYMESSAGE).map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+                this.centralUnit.getComponents(Function.DISPLAYMESSAGE).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DISPLAYMESSAGE, component.getNumber(), component.getState())).toList()
         );
     }
 
@@ -202,7 +202,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             });
         });
         e.when(groupGet(Function.DIMMER, this.centralUnit.getComponents(Function.DIMMER).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.DIMMER).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DIMMER, component.getNumber(), component.getState())).collect(Collectors.toList())
+                this.centralUnit.getComponents(Function.DIMMER).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DIMMER, component.getNumber(), component.getState())).toList()
         );
     }
 
@@ -254,7 +254,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             });
         });
         e.when(groupGet(Function.MOTOR, this.centralUnit.getComponents(Function.MOTOR).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.MOTOR).map(component -> ExpectationBuilder.WhenBuilder.state(Function.MOTOR, component.getNumber(), component.getState())).collect(Collectors.toList())
+                this.centralUnit.getComponents(Function.MOTOR).map(component -> ExpectationBuilder.WhenBuilder.state(Function.MOTOR, component.getNumber(), component.getState())).toList()
         );
     }
 
@@ -272,7 +272,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                 e.with(c.getFunction(), c.getNumber()).when(set(OnOffToggleStateCalculator.ValidOnOffToggle.ON)).thenRespond(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
             });
             e.when(groupGet(function, this.centralUnit.getComponents(function).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                    this.centralUnit.getComponents(function).map(component -> ExpectationBuilder.WhenBuilder.state(function, component.getNumber(), component.getState())).collect(Collectors.toList())
+                    this.centralUnit.getComponents(function).map(component -> ExpectationBuilder.WhenBuilder.state(function, component.getNumber(), component.getState())).toList()
             );
         });
     }
@@ -284,7 +284,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             e.with(c.getFunction(), c.getNumber()).when(set(InputStateCalculator.ValidInputState.CLOSED)).thenRespond(new InputState(InputStateCalculator.ValidInputState.CLOSED));
         });
         e.when(groupGet(Function.INPUT, this.centralUnit.getComponents(Function.INPUT).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.INPUT).map(component -> ExpectationBuilder.WhenBuilder.state(Function.INPUT, component.getNumber(), component.getState())).collect(Collectors.toList())
+                this.centralUnit.getComponents(Function.INPUT).map(component -> ExpectationBuilder.WhenBuilder.state(Function.INPUT, component.getNumber(), component.getState())).toList()
         );
     }
 

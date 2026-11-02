@@ -79,9 +79,6 @@ public class MotorStateCalculator extends StateCalculatorSupport<MotorState> {
             .add(ValidProtectionState.SWITCHED_OFF, 4);
     public static final BigDecimal HUNDRED = new BigDecimal(100);
 
-    public MotorStateCalculator() {
-    }
-
     @Override
     public MotorState fromEvent(ComponentSpec component, byte[] dataBytes) {
         MotorState state = new MotorState(DIRECTION_MAPPER.toEnum(dataBytes));
@@ -119,11 +116,11 @@ public class MotorStateCalculator extends StateCalculatorSupport<MotorState> {
             setting = DIRECTION_MAPPER.toBytes(ValidMotorDirectionState.MOTOR_GO_TO_POSITION);
 
             try {
-                int position = (int) state.getRequestedPosition();
+                int position = state.getRequestedPosition();
                 position = Math.min(position, 100);
                 position = Math.max(position, 0);
                 data = NumberConverter.UNSIGNED_BYTE.convert(position);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
                 //Not a number, so no data is needed
             }
         }
@@ -163,8 +160,8 @@ public class MotorStateCalculator extends StateCalculatorSupport<MotorState> {
             return NumberConverter.UNSIGNED_BYTE.convert(p);
         }).orElse(currentPosition);
         byte[] secondsToFinish = Optional.ofNullable(state.getSecondsToFinish()).map(n -> n.multiply(HUNDRED)).map(NumberConverter.UNSIGNED_SHORT::convert).orElse(Bytes.EMPTY);
-        byte[] correctionAtZeroPercentInSeconds = Optional.ofNullable(state.getCorrectionAtZeroPercentInSeconds()).map(NumberConverter.UNSIGNED_SHORT::convert).orElse(Bytes.EMPTY);
-        byte[] correctionAtHundredPercentInSeconds = Optional.ofNullable(state.getCorrectionAtHundredPercentInSeconds()).map(NumberConverter.UNSIGNED_SHORT::convert).orElse(Bytes.EMPTY);
+        byte[] correctionAtZeroPercentInSeconds = Optional.ofNullable(state.getCorrectionAtZeroPercentInSeconds()).map(NumberConverter.UNSIGNED_BYTE::convert).orElse(Bytes.EMPTY);
+        byte[] correctionAtHundredPercentInSeconds = Optional.ofNullable(state.getCorrectionAtHundredPercentInSeconds()).map(NumberConverter.UNSIGNED_BYTE::convert).orElse(Bytes.EMPTY);
 
         return Bytes.concat(direction, power, protection, requestedPosition, currentPosition, secondsToFinish, correctionAtZeroPercentInSeconds, correctionAtHundredPercentInSeconds);
     }
