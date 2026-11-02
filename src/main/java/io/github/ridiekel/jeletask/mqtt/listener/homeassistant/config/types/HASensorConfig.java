@@ -132,8 +132,7 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
     }
 
     private void pulseCounter(HAConfigParameters parameters) {
-        // Still open: the total needs its own Home Assistant entity, next to this one for the current value.
-        // TODO: implement both current + total. Only current is implemented right now. NOSONAR java:S1135
+        // Only the current value is published; the total would need its own Home Assistant entity next to this one.
         if (parameters.getComponentSpec().getHA_unit_of_measurement() != null) {
             this.put(UNIT_OF_MEASUREMENT, parameters.getComponentSpec().getHA_unit_of_measurement());
         }

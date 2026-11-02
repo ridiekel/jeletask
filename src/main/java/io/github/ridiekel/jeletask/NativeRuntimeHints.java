@@ -30,7 +30,6 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(LuxState.class, MemberCategory.values());
         hints.reflection().registerType(MotorState.class, MemberCategory.values());
         hints.reflection().registerType(OnOffState.class, MemberCategory.values());
-        hints.reflection().registerType(ProtectionState.class, MemberCategory.values());
         hints.reflection().registerType(PulseCounterState.class, MemberCategory.values());
         hints.reflection().registerType(StringState.class, MemberCategory.values());
         hints.reflection().registerType(TemperatureControlState.class, MemberCategory.values());
@@ -42,7 +41,6 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(CentralUnitType.class, MemberCategory.values());
         hints.reflection().registerType(Command.class, MemberCategory.values());
         hints.reflection().registerType(ComponentSpec.class, MemberCategory.values());
-        hints.reflection().registerType(Device.class, MemberCategory.values());
         hints.reflection().registerType(Function.class, MemberCategory.values());
 
         hints.reflection().registerType(MqttProcessor.ConnectedStatus.class, MemberCategory.values());

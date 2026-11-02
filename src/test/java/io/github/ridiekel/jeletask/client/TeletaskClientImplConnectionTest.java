@@ -269,13 +269,6 @@ class TeletaskClientImplConnectionTest {
     }
 
     @Test
-    void aClientCannotBeCloned() {
-        TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
-
-        assertThrows(CloneNotSupportedException.class, client::clone);
-    }
-
-    @Test
     void stopKeepsTheInterruptOfTheCallerAndStillClosesEverything() {
         this.central.goOnline();
         TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));

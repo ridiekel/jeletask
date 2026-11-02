@@ -39,9 +39,10 @@ public final class HealthCheck {
     }
 
     // Java 25 launches a main without parameters; the Docker HEALTHCHECK passes none.
+    // Not a logger: this class must stay JDK-only, and Docker keeps what the check prints as the health status.
+    @SuppressWarnings("java:S106")
     static void main() {
-        // Not a logger: this class must stay JDK-only, and Docker keeps what the check prints as the health status.
-        System.exit(DEFAULT.check(System.out)); // NOSONAR java:S106
+        System.exit(DEFAULT.check(System.out));
     }
 
     public void write(boolean teletaskConnected, boolean mqttConnected) throws IOException {

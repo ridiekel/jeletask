@@ -420,19 +420,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         new LogMessage(this.getCentralUnit(), function, state).execute(this);
     }
 
-    /**
-     * Prevent cloning.
-     *
-     * @return Nothing really, because this will always result in an Exception.
-     * @throws CloneNotSupportedException when called.
-     */
-    // Only exists to forbid cloning explicitly; there is no clone to seed with super.clone()
-    @SuppressWarnings("java:S1182")
-    @Override
-    public final TeletaskClientImpl clone() throws CloneNotSupportedException {
-        throw new CloneNotSupportedException();
-    }
-
     private ExecutorService getIoService() {
         return this.ioService;
     }

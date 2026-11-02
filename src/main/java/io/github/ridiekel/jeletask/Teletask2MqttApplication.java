@@ -20,8 +20,7 @@ public class Teletask2MqttApplication {
 
     static void main(String[] args) {
         if (Arrays.asList(args).contains(HealthCheck.ARGUMENT)) {
-            // Not a logger: this runs before Spring configures logging, and Docker keeps what the check prints as the health status.
-            System.exit(HealthCheck.getDefault().check(System.out)); // NOSONAR java:S106
+            exitWithHealthStatus();
         }
 
         handleDeprecations();
@@ -42,6 +41,12 @@ public class Teletask2MqttApplication {
         copyDeprecatedVariable("TELETASK_HOST");
         copyDeprecatedVariable("TELETASK_PORT");
         copyDeprecatedVariable("TELETASK_ID");
+    }
+
+    // Not a logger: this runs before Spring configures logging, and Docker keeps what the check prints as the health status.
+    @SuppressWarnings("java:S106")
+    private static void exitWithHealthStatus() {
+        System.exit(HealthCheck.getDefault().check(System.out));
     }
 
     private static void copyDeprecatedVariable(String variable) {
