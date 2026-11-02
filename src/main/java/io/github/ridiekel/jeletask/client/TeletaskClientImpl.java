@@ -434,6 +434,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         public void run() {
             try {
                 TeletaskClientImpl.this.handleReceiveEvents(MessageUtilities.receive(LOG, TeletaskClientImpl.this));
+            } catch (InterruptedException _) {
+                // The io service is shutting down; keep the interrupt so its thread can stop
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
                 LOG.trace(String.format("Exception (%s) caught in EventMessageListener: %s", e.getClass().getName(), e.getMessage()), e);
             }

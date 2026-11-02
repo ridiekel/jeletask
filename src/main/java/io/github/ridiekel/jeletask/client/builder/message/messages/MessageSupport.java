@@ -86,6 +86,9 @@ public abstract class MessageSupport {
                         LOG.debug(AnsiOutput.toString(toColoredLogLine(AnsiColor.GREEN, "WAIT_ACK"), AnsiColor.BLUE, " - Waiting: " + (System.currentTimeMillis() - startWaitingTime) + "ms", AnsiColor.DEFAULT));
                         try {
                             client.handleReceiveEvents(MessageUtilities.receive(LOG, client, this));
+                        } catch (InterruptedException _) {
+                            // Keep the interrupt: the next poll of Awaitility then stops waiting for the acknowledge
+                            Thread.currentThread().interrupt();
                         } catch (Exception e) {
                             LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);
                         }

@@ -269,6 +269,20 @@ class TeletaskClientImplConnectionTest {
     }
 
     @Test
+    void anInterruptedEventListenerKeepsTheInterrupt() {
+        this.central.goOnline();
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
+        client.start();
+        awaitLogMessagesOn(0);
+        TeletaskClientImpl.EventMessageListener listener = client.new EventMessageListener();
+
+        Thread.currentThread().interrupt();
+        listener.run();
+
+        assertTrue(Thread.interrupted());
+    }
+
+    @Test
     void stopKeepsTheInterruptOfTheCallerAndStillClosesEverything() {
         this.central.goOnline();
         TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
