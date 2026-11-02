@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.support.descriptor.MethodSource;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -109,7 +110,7 @@ public class TestProgressListener implements TestExecutionListener {
         }
         int done = this.total - this.remaining.size();
         String counter = String.valueOf(this.total);
-        return String.format("[%3d%% %" + counter.length() + "d/%s] ", done * 100 / this.total, done, counter);
+        return String.format("[%3d%% %s/%s] ", done * 100 / this.total, StringUtils.leftPad(String.valueOf(done), counter.length()), counter);
     }
 
     private static boolean isTestMethod(TestIdentifier test) {

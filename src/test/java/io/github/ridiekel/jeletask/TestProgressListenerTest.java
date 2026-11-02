@@ -3,7 +3,10 @@ package io.github.ridiekel.jeletask;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
@@ -46,20 +49,27 @@ class TestProgressListenerTest {
 
     private static List<String> run(boolean enabled) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        LauncherDiscoveryRequest request = request().selectors(selectClass(Fixture.class)).build();
-        System.setProperty(FIXTURE, "true");
-        try {
-            LauncherFactory.create(WITHOUT_REGISTERED_LISTENERS).execute(request, new TestProgressListener(enabled, new PrintStream(bytes, true, StandardCharsets.UTF_8)));
-        } finally {
-            System.clearProperty(FIXTURE);
-        }
+        LauncherDiscoveryRequest request = request()
+                .selectors(selectClass(Fixture.class))
+                .configurationParameter(FIXTURE, "true")
+                .build();
+        LauncherFactory.create(WITHOUT_REGISTERED_LISTENERS).execute(request, new TestProgressListener(enabled, new PrintStream(bytes, true, StandardCharsets.UTF_8)));
         return bytes.toString(StandardCharsets.UTF_8).lines()
                 .map(line -> line.replaceAll("\u001B\\[[0-9;]*m", ""))
                 .toList();
     }
 
     // Only runs when launched by the tests above, never as part of the suite itself
-    @EnabledIfSystemProperty(named = FIXTURE, matches = "true")
+    static class OnlyWhenLaunchedByTheTest implements ExecutionCondition {
+        @Override
+        public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+            return context.getConfigurationParameter(FIXTURE).isPresent()
+                    ? ConditionEvaluationResult.enabled("launched by TestProgressListenerTest")
+                    : ConditionEvaluationResult.disabled("fixture of TestProgressListenerTest");
+        }
+    }
+
+    @ExtendWith(OnlyWhenLaunchedByTheTest.class)
     static class Fixture {
         @Test
         void plain() {
