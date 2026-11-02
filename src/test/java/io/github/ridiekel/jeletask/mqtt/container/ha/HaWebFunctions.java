@@ -11,6 +11,7 @@ import io.github.ridiekel.jeletask.client.spec.Function;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,6 +81,8 @@ public class HaWebFunctions {
     }
 
     public static class HaMotorWebElementFunctions extends HaOnOffWebElementFunctionsSupport<HaMotorWebElementFunctions> {
+        private static final Duration MOTOR_RUN_TIMEOUT = Duration.ofSeconds(20);
+
         public HaMotorWebElementFunctions(CentralUnit centralUnit, Function function, int number) {
             super(centralUnit, function, number);
         }
@@ -97,6 +100,14 @@ public class HaWebFunctions {
 
         public HaMotorWebElementFunctions shouldHaveSliderState(String value) {
             this.sliderElement().shouldHave(Condition.attribute("aria-valuenow", value));
+            return this.self();
+        }
+
+        /**
+         * Waits for a run to end: a full run takes five seconds, and a slow machine needs more on top of that.
+         */
+        public HaMotorWebElementFunctions shouldEndAtSliderState(String value) {
+            this.sliderElement().shouldHave(Condition.attribute("aria-valuenow", value), MOTOR_RUN_TIMEOUT);
             return this.self();
         }
 
