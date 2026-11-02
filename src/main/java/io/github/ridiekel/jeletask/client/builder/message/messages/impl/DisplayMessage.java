@@ -26,28 +26,28 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMess
 
         DisplayMessageStateCalculator displayMessageStateCalculator = centralUnit.getMessageHandler().getFunctionConfig(function).getStateCalculator(component);
 
-        if (component.getAddressNumbers() == null || component.getBusNumbers() == null)
-            throw new IllegalArgumentException("Address or bus numbers are missing");
-
-        String[] busNumbers = component.getBusNumbers().split(",");
-        String[] addressNumbers = component.getAddressNumbers().split(",");
-
-        if (addressNumbers.length != busNumbers.length)
-            throw new IllegalArgumentException("Address and bus numbers configuration error");
+        validateBusAndAddressNumbers(component);
 
         super(centralUnit, function, state);
         this.number = number;
 
-        byte[] busNumbersBytes = Bytes.EMPTY;
-        for(String busNumber: busNumbers)
-            busNumbersBytes = Bytes.concat(busNumbersBytes, new byte[]{Byte.valueOf(busNumber)});
-
-        byte[] addressNumbersBytes = Bytes.EMPTY;
-        for(String addressNumber: addressNumbers)
-            addressNumbersBytes = Bytes.concat(addressNumbersBytes, new byte[]{Byte.valueOf(addressNumber)});
-
-        this.busAndAddressBytes = Bytes.concat(busNumbersBytes, addressNumbersBytes);
+        this.busAndAddressBytes = Bytes.concat(toBytes(component.getBusNumbers()), toBytes(component.getAddressNumbers()));
         this.displayMessageBytes = displayMessageStateCalculator.toCommand(component, this.getState());
+    }
+
+    private static void validateBusAndAddressNumbers(ComponentSpec component) {
+        if (component.getAddressNumbers() == null || component.getBusNumbers() == null)
+            throw new IllegalArgumentException("Address or bus numbers are missing");
+
+        if (component.getAddressNumbers().split(",").length != component.getBusNumbers().split(",").length)
+            throw new IllegalArgumentException("Address and bus numbers configuration error");
+    }
+
+    private static byte[] toBytes(String commaSeparatedNumbers) {
+        byte[] bytes = Bytes.EMPTY;
+        for (String number : commaSeparatedNumbers.split(","))
+            bytes = Bytes.concat(bytes, new byte[]{Byte.valueOf(number)});
+        return bytes;
     }
 
     @Override

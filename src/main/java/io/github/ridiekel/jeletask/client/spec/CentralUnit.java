@@ -61,10 +61,12 @@ public class CentralUnit {
 
     /**
      * Devices get a stable negative number derived from their name; it ends up in MQTT topics and HA unique ids.
-     * Computed in long arithmetic so {@code Integer.MIN_VALUE} maps onto itself, exactly like the former int version did.
+     * Negating only positive hashes keeps {@code Integer.MIN_VALUE} as it is, exactly like the former
+     * {@code Math.abs(hash) * -1} did, without relying on abs overflowing.
      */
     static int deviceNumber(String device) {
-        return (int) -Math.abs((long) device.hashCode());
+        int hash = device.hashCode();
+        return hash > 0 ? -hash : hash;
     }
 
     public ComponentSpec getComponent(Function function, int number) {

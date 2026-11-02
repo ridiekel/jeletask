@@ -23,11 +23,11 @@ public final class MessageUtilities {
     private MessageUtilities() {
     }
 
-    public static List<MessageSupport> receive(Logger logger, TeletaskReceiver teletaskReceiver) throws Exception {
+    public static List<MessageSupport> receive(Logger logger, TeletaskReceiver teletaskReceiver) throws IOException, InterruptedException {
         return receive(logger, teletaskReceiver, null);
     }
 
-    public static List<MessageSupport> receive(Logger logger, TeletaskReceiver teletaskReceiver, MessageSupport currentlyRunningMessage) throws Exception {
+    public static List<MessageSupport> receive(Logger logger, TeletaskReceiver teletaskReceiver, MessageSupport currentlyRunningMessage) throws IOException, InterruptedException {
         List<MessageSupport> responses = new ArrayList<>();
 
         InputStream inputStream = teletaskReceiver.getInputStream();
