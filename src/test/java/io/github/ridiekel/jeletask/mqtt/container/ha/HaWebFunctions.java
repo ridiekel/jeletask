@@ -4,13 +4,10 @@ import com.codeborne.selenide.ClickOptions;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.SelenideElement;
-import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
@@ -26,7 +23,7 @@ public class HaWebFunctions {
 
     private final CentralUnit centralUnit;
 
-    public HaWebFunctions(Teletask2MqttConfigurationProperties config, CentralUnit centralUnit) {
+    public HaWebFunctions(CentralUnit centralUnit) {
         this.centralUnit = centralUnit;
     }
 
@@ -143,8 +140,6 @@ public class HaWebFunctions {
     }
 
     public static class HaWebElementFunctions<F extends HaWebElementFunctions<F>> {
-        private static final Logger LOG = LogManager.getLogger();
-
         private static final Map<Function, java.util.function.Function<ComponentSpec, String>> FUNTION_TO_ROWTYPE = Map.of(
                 Function.DIMMER, c -> "hui-toggle-entity-row",
                 Function.RELAY, onOffElementSelector(),
@@ -183,13 +178,13 @@ public class HaWebFunctions {
             List<@Nullable String> titles = $$(Selectors.shadowDeepCss(elementToFind))
                     .attributes("title");
 
-            int index = titles.indexOf(description);
+            int found = titles.indexOf(description);
 
-            if (index < 0) {
-                throw new IllegalStateException(String.format("'%s' not found in: '%s' - List of possible values: \n%s", description, elementToFind, titles.stream().map(s -> String.format("\t'%s'", s)).collect(Collectors.joining("\n"))));
+            if (found < 0) {
+                throw new IllegalStateException(String.format("'%s' not found in: '%s' - List of possible values: %n%s", description, elementToFind, titles.stream().map(s -> String.format("\t'%s'", s)).collect(Collectors.joining("\n"))));
             }
 
-            return index;
+            return found;
         }
 
         @SuppressWarnings("unchecked")
@@ -333,26 +328,6 @@ public class HaWebFunctions {
             this.textElement().shouldHave(Condition.text(value));
             return this.self();
         }
-
-//        public HaSensorWebElementFunctions shouldHaveIconStateOpen() {
-//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.OPEN.toString()));
-//            return this.self();
-//        }
-//
-//        public HaSensorWebElementFunctions shouldHaveIconStateClosed() {
-//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.CLOSED.toString()));
-//            return this.self();
-//        }
-//
-//        public HaSensorWebElementFunctions shouldHaveIconStateNotPressed() {
-//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.NOT_PRESSED.toString()));
-//            return this.self();
-//        }
-//
-//        public HaSensorWebElementFunctions shouldHaveIconStateShortPress() {
-//            this.iconElement().shouldHave(Condition.attribute("data-state", InputStateCalculator.ValidInputState.SHORT_PRESS.toString()));
-//            return this.self();
-//        }
     }
 
     public static class HaInputWebElementFunctions extends HaWebElementFunctions<HaInputWebElementFunctions> {

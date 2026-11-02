@@ -25,8 +25,7 @@ class End2EndLastWillTest extends MockingTeletaskTestSupport {
         awaitLast(received, "online");
 
         String broker = "tcp://" + this.mqtt().getHost() + ":" + this.mqtt().getPort();
-        MqttClient bridge = new MqttClient(broker, "last-will-test-client", new MemoryPersistence());
-        try {
+        try (MqttClient bridge = new MqttClient(broker, "last-will-test-client", new MemoryPersistence())) {
             bridge.connect(processor.connectOptions(null, null));
 
             // Drop the connection without a DISCONNECT packet, like a crash would
@@ -34,7 +33,6 @@ class End2EndLastWillTest extends MockingTeletaskTestSupport {
 
             awaitLast(received, "offline");
         } finally {
-            bridge.close(true);
             processor.publishConnectionStatus();
         }
 

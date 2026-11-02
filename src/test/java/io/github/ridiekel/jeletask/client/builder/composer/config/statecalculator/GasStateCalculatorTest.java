@@ -3,6 +3,8 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 
@@ -18,42 +20,10 @@ class GasStateCalculatorTest {
         return component;
     }
 
-    @Test
-    void roundTrip1() {
-        ComponentSpec component = componentWith(new BigDecimal("10"), new BigDecimal("110"), "4-20ma", 2);
-
-        BigDecimal expected = new BigDecimal("200");
-        BigDecimal result = GasStateCalculator.fromEventValue(component, expected);
-        BigDecimal actual = GasStateCalculator.toCommandValue(component, result);
-
-        Assertions.assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void roundTrip2() {
-        ComponentSpec component = componentWith(new BigDecimal("10"), new BigDecimal("110"), "0-10v", 2);
-
-        BigDecimal expected = new BigDecimal("200");
-        BigDecimal result = GasStateCalculator.fromEventValue(component, expected);
-        BigDecimal actual = GasStateCalculator.toCommandValue(component, result);
-
-        Assertions.assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void roundTrip3() {
-        ComponentSpec component = componentWith(new BigDecimal("10"), new BigDecimal("110"), "5-10v", 2);
-
-        BigDecimal expected = new BigDecimal("200");
-        BigDecimal result = GasStateCalculator.fromEventValue(component, expected);
-        BigDecimal actual = GasStateCalculator.toCommandValue(component, result);
-
-        Assertions.assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void roundTrip4() {
-        ComponentSpec component = componentWith(new BigDecimal("10"), new BigDecimal("110"), "0-20ma", 2);
+    @ParameterizedTest
+    @ValueSource(strings = {"4-20ma", "0-10v", "5-10v", "0-20ma"})
+    void roundTrip(String type) {
+        ComponentSpec component = componentWith(new BigDecimal("10"), new BigDecimal("110"), type, 2);
 
         BigDecimal expected = new BigDecimal("200");
         BigDecimal result = GasStateCalculator.fromEventValue(component, expected);

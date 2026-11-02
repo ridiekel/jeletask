@@ -11,6 +11,7 @@ import java.util.Map;
 @Setter
 @Getter
 public class Entity extends HAObject {
+    @SuppressWarnings("java:S116") // mirrors the snake_case key of the Home Assistant REST API, and callers use getEntity_id()
     private String entity_id;
     private String state;
     private Attributes attributes;
@@ -18,6 +19,7 @@ public class Entity extends HAObject {
     @Setter
     @Getter
     public static class Attributes extends HAObject {
+        @SuppressWarnings("java:S116") // mirrors the snake_case key of the Home Assistant REST API
         private String friendly_name;
         // Everything else HA reports, e.g. a climate's temperature, hvac_action and preset_mode
         @JsonAnySetter

@@ -74,8 +74,7 @@ class TemperatureControlStateCalculatorTest {
 
         byte[] command = new TemperatureControlStateCalculator().toCommand(component(), state);
 
-        Assertions.assertThat(command).startsWith((byte) 87);
-        Assertions.assertThat(command).hasSize(3);
+        Assertions.assertThat(command).startsWith((byte) 87).hasSize(3);
     }
 
     private static ComponentSpec component(OnOffToggleStateCalculator.ValidOnOffToggle current) {
@@ -171,8 +170,10 @@ class TemperatureControlStateCalculatorTest {
     @Test
     void manualPresetWithoutAnyTargetIsRejected() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
+        TemperatureControlState manual = c.stateFromMessage("{\"state\": \"ON\", \"preset\": \"MANUAL\"}");
 
-        Assertions.assertThatThrownBy(() -> c.toCommand(component(OnOffToggleStateCalculator.ValidOnOffToggle.ON), c.stateFromMessage("{\"state\": \"ON\", \"preset\": \"MANUAL\"}")))
+        Assertions.assertThatThrownBy(() -> c.toCommand(component, manual))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("target_temperature");
     }
@@ -213,19 +214,24 @@ class TemperatureControlStateCalculatorTest {
     @Test
     void presetTemperatureOutOfRangeIsRejected() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
-
+        ComponentSpec component = component();
         // (100 + 40) x 2 = 280 would wrap around to 24, which the central stores as -28 °C
-        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": 100}")))
+        TemperatureControlState dayTooHigh = c.stateFromMessage("{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": 100}");
+        TemperatureControlState nightTooLow = c.stateFromMessage("{\"state\": \"ON\", \"action\": \"NIGHT_PRESET\", \"night_at_heating_preset_temperature\": -40.5}");
+        TemperatureControlState negativeEcoOffset = c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": -2}");
+        // 26 x 10 does not fit in the byte of a report
+        TemperatureControlState ecoOffsetTooHigh = c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 26}");
+
+        Assertions.assertThatThrownBy(() -> c.toCommand(component, dayTooHigh))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("day_preset_temperature");
-        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"NIGHT_PRESET\", \"night_at_heating_preset_temperature\": -40.5}")))
+        Assertions.assertThatThrownBy(() -> c.toCommand(component, nightTooLow))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("night_at_heating_preset_temperature");
-        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": -2}")))
+        Assertions.assertThatThrownBy(() -> c.toCommand(component, negativeEcoOffset))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("eco_preset_offset");
-        // 26 x 10 does not fit in the byte of a report
-        Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 26}")))
+        Assertions.assertThatThrownBy(() -> c.toCommand(component, ecoOffsetTooHigh))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("eco_preset_offset");
     }
@@ -233,9 +239,12 @@ class TemperatureControlStateCalculatorTest {
     @Test
     void actionWithoutItsValueIsRejected() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component();
 
         for (String action : List.of("TARGET", "DAY_PRESET", "NIGHT_PRESET", "ECO_OFFSET")) {
-            Assertions.assertThatThrownBy(() -> c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"" + action + "\"}")))
+            TemperatureControlState withoutValue = c.stateFromMessage("{\"state\": \"ON\", \"action\": \"" + action + "\"}");
+
+            Assertions.assertThatThrownBy(() -> c.toCommand(component, withoutValue))
                     .as(action)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageStartingWith("Missing");

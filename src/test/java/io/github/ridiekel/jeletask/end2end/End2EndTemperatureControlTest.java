@@ -58,7 +58,7 @@ class End2EndTemperatureControlTest extends MockingTeletaskTestSupport {
             JsonNode json;
             try {
                 json = StringUtilities.OBJECT_MAPPER.readTree(capture.getMessage());
-            } catch (Exception e) {
+            } catch (Exception _) {
                 return new MatchTest.MatchTestResult(false, capture.getMessage());
             }
             return new MatchTest.MatchTestResult(test.test(json), capture.getMessage());

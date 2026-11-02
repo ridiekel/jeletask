@@ -129,9 +129,9 @@ public class ExpectationBuilder {
             }
 
             private void log(String state) {
-                MockServerCommand command = this.command.apply(this.builder);
+                MockServerCommand requested = this.command.apply(this.builder);
 
-                if (command.command() instanceof SetMessage message) {
+                if (requested.command() instanceof SetMessage message) {
                     LOG.trace(String.format(AnsiOutput.toString(AnsiColor.BLUE, "[%s] - [%s] - [%s] - mocking requested state [", AnsiColor.GREEN, "%s", AnsiColor.BLUE, "] -> [", AnsiColor.YELLOW, "%s", AnsiColor.BLUE, "]", AnsiColor.DEFAULT),
                             StringUtils.rightPad("MOCK", 10),
                             StringUtils.rightPad(message.getFunction().toString(), 10),
@@ -142,13 +142,13 @@ public class ExpectationBuilder {
                 } else {
                     LOG.trace(String.format("[%s] - [%s]",
                             StringUtils.rightPad("MOCK", 10),
-                            command.command()));
+                            requested.command()));
                 }
             }
 
             public void thenRespondFunctional(java.util.function.Supplier<State<?>> state) {
                 thenRespondFunctional(Stream.of(state)
-                        .map(s -> (java.util.function.Function<WithBuilder, Supplier<MockServerResponse>>) b -> (Supplier<MockServerResponse>) () -> (MockServerResponse) (centralUnit, message) -> centralUnit.getMessageHandler().createResponseEventMessageForTesting(centralUnit, builder.getFunction(), new MessageHandler.OutputState(builder.getNumber(), s.get())))
+                        .map(s -> (java.util.function.Function<WithBuilder, Supplier<MockServerResponse>>) b -> (Supplier<MockServerResponse>) () -> (MockServerResponse) (unit, message) -> unit.getMessageHandler().createResponseEventMessageForTesting(unit, builder.getFunction(), new MessageHandler.OutputState(builder.getNumber(), s.get())))
                         .toList());
             }
 

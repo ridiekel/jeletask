@@ -71,6 +71,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
 
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(100)
+    @Override
     public void start() {
         LOGGER.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Starting MQTT", AnsiColor.DEFAULT));
 
@@ -97,7 +98,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
                 options.setKeepAliveInterval(5);
                 mqttClient.connect(options);
                 connected = mqttClient.isConnected();
-            } catch (MqttException e) {
+            } catch (MqttException _) {
                 connected = false;
             }
             return connected;
@@ -131,7 +132,7 @@ public class MqttContainer extends GenericContainer<MqttContainer> {
             String prettyMessage;
             try {
                 prettyMessage = StringUtilities.prettyString(message);
-            } catch (Exception e) {
+            } catch (Exception _) {
                 prettyMessage = message;
             }
             prettyMessage = StringUtilities.indent(prettyMessage);
