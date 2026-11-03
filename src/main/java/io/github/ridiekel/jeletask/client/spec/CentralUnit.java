@@ -3,7 +3,7 @@ package io.github.ridiekel.jeletask.client.spec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
-import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.SensorType;
+import io.github.ridiekel.jeletask.client.spec.component.StringSensorSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.StringState;
 import lombok.Getter;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * POJO representation of the TDS config JSON file.
+ * The central unit with the components of the TDS config JSON file, read by {@link io.github.ridiekel.jeletask.client.spec.config.CentralUnitConfigReader}.
  */
 @Getter
 @Setter
@@ -49,11 +49,9 @@ public class CentralUnit {
 
     public ComponentSpec getDevice(String device) {
         return this.deviceMap.computeIfAbsent(device, key -> {
-            ComponentSpec deviceSpec = new ComponentSpec();
+            ComponentSpec deviceSpec = new StringSensorSpec();
             deviceSpec.setState(new StringState(this.getVersion()));
-            deviceSpec.setFunction(Function.SENSOR);
             deviceSpec.setNumber(deviceNumber(key));
-            deviceSpec.setType(SensorType.STRING.toString());
             deviceSpec.setDescription(key);
             return deviceSpec;
         });
@@ -70,10 +68,7 @@ public class CentralUnit {
     }
 
     public ComponentSpec getComponent(Function function, int number) {
-        return getComponents(function).filter(c -> c.getNumber() == number).findAny().map(c -> {
-            c.setFunction(function);
-            return c;
-        }).orElseThrow(() -> {
+        return getComponents(function).filter(c -> c.getNumber() == number).findAny().orElseThrow(() -> {
             LOG.debug(
                     AnsiOutput.toString(AnsiColor.YELLOW, "[EVENT  ] - {}", AnsiColor.DEFAULT, " - {}"),
                     String.format("[%s] - [%s] - [%s]", StringUtils.rightPad(function.toString(), 10), StringUtils.leftPad(String.valueOf(number), 3), StringUtils.leftPad("", 40)),
@@ -98,7 +93,6 @@ public class CentralUnit {
             Map<String, ComponentSpec> devices = new HashMap<>();
             for (Map.Entry<Function, List<ComponentSpec>> components : componentsTypes.entrySet()) {
                 List<ComponentSpec> componentsOfType = components.getValue();
-                componentsOfType.forEach(v -> v.setFunction(components.getKey()));
                 Set<ComponentSpec> deviceSpecs = componentsOfType.stream()
                         .filter(c -> c.getDevice() != null)
                         .map(c -> {
@@ -122,11 +116,9 @@ public class CentralUnit {
 
     private ComponentSpec getBridgeComponent() {
         if (this.bridge == null) {
-            this.bridge = new ComponentSpec();
+            this.bridge = new StringSensorSpec();
             this.bridge.setState(new StringState(this.getVersion()));
-            this.bridge.setFunction(Function.SENSOR);
             this.bridge.setNumber(BRIDGE_NUMBER);
-            this.bridge.setType(SensorType.STRING.toString());
             this.bridge.setDescription("Teletask2MQTT Bridge");
         }
         return this.bridge;

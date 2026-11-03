@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TeletaskMockServerDisplayMessageTest {
     @Test
     void groupGetOfDisplayMessagesAnswersWithADisplayMessageEvent() {
-        ComponentSpec display = new ComponentSpec();
+        ComponentSpec display = new DisplayMessageSpec();
         display.setNumber(1000);
 
         CentralUnit centralUnit = new CentralUnit();

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.InputSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttPublisher;
@@ -107,7 +108,7 @@ public class LongPressInputCaptor {
     }
 
     private Captor getCaptor(ComponentSpec component) {
-        return this.pressedInputs.computeIfAbsent(component, c -> new Captor(component.getLong_press_duration_millis()));
+        return this.pressedInputs.computeIfAbsent(component, c -> new Captor(((InputSpec) component).getLongPressDurationMillis()));
     }
 
     public static class Captor extends InputState {

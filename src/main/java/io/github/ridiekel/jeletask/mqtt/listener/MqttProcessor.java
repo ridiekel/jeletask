@@ -9,6 +9,7 @@ import io.github.ridiekel.jeletask.client.listener.StateChangeListener;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.InputSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.mqtt.listener.command.MQTTMessageToTeletaskCommand;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HomeAssistentAutoConfig;
@@ -492,7 +493,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         components.forEach(c -> {
             if (c.getFunction() == Function.MOTOR) {
                 this.motorProgressor.update(c);
-            } else if (c.getFunction() == Function.INPUT && c.getLong_press_duration_millis() != null) {
+            } else if (c instanceof InputSpec input && input.getLongPressDurationMillis() != null) {
                 this.longPressInputCaptor.update(c);
             } else {
                 publishState(c, c.getState());

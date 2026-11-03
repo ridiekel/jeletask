@@ -4,6 +4,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.MotorStateCalculator.ValidProtectionState;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator.ValidOnOffToggle;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.MotorSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ class MotorStateCalculatorTest {
     private static final byte[] FULL_EVENT = {2, (byte) 255, 1, 70, 40, 0x01, 0x2C, 5, 7};
 
     private final MotorStateCalculator calculator = new MotorStateCalculator();
-    private final ComponentSpec component = new ComponentSpec();
+    private final ComponentSpec component = new MotorSpec();
 
     private MotorState fromFullEventCutAt(int length) {
         return calculator.fromEvent(component, Arrays.copyOf(FULL_EVENT, length));

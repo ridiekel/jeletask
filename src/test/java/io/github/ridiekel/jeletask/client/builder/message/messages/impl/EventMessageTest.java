@@ -6,6 +6,8 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.PulseCounterSpec;
+import io.github.ridiekel.jeletask.client.spec.component.RelaySpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.PulseCounterState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
@@ -36,16 +38,15 @@ class EventMessageTest {
 
     @BeforeEach
     void setUp() {
-        ComponentSpec pulseCounter = new ComponentSpec();
+        ComponentSpec pulseCounter = new PulseCounterSpec();
         pulseCounter.setNumber(6);
-        pulseCounter.setType("PULSECOUNTER");
 
-        ComponentSpec relay3 = new ComponentSpec();
+        ComponentSpec relay3 = new RelaySpec();
         relay3.setNumber(3);
         relay3.setDescription("Kitchen");
         relay3.setState(new OnOffState(ValidOnOffToggle.ON));
 
-        ComponentSpec relay1000 = new ComponentSpec();
+        ComponentSpec relay1000 = new RelaySpec();
         relay1000.setNumber(1000);
 
         Map<Function, List<ComponentSpec>> components = new LinkedHashMap<>();

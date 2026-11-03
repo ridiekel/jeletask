@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HomeAssistentAutoConfig.HADeviceType;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadWriteConfig;
 
@@ -21,7 +22,7 @@ public class HAOnOffConfig extends HAReadWriteConfig<HAOnOffConfig> {
         this.put("state_off", "OFF");
         this.put("value_template", "{{ value_json.state }}");
 
-        if ("light".equalsIgnoreCase(parameters.getComponentSpec().getType())) {
+        if (parameters.getDeviceType() == HADeviceType.LIGHT) {
             this.put("supported_color_modes", "onoff");
         }
     }

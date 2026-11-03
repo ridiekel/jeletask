@@ -8,6 +8,8 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.TestComponents;
+import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 
@@ -41,17 +43,17 @@ public final class TestCentralUnit extends CentralUnit {
         this.setPort(port);
         this.setVersion("test");
 
-        ComponentSpec display = component(DISPLAY, null);
-        display.setBus_numbers("1,2");
-        display.setAddress_numbers("3,4");
+        DisplayMessageSpec display = component(Function.DISPLAYMESSAGE, DISPLAY, null);
+        display.setBusNumbers("1,2");
+        display.setAddressNumbers("3,4");
 
         Map<Function, List<ComponentSpec>> components = new LinkedHashMap<>();
         components.put(Function.RELAY, List.of(
-                component(RELAY_1, new OnOffState(ValidOnOffToggle.OFF)),
-                component(RELAY_2, new OnOffState(ValidOnOffToggle.OFF)),
-                component(RELAY_WITHOUT_STATE, null)));
-        components.put(Function.DIMMER, List.of(component(DIMMER_1, null)));
-        components.put(Function.DISPLAYMESSAGE, List.of(display, component(DISPLAY_WITHOUT_ADDRESS, null)));
+                component(Function.RELAY, RELAY_1, new OnOffState(ValidOnOffToggle.OFF)),
+                component(Function.RELAY, RELAY_2, new OnOffState(ValidOnOffToggle.OFF)),
+                component(Function.RELAY, RELAY_WITHOUT_STATE, null)));
+        components.put(Function.DIMMER, List.of(component(Function.DIMMER, DIMMER_1, null)));
+        components.put(Function.DISPLAYMESSAGE, List.of(display, component(Function.DISPLAYMESSAGE, DISPLAY_WITHOUT_ADDRESS, null)));
         this.setComponentsTypes(components);
     }
 
@@ -107,11 +109,10 @@ public final class TestCentralUnit extends CentralUnit {
         return this.handler;
     }
 
-    private static ComponentSpec component(int number, State<?> state) {
-        ComponentSpec component = new ComponentSpec();
-        component.setNumber(number);
+    @SuppressWarnings("unchecked")
+    private static <T extends ComponentSpec> T component(Function function, int number, State<?> state) {
+        ComponentSpec component = TestComponents.of(function, state, number);
         component.setDescription("Component " + number);
-        component.setState(state);
-        return component;
+        return (T) component;
     }
 }

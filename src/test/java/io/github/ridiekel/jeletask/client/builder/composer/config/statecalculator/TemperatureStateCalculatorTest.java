@@ -1,6 +1,7 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
 
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.TemperatureSensorSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.TemperatureState;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ class TemperatureStateCalculatorTest {
     @Test
     void bytesToTemp() {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
-        ComponentSpec component = new ComponentSpec();
+        TemperatureSensorSpec component = new TemperatureSensorSpec();
         component.setDecimals(5);
         TemperatureState state = c.fromEvent(component, new byte[]{23, 6});
 
@@ -22,7 +23,7 @@ class TemperatureStateCalculatorTest {
     @Test
     void bytesToTempNoDecimals() {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
-        ComponentSpec component = new ComponentSpec();
+        TemperatureSensorSpec component = new TemperatureSensorSpec();
         component.setDecimals(0);
         TemperatureState state = c.fromEvent(component, new byte[]{23, 6});
 
@@ -32,7 +33,7 @@ class TemperatureStateCalculatorTest {
     @Test
     void tempToBytes() {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
-        ComponentSpec component = new ComponentSpec();
+        TemperatureSensorSpec component = new TemperatureSensorSpec();
         component.setDecimals(5);
         byte[] bytes = c.toCommand(null, new TemperatureState(new BigDecimal("30.89")));
 
@@ -43,7 +44,7 @@ class TemperatureStateCalculatorTest {
     @Test
     void tempToBytesNoDecimals() {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
-        ComponentSpec component = new ComponentSpec();
+        TemperatureSensorSpec component = new TemperatureSensorSpec();
         component.setDecimals(0);
         byte[] bytes = c.toCommand(null, new TemperatureState(new BigDecimal("30.89")));
 
@@ -53,7 +54,7 @@ class TemperatureStateCalculatorTest {
 
     private static void roundTrip(String val) {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
-        ComponentSpec component = new ComponentSpec();
+        TemperatureSensorSpec component = new TemperatureSensorSpec();
         component.setDecimals(5);
 
         byte[] bytes = c.toCommand(null, new TemperatureState(new BigDecimal(val)));
@@ -71,7 +72,7 @@ class TemperatureStateCalculatorTest {
     @Test
     void roundTrip2() {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
-        ComponentSpec component = new ComponentSpec();
+        TemperatureSensorSpec component = new TemperatureSensorSpec();
         component.setDecimals(5);
 
         TemperatureState state = c.fromEvent(component, new byte[]{0, 20});

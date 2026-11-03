@@ -9,6 +9,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.TestComponents;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 import io.github.ridiekel.jeletask.mockserver.FakeCentral;
 import io.github.ridiekel.jeletask.utilities.Bytes;
@@ -247,7 +248,7 @@ final class ResilienceBridge implements AutoCloseable {
     }
 
     private static ComponentSpec relayOff(int number) {
-        return new ComponentSpec(Function.RELAY, new OnOffState(ValidOnOffToggle.OFF), number);
+        return TestComponents.of(Function.RELAY, new OnOffState(ValidOnOffToggle.OFF), number);
     }
 
     private static int number(FakeCentral.Frame frame) {

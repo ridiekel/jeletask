@@ -1,6 +1,7 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
 
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.GasSensorSpec;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -12,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GasStateCalculatorTest {
     private static ComponentSpec componentWith(BigDecimal min, BigDecimal max, String type, Integer decimals) {
-        ComponentSpec component = new ComponentSpec();
-        component.setGas_min(min);
-        component.setGas_max(max);
-        component.setGas_type(type);
+        GasSensorSpec component = new GasSensorSpec();
+        component.setGasMin(min);
+        component.setGasMax(max);
+        component.setGasType(type);
         component.setDecimals(decimals);
         return component;
     }

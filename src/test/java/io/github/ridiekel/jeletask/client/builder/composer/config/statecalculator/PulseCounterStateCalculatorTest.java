@@ -2,16 +2,21 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.PulseCounterSpec;
+import io.github.ridiekel.jeletask.client.spec.config.CentralUnitConfigReader;
+import io.github.ridiekel.jeletask.client.spec.config.InvalidConfigException;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.PulseCounterState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,8 +31,8 @@ class PulseCounterStateCalculatorTest {
     private static final PulseCounterStateCalculator CALCULATOR = new PulseCounterStateCalculator();
 
     private static ComponentSpec component(int pulsesPerUnit) {
-        ComponentSpec component = new ComponentSpec();
-        component.setPulses_per_unit(pulsesPerUnit);
+        PulseCounterSpec component = new PulseCounterSpec();
+        component.setPulsesPerUnit(pulsesPerUnit);
         return component;
     }
 
@@ -128,7 +133,7 @@ class PulseCounterStateCalculatorTest {
 
     @Test
     void zeroPulsesPerUnitGivesInfinityOrNaN() throws JsonProcessingException {
-        // Characterization: nothing validates the setting, §6.8.5 only says to divide by it
+        // Characterization: the config file rejects 0, but a component made in code is still divided by it (§6.8.5)
         PulseCounterState infinite = CALCULATOR.fromEvent(component(0), report("00 00", "00 00 00 01"));
         PulseCounterState notANumber = CALCULATOR.fromEvent(component(0), report("00 00", "00 00 00 00"));
 
@@ -140,22 +145,24 @@ class PulseCounterStateCalculatorTest {
     }
 
     @Test
-    void pulsesPerUnitDefaultsToThousandWhenNotConfigured() throws JsonProcessingException {
-        assertThat(sensorFromConfig("").getPulses_per_unit()).isEqualTo(1000);
+    void pulsesPerUnitDefaultsToThousandWhenNotConfigured() {
+        assertThat(sensorFromConfig("").getPulsesPerUnit()).isEqualTo(1000);
     }
 
     @Test
-    void aNullPulsesPerUnitInTheConfigBecomesZero() throws JsonProcessingException {
-        // Characterization: the field is a primitive int, so the mapper of CentralUnitFactory turns null into 0
-        assertThat(sensorFromConfig(", \"pulses_per_unit\": null").getPulses_per_unit()).isZero();
+    void aNullPulsesPerUnitInTheConfigIsRejected() {
+        // The field is a primitive int, so null becomes 0, which would divide by zero
+        assertThatThrownBy(() -> sensorFromConfig(", \"pulses_per_unit\": null"))
+                .isInstanceOf(InvalidConfigException.class)
+                .hasMessageContaining("'pulses_per_unit' must be greater than 0, but is 0");
     }
 
-    private static ComponentSpec sensorFromConfig(String extraAttribute) throws JsonProcessingException {
-        CentralUnit centralUnit = new ObjectMapper().readValue("""
+    private static PulseCounterSpec sensorFromConfig(String extraAttribute) {
+        CentralUnit centralUnit = CentralUnitConfigReader.read(new ByteArrayInputStream("""
                 {"type": "MICROS_PLUS", "componentsTypes": {"SENSOR": [
                   {"number": 6, "description": "Pulse counter", "type": "PULSECOUNTER"%s}
-                ]}}""".formatted(extraAttribute), CentralUnit.class);
-        return centralUnit.getComponent(Function.SENSOR, 6);
+                ]}}""".formatted(extraAttribute).getBytes(StandardCharsets.UTF_8)), "test").centralUnit();
+        return (PulseCounterSpec) centralUnit.getComponent(Function.SENSOR, 6);
     }
 
     @Test

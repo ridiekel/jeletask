@@ -2,13 +2,17 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.GasSensorSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.GasState;
 import org.apache.commons.lang3.function.TriFunction;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,12 +36,13 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
     }
 
     public static BigDecimal fromEventValue(ComponentSpec component, BigDecimal value) {
-        BigDecimal min = Optional.ofNullable(component.getGas_min()).orElseThrow(() -> new IllegalArgumentException("Gas min cannot be null"));
-        BigDecimal max = Optional.ofNullable(component.getGas_max()).orElseThrow(() -> new IllegalArgumentException("Gas max cannot be null"));
+        GasSensorSpec gas = (GasSensorSpec) component;
+        BigDecimal min = Optional.ofNullable(gas.getGasMin()).orElseThrow(() -> new IllegalArgumentException("Gas min cannot be null"));
+        BigDecimal max = Optional.ofNullable(gas.getGasMax()).orElseThrow(() -> new IllegalArgumentException("Gas max cannot be null"));
 
-        BigDecimal calculated = Optional.ofNullable(component.getGas_type()).map(CONFIGS::get).map(c -> c.fromEvent.apply(value, min, max)).orElseThrow(() -> new IllegalArgumentException("Gas type '" + component.getGas_type() + "' not found in: " + CONFIGS));
+        BigDecimal calculated = Optional.ofNullable(gas.getGasType()).map(CONFIGS::get).map(c -> c.fromEvent.apply(value, min, max)).orElseThrow(() -> new IllegalArgumentException("Gas type '" + gas.getGasType() + "' not found in: " + CONFIGS));
 
-        return calculated.setScale(Optional.ofNullable(component.getDecimals()).orElse(2), RoundingMode.HALF_UP);
+        return calculated.setScale(Optional.ofNullable(gas.getDecimals()).orElse(2), RoundingMode.HALF_UP);
     }
 
     @Override
@@ -50,10 +55,11 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
     }
 
     public static BigDecimal toCommandValue(ComponentSpec component, BigDecimal value) {
-        BigDecimal min = Optional.ofNullable(component.getGas_min()).orElseThrow(() -> new IllegalArgumentException("Gas min cannot be null"));
-        BigDecimal max = Optional.ofNullable(component.getGas_max()).orElseThrow(() -> new IllegalArgumentException("Gas max cannot be null"));
+        GasSensorSpec gas = (GasSensorSpec) component;
+        BigDecimal min = Optional.ofNullable(gas.getGasMin()).orElseThrow(() -> new IllegalArgumentException("Gas min cannot be null"));
+        BigDecimal max = Optional.ofNullable(gas.getGasMax()).orElseThrow(() -> new IllegalArgumentException("Gas max cannot be null"));
 
-        return Optional.ofNullable(component.getGas_type()).map(CONFIGS::get).map(c -> c.toCommand.apply(value, min, max)).orElseThrow(() -> new IllegalArgumentException("Gas type '" + component.getGas_type() + "' not found in: " + CONFIGS));
+        return Optional.ofNullable(gas.getGasType()).map(CONFIGS::get).map(c -> c.toCommand.apply(value, min, max)).orElseThrow(() -> new IllegalArgumentException("Gas type '" + gas.getGasType() + "' not found in: " + CONFIGS));
     }
 
     @Override
@@ -110,6 +116,11 @@ public class GasStateCalculator extends StateCalculatorSupport<GasState> {
                             .setScale(0, RoundingMode.HALF_UP)
             )
     ).collect(Collectors.toMap(t -> t.name, Function.identity()));
+
+    /**
+     * The values of gas_type in the config file.
+     */
+    public static final Set<String> GAS_TYPES = Collections.unmodifiableSet(new TreeSet<>(CONFIGS.keySet()));
 
     private record GasTypeConfig(
             String name,

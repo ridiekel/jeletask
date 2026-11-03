@@ -68,8 +68,8 @@ public class HAConfig<T extends HAConfig<T>> {
                         .deviceName(parameters.getComponentSpec().getDescription());
             }
         }
-        if (parameters.getComponentSpec().getSuggested_area() != null) {
-            this.deviceSuggestedArea(parameters.getComponentSpec().getSuggested_area());
+        if (parameters.getComponentSpec().getSuggestedArea() != null) {
+            this.deviceSuggestedArea(parameters.getComponentSpec().getSuggestedArea());
         }
     }
 

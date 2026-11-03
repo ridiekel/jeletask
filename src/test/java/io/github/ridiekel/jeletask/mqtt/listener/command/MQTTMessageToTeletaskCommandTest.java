@@ -9,6 +9,8 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
+import io.github.ridiekel.jeletask.client.spec.component.RelaySpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
@@ -31,10 +33,10 @@ class MQTTMessageToTeletaskCommandTest {
     private final MQTTMessageToTeletaskCommand command = new MQTTMessageToTeletaskCommand(client, "prefix", "central");
 
     private static CentralUnit centralUnit() {
-        ComponentSpec relay = new ComponentSpec();
+        ComponentSpec relay = new RelaySpec();
         relay.setNumber(1);
         relay.setDescription("Relay 1");
-        ComponentSpec display = new ComponentSpec();
+        ComponentSpec display = new DisplayMessageSpec();
         display.setNumber(2);
         display.setDescription("Display 2");
 
