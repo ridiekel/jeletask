@@ -4,6 +4,8 @@ import ch.qos.logback.classic.Level;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator.ValidInputState;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.TestComponents;
+import io.github.ridiekel.jeletask.client.spec.component.InputSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
 import io.github.ridiekel.jeletask.mockserver.LogCapture;
@@ -28,9 +30,9 @@ class LongPressInputCaptorLoggingTest {
     private final ComponentSpec button = button();
 
     private static ComponentSpec button() {
-        ComponentSpec button = new ComponentSpec(Function.INPUT, new InputState(ValidInputState.CLOSED), 12);
+        ComponentSpec button = TestComponents.of(Function.INPUT, new InputState(ValidInputState.CLOSED), 12);
         button.setDescription("Front door");
-        button.setLong_press_duration_millis(60_000);
+        ((InputSpec) button).setLongPressDurationMillis(60_000);
         return button;
     }
 

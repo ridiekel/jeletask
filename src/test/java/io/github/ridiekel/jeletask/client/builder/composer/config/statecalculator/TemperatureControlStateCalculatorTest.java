@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.TemperatureControlSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.TemperatureControlState;
@@ -29,8 +30,8 @@ class TemperatureControlStateCalculatorTest {
         return withNightCooling ? Bytes.concat(head, bigDecimalToBytes(new BigDecimal("25.0"))) : head;
     }
 
-    private static ComponentSpec component() {
-        ComponentSpec component = new ComponentSpec();
+    private static TemperatureControlSpec component() {
+        TemperatureControlSpec component = new TemperatureControlSpec();
         component.setDecimals(1);
         return component;
     }
@@ -344,7 +345,7 @@ class TemperatureControlStateCalculatorTest {
 
     @Test
     void temperaturesAreRoundedUpToTheDecimalsOfTheComponent() {
-        ComponentSpec noDecimals = component();
+        TemperatureControlSpec noDecimals = component();
         noDecimals.setDecimals(0);
 
         Assertions.assertThat(new TemperatureControlStateCalculator().fromEvent(noDecimals, event(26, 95, 89, true)).getCurrentTemperature()).isEqualByComparingTo("21");

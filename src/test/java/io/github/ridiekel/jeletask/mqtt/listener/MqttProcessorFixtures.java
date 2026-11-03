@@ -10,6 +10,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.TestComponents;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
@@ -43,7 +44,7 @@ final class MqttProcessorFixtures {
     }
 
     static ComponentSpec relay(int number) {
-        ComponentSpec relay = new ComponentSpec(Function.RELAY, new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON), number);
+        ComponentSpec relay = TestComponents.of(Function.RELAY, new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON), number);
         relay.setDescription("Relay " + number);
         return relay;
     }

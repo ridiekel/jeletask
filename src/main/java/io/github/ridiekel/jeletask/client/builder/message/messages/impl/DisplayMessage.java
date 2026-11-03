@@ -4,8 +4,8 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.builder.message.messages.FunctionStateBasedMessageSupport;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
-import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +22,7 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMess
 
     public DisplayMessage(CentralUnit centralUnit, Function function, int number, DisplayMessageState state) {
         // Validate the configuration before constructing the message (flexible constructor body, JEP 513)
-        ComponentSpec component = centralUnit.getComponent(function, number);
+        DisplayMessageSpec component = (DisplayMessageSpec) centralUnit.getComponent(function, number);
 
         DisplayMessageStateCalculator displayMessageStateCalculator = centralUnit.getMessageHandler().getFunctionConfig(function).getStateCalculator(component);
 
@@ -35,7 +35,7 @@ public class DisplayMessage extends FunctionStateBasedMessageSupport<DisplayMess
         this.displayMessageBytes = displayMessageStateCalculator.toCommand(component, this.getState());
     }
 
-    private static void validateBusAndAddressNumbers(ComponentSpec component) {
+    private static void validateBusAndAddressNumbers(DisplayMessageSpec component) {
         if (component.getAddressNumbers() == null || component.getBusNumbers() == null)
             throw new IllegalArgumentException("Address or bus numbers are missing");
 

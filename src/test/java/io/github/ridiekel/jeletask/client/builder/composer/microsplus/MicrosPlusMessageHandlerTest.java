@@ -6,6 +6,8 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.PulseCounterSpec;
+import io.github.ridiekel.jeletask.client.spec.component.RelaySpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.PulseCounterState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
@@ -21,12 +23,11 @@ class MicrosPlusMessageHandlerTest {
     private final MicrosPlusMessageHandler handler = new MicrosPlusMessageHandler();
 
     private static CentralUnit centralUnit() {
-        ComponentSpec relay = new ComponentSpec();
+        ComponentSpec relay = new RelaySpec();
         relay.setNumber(3);
 
-        ComponentSpec pulseCounter = new ComponentSpec();
+        ComponentSpec pulseCounter = new PulseCounterSpec();
         pulseCounter.setNumber(6);
-        pulseCounter.setType("PULSECOUNTER");
 
         Map<Function, List<ComponentSpec>> components = new LinkedHashMap<>();
         components.put(Function.RELAY, List.of(relay));

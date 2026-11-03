@@ -1,14 +1,13 @@
 package io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.types;
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.SensorType;
-import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.TemperatureControlStateCalculator.ValidTemperatureControlPreset;
+import io.github.ridiekel.jeletask.client.spec.component.SensorSpec;
+import io.github.ridiekel.jeletask.client.spec.component.TemperatureControlSpec;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadOnlyConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,7 +20,6 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
     private static final String STATE_TOPIC = "~/state";
     private static final String COMMAND_TOPIC = "~/set";
     private static final String UNIT_OF_MEASUREMENT = "unit_of_measurement";
-    private static final String VALID_PRESETS = Arrays.toString(ValidTemperatureControlPreset.values());
 
     public HASensorConfig(HAConfigParameters parameters) {
         super(parameters);
@@ -39,11 +37,12 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
      * HA 'climate'
      */
     private void climate(HAConfigParameters parameters) {
-        this.putDouble("min_temp", parameters.getComponentSpec().getHA_min_temp());
-        this.putDouble("max_temp", parameters.getComponentSpec().getHA_max_temp());
-        this.putDouble("precision", parameters.getComponentSpec().getHA_temperature_step());
-        this.putDouble("temp_step", parameters.getComponentSpec().getHA_temperature_step());
-        this.putArray("modes", parameters.getComponentSpec().getHA_modes().split(","));
+        TemperatureControlSpec thermostat = (TemperatureControlSpec) parameters.getComponentSpec();
+        this.putDouble("min_temp", thermostat.getHaMinTemp());
+        this.putDouble("max_temp", thermostat.getHaMaxTemp());
+        this.putDouble("precision", thermostat.getHaTemperatureStep());
+        this.putDouble("temp_step", thermostat.getHaTemperatureStep());
+        this.putArray("modes", thermostat.getHaModes().split(","));
         this.put("current_temperature_topic", STATE_TOPIC);
         this.put("temperature_state_topic", STATE_TOPIC);
         this.put("temperature_command_topic", COMMAND_TOPIC);
@@ -87,16 +86,16 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
                     {"state": "ON", "mode": "{{ value | upper}}"}
                 {% endif %}
                 """);
-        this.putFanModes(parameters);
-        if (parameters.getComponentSpec().isHA_hvac_action()) {
+        this.putFanModes(thermostat);
+        if (thermostat.isHaHvacAction()) {
             this.putHvacAction();
         }
-        this.putPresetModes(parameters);
-        this.put(UNIT_OF_MEASUREMENT, Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
+        this.putPresetModes(thermostat);
+        this.put(UNIT_OF_MEASUREMENT, Optional.ofNullable(thermostat.getHaUnitOfMeasurement()).orElse("°C"));
     }
 
-    private void putFanModes(HAConfigParameters parameters) {
-        String fanModes = parameters.getComponentSpec().getHA_fan_modes();
+    private void putFanModes(TemperatureControlSpec thermostat) {
+        String fanModes = thermostat.getHaFanModes();
         if (fanModes != null && !fanModes.isBlank()) {
             this.putArray("fan_modes", fanModes.split(","));
             this.put("fan_mode_state_topic", STATE_TOPIC);
@@ -118,8 +117,9 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
                 """);
     }
 
-    private void putPresetModes(HAConfigParameters parameters) {
-        Map<String, String> presets = presetModes(parameters);
+    private void putPresetModes(TemperatureControlSpec thermostat) {
+        // The config file validation already rejects invalid entries, this only protects HA from components made in code
+        Map<String, String> presets = thermostat.presetModes((entry, reason) -> LOG.warn("Ignoring ha_preset_modes entry '{}' of sensor {}: {}", entry, thermostat.getNumber(), reason));
         if (!presets.isEmpty()) {
             String toLabel = presets.entrySet().stream().map(e -> jinjaString(e.getValue()) + ": " + jinjaString(e.getKey())).collect(Collectors.joining(", ", "{", "}"));
             String toPreset = presets.entrySet().stream().map(e -> jinjaString(e.getKey()) + ": " + jinjaString(e.getValue())).collect(Collectors.joining(", ", "{", "}"));
@@ -133,8 +133,9 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
 
     private void pulseCounter(HAConfigParameters parameters) {
         // Only the current value is published; the total would need its own Home Assistant entity next to this one.
-        if (parameters.getComponentSpec().getHA_unit_of_measurement() != null) {
-            this.put(UNIT_OF_MEASUREMENT, parameters.getComponentSpec().getHA_unit_of_measurement());
+        String unit = ((SensorSpec) parameters.getComponentSpec()).getHaUnitOfMeasurement();
+        if (unit != null) {
+            this.put(UNIT_OF_MEASUREMENT, unit);
         }
 
         this.put("value_template", "{{ value_json.current }}");
@@ -146,44 +147,22 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
     private void simpleSensor(HAConfigParameters parameters) {
         this.put("value_template", "{{ value_json.state }}");
 
+        String unit = ((SensorSpec) parameters.getComponentSpec()).getHaUnitOfMeasurement();
         if (isType(parameters, SensorType.TEMPERATURE)) {
             this.deviceClass("temperature");
             this.stateClass("measurement");
-            this.put(UNIT_OF_MEASUREMENT, Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
+            this.put(UNIT_OF_MEASUREMENT, Optional.ofNullable(unit).orElse("°C"));
         } else if (isType(parameters, SensorType.LIGHT)) {
             this.deviceClass("illuminance");
             this.stateClass("measurement");
-            this.put(UNIT_OF_MEASUREMENT, Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("lx"));
-        } else if (parameters.getComponentSpec().getHA_unit_of_measurement() != null) {
-            this.put(UNIT_OF_MEASUREMENT, parameters.getComponentSpec().getHA_unit_of_measurement());
+            this.put(UNIT_OF_MEASUREMENT, Optional.ofNullable(unit).orElse("lx"));
+        } else if (unit != null) {
+            this.put(UNIT_OF_MEASUREMENT, unit);
         }
     }
 
     private static boolean isType(HAConfigParameters parameters, SensorType expected) {
         return expected == SensorType.from(parameters.getComponentSpec());
-    }
-
-    /**
-     * label -> Teletask preset, e.g. "Manual=MANUAL,Comfort=DAY". A missing preset in the state means MANUAL.
-     * Unknown presets and the label "none" (reserved by HA) are left out, so HA does not reject the whole entity.
-     */
-    private static Map<String, String> presetModes(HAConfigParameters parameters) {
-        Map<String, String> presets = new LinkedHashMap<>();
-        for (String entry : Optional.ofNullable(parameters.getComponentSpec().getHA_preset_modes()).orElse("").split(",")) {
-            if (!entry.isBlank()) {
-                String[] parts = entry.split("=", 2);
-                String label = parts[0].trim();
-                String preset = (parts.length > 1 ? parts[1] : parts[0]).trim().toUpperCase();
-                if (Arrays.stream(ValidTemperatureControlPreset.values()).noneMatch(p -> p.name().equals(preset))) {
-                    LOG.warn("Ignoring ha_preset_modes entry '{}' of sensor {}: unknown preset '{}', expected one of {}", entry, parameters.getComponentSpec().getNumber(), preset, VALID_PRESETS);
-                } else if (label.equalsIgnoreCase("none")) {
-                    LOG.warn("Ignoring ha_preset_modes entry '{}' of sensor {}: Home Assistant reserves the label 'none'", entry, parameters.getComponentSpec().getNumber());
-                } else {
-                    presets.put(label, preset);
-                }
-            }
-        }
-        return presets;
     }
 
     private static String jinjaString(String value) {

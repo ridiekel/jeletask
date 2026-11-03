@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.PulseCounterSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.PulseCounterState;
 
 /**
@@ -48,7 +49,7 @@ public class PulseCounterStateCalculator extends StateCalculatorSupport<PulseCou
         */        
         
         state.setCurrent(NumberConverter.UNSIGNED_SHORT.convert(new byte[]{dataBytes[0],dataBytes[1]}).shortValue());
-        state.setTotal(NumberConverter.UNSIGNED_INT.convert(new byte[]{dataBytes[16],dataBytes[17],dataBytes[18],dataBytes[19]}).floatValue() / component.getPulses_per_unit());
+        state.setTotal(NumberConverter.UNSIGNED_INT.convert(new byte[]{dataBytes[16],dataBytes[17],dataBytes[18],dataBytes[19]}).floatValue() / ((PulseCounterSpec) component).getPulsesPerUnit());
 
         return state;
     }

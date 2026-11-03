@@ -1,129 +1,92 @@
 package io.github.ridiekel.jeletask.client.spec;
 
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.ridiekel.jeletask.client.spec.config.ConfigProblems;
 import io.github.ridiekel.jeletask.client.spec.state.State;
+import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.HomeAssistentAutoConfig.HADeviceType;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.util.Arrays;
 
 /**
  * This class represents a Teletask component, being either a: relay, motor, mood, ... basically anything which can be controlled.
+ * <p>
+ * Every function has its own subclass that holds only the properties of the config file that apply to it.
+ * Only the fields annotated with {@link JsonProperty} are read from the config file.
  */
 @Setter
 @Getter
-// The snake_case and HA_* field names are the keys of the user's JSON config file (via the Lombok accessors); renaming them breaks existing configs
-@SuppressWarnings("java:S116")
-public class ComponentSpec {
-    private String description;
-    private Function function;
+public abstract class ComponentSpec {
+    @JsonProperty("number")
     private int number;
+
+    @JsonProperty("description")
+    private String description = "";
+
+    @JsonProperty("device")
     private String device;
+
+    @JsonProperty("suggested_area")
+    private String suggestedArea;
+
+    //haType is the type as it is known to Home Assistant, it overrides the type derived from the function
+    @JsonProperty("haType")
+    @JsonAlias("hatype")
+    private String haType;
 
     private State<?> state;
 
-    //type is the type as it is known to teletask
-    private String type;
-
-    // Defaulting to 1 for temperature sensors. Otherwise we would have to always override this.
-    private Integer decimals = 1;
-
-    //haType is the type as it is known to Home Assistant
-    private String haType;
-    private String suggested_area;
-    private String HA_unit_of_measurement;
-    private double HA_temperature_step = 0.5;
-    private String HA_modes = "auto,off,cool,heat,dry,fan_only";
-    private double HA_min_temp = 10;
-    private double HA_max_temp = 30;
-    // Empty = no fan control in HA (e.g. radiator zones)
-    private String HA_fan_modes = "auto,low,medium,high";
-    // Presets shown in HA, comma separated: "PRESET" or "Label=PRESET" (DAY, NIGHT, ECO, FROST, MANUAL). Empty = no presets
-    private String HA_preset_modes = "";
-    // Show the demand of output_state as hvac_action. Only observed on a MICROS+, the manual marks that byte as not used
-    private boolean HA_hvac_action = false;
-
-    // For GAS (General Analog Sensor)
-    private String gas_type = "";
-    private BigDecimal gas_min = BigDecimal.ZERO;
-    private BigDecimal gas_max = BigDecimal.ZERO;
-
-    // For DISPLAYMESSAGE
-    private String address_numbers;
-    private String bus_numbers;
-
-    // For PULSECOUNTER
-    private int pulses_per_unit = 1000;
-
-    // For INPUT
-    private Integer long_press_duration_millis;
-
     private HAConfig<?> haPublishedConfig = null;
 
-    /**
-     * Default constructor.
-     * The default constructor is used by Jackson.  In order not to have null values, some fields are initialised to empty strings.
-     */
-    public ComponentSpec() {
-        this.description = "";
-    }
+    public abstract Function getFunction();
 
     /**
-     * Constructor taking arguments status, state and number.
-     *
-     * @param function The function for which the call was requested.
-     * @param state    The current status of the component, for example 0 indicating off for a "relay".
-     * @param number   The component number you wish to manipulate.
+     * @return The type as it is known to Teletask or Home Assistant, depending on the function. {@code null} when the function has no type.
      */
-    public ComponentSpec(Function function, State<?> state, int number) {
-        this.function = function;
-        this.state = state;
-        this.number = number;
+    public String getType() {
+        return null;
     }
 
-    public String getHAType() {
-        return this.haType;
+    /**
+     * Reports what is wrong with the configured properties. Subclasses add their own checks to the ones of their parent.
+     */
+    public void validate(ConfigProblems problems) {
+        if (this.number < 0) {
+            problems.error("number", "must not be negative, negative numbers are reserved for the bridge and its devices");
+        }
+        if (this.haType != null && Arrays.stream(HADeviceType.values()).noneMatch(t -> t.toString().equalsIgnoreCase(this.haType))) {
+            problems.error("haType", "'" + this.haType + "' is not a Home Assistant type, expected one of " + Arrays.toString(HADeviceType.values()));
+        }
     }
 
-    public void setHAType(String haType) {
-        this.haType = haType;
-    }
-
-    public String getAddressNumbers() {
-        return this.address_numbers;
-    }
-
-    public String getBusNumbers() {
-        return this.bus_numbers;
-    }
-
+    // A component is identified by its function and number, the configured properties do not matter
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof ComponentSpec that)) return false;
 
-        ComponentSpec that = (ComponentSpec) o;
-
-        if (number != that.number) return false;
-        return function == that.function;
+        return number == that.number && getFunction() == that.getFunction();
     }
 
     @Override
-    public int hashCode() {
-        int result = function.hashCode();
+    public final int hashCode() {
+        int result = getFunction().hashCode();
         result = 31 * result + number;
         return result;
     }
 
     @Override
     public String toString() {
-        return "ComponentSpec{" +
-                "function=" + function +
+        return getClass().getSimpleName() + "{" +
+                "function=" + getFunction() +
                 ", number=" + number +
                 ", description='" + description + '\'' +
                 ", device='" + device + '\'' +
-                ", type='" + type + '\'' +
+                ", type='" + getType() + '\'' +
                 ", state=" + state +
                 '}';
     }

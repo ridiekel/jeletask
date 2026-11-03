@@ -4,6 +4,7 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculato
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.TestComponents;
 import io.github.ridiekel.jeletask.client.spec.state.impl.MotorState;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -30,7 +31,7 @@ import java.util.stream.Stream;
 class MotorProgressorTest {
     private static @NotNull List<MotorStateHistory> simulateRun(int fromPosition, int toPosition) {
         MotorState state = new MotorState();
-        ComponentSpec motor = new ComponentSpec(Function.MOTOR, state, 1);
+        ComponentSpec motor = TestComponents.of(Function.MOTOR, state, 1);
         motor.setDescription("Test motor 1");
         state.setPower(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
         state.setState(MotorStateCalculator.ValidMotorDirectionState.MOTOR_GO_TO_POSITION);
@@ -101,7 +102,7 @@ class MotorProgressorTest {
         state.setCurrentPosition(from);
         state.setRequestedPosition(to);
         state.setSecondsToFinish(secondsToFinish == null ? null : new BigDecimal(secondsToFinish));
-        ComponentSpec motor = new ComponentSpec(Function.MOTOR, state, number);
+        ComponentSpec motor = TestComponents.of(Function.MOTOR, state, number);
         motor.setDescription("Test motor " + number);
         return motor;
     }

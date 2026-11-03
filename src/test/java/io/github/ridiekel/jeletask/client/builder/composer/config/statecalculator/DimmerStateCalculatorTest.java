@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.DimmerSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DimmerState;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class DimmerStateCalculatorTest {
     private static ComponentSpec componentWith(Integer number, DimmerStateCalculator.ValidDimmerState state, Integer brightness) {
-        ComponentSpec component = new ComponentSpec();
+        ComponentSpec component = new DimmerSpec();
         component.setNumber(number);
         DimmerState dimmerState = new DimmerState(state);
         dimmerState.setBrightness(brightness);

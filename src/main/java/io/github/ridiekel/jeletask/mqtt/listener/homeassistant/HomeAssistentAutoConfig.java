@@ -88,9 +88,7 @@ public class HomeAssistentAutoConfig {
 
     private static java.util.function.Function<ComponentSpec, HADeviceType> switchSceneLight(HADeviceType defaultType) {
         return c -> {
-            HADeviceType haDeviceType = Optional.ofNullable(c.getType()).map(String::toUpperCase).map(HADeviceType::valueOf).orElse(defaultType);
-            c.setType(haDeviceType.toString().toLowerCase());
-            return haDeviceType;
+            return Optional.ofNullable(c.getType()).map(String::toUpperCase).map(HADeviceType::valueOf).orElse(defaultType);
         };
     }
 
@@ -131,7 +129,7 @@ public class HomeAssistentAutoConfig {
         private final java.util.function.Function<HAConfigParameters, HAConfig<?>> config;
 
         private FunctionConfig(java.util.function.Function<ComponentSpec, HADeviceType> typeIfAbsent, java.util.function.Function<HAConfigParameters, HAConfig<?>> config) {
-            this.type = c -> Optional.ofNullable(c.getHAType()).orElseGet(() -> typeIfAbsent.apply(c).toString());
+            this.type = c -> Optional.ofNullable(c.getHaType()).orElseGet(() -> typeIfAbsent.apply(c).toString());
             this.config = config;
         }
 
@@ -174,7 +172,7 @@ public class HomeAssistentAutoConfig {
         }
 
         protected String haComponent(ComponentSpec c) {
-            return Optional.ofNullable(c.getHAType()).orElse(FUNCTION_TO_TYPE.get(c.getFunction()).getHAType(c));
+            return Optional.ofNullable(c.getHaType()).orElse(FUNCTION_TO_TYPE.get(c.getFunction()).getHAType(c));
         }
     }
 

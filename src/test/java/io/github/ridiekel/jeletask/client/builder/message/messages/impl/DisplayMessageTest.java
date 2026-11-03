@@ -1,18 +1,20 @@
 package io.github.ridiekel.jeletask.client.builder.message.messages.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandlerFactory;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,20 +28,16 @@ class DisplayMessageTest {
     private static final int NUMBER = 1000;
 
     private static CentralUnit centralUnit(String bus, String address) {
-        String json = """
-                {"type": "MICROS_PLUS", "componentsTypes": {"DISPLAYMESSAGE": [
-                  {"number": %d, "description": "Aurus", "bus_numbers": %s, "address_numbers": %s}
-                ]}}""".formatted(NUMBER, quoted(bus), quoted(address));
-        try {
-            // Same mapper as CentralUnitFactory, so the config attribute names are covered too
-            return new ObjectMapper().readValue(json, CentralUnit.class);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static String quoted(String value) {
-        return value == null ? "null" : "\"" + value + "\"";
+        // Built in code: the config file already rejects these invalid numbers (see CentralUnitConfigReaderTest), the message checks them again
+        DisplayMessageSpec display = new DisplayMessageSpec();
+        display.setNumber(NUMBER);
+        display.setDescription("Aurus");
+        display.setBusNumbers(bus);
+        display.setAddressNumbers(address);
+        CentralUnit centralUnit = new CentralUnit();
+        centralUnit.setType(CentralUnitType.MICROS_PLUS);
+        centralUnit.setComponentsTypes(new LinkedHashMap<>(Map.of(Function.DISPLAYMESSAGE, List.of(display))));
+        return centralUnit;
     }
 
     private static DisplayMessage message(CentralUnit centralUnit, DisplayMessageState state) {

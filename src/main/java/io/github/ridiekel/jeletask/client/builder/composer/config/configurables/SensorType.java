@@ -1,8 +1,7 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.configurables;
 
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
-
-import java.util.Optional;
+import io.github.ridiekel.jeletask.client.spec.component.SensorSpec;
 
 public enum SensorType {
     STRING,
@@ -14,6 +13,6 @@ public enum SensorType {
     PULSECOUNTER;
 
     public static SensorType from(ComponentSpec spec) {
-        return Optional.ofNullable(spec.getType()).map(SensorType::valueOf).orElse(null);
+        return spec instanceof SensorSpec sensor ? sensor.getSensorType() : null;
     }
 }

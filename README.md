@@ -40,6 +40,14 @@ If teletask has not changed their binary API, it should be compatible.
 
 `type` can be either `PICOS`, `NANOS`, `MICROS_PLUS`
 
+Every function only accepts its own properties, and a `SENSOR` only those of its `type`.
+The config file is checked at startup:
+
+* A property that does not belong to the function or sensor type is ignored, with a warning in the log.
+* A wrong value (an unknown `type`, a missing `number`, `gas_max` not above `gas_min`, ...) stops the bridge, which
+  logs every problem of the file at once, e.g.
+  `SENSOR #3 (number 321, "GAS - 4-20ma"): 'gas_max' must be greater than gas_min, but gas_min is 0 and gas_max is 0`.
+
 `device` can be used to group devices in the MQTT addons page.
 This is just a description, repeating it (like in the example) will group everything with the same description.
 `TELETASK_PUBLISH_ASONEDEVICE` needs to be set to `false` for this to work.

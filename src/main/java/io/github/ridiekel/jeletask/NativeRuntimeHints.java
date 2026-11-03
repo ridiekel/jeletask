@@ -1,6 +1,7 @@
 package io.github.ridiekel.jeletask;
 
 import io.github.ridiekel.jeletask.client.spec.*;
+import io.github.ridiekel.jeletask.client.spec.component.*;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.*;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
@@ -9,6 +10,8 @@ import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.Progress;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
+
+import java.util.stream.Stream;
 
 public class NativeRuntimeHints implements RuntimeHintsRegistrar {
     @Override
@@ -41,6 +44,12 @@ public class NativeRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(CentralUnitType.class, MemberCategory.values());
         hints.reflection().registerType(Command.class, MemberCategory.values());
         hints.reflection().registerType(ComponentSpec.class, MemberCategory.values());
+        // The config file is read into these by reflection
+        Stream.of(OnOffSpec.class, RelaySpec.class, FlagSpec.class, LocalMoodSpec.class, TimedMoodSpec.class, GeneralMoodSpec.class, TimedFunctionSpec.class,
+                        ConditionSpec.class, DimmerSpec.class, MotorSpec.class, InputSpec.class, DisplayMessageSpec.class,
+                        SensorSpec.class, DecimalSensorSpec.class, StringSensorSpec.class, TemperatureSensorSpec.class, LightSensorSpec.class, HumiditySensorSpec.class,
+                        GasSensorSpec.class, TemperatureControlSpec.class, PulseCounterSpec.class)
+                .forEach(type -> hints.reflection().registerType(type, MemberCategory.values()));
         hints.reflection().registerType(Function.class, MemberCategory.values());
 
         hints.reflection().registerType(MqttProcessor.ConnectedStatus.class, MemberCategory.values());

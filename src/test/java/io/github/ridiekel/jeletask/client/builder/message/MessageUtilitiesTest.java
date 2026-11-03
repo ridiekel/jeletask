@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask.client.builder.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ridiekel.jeletask.TeletaskReceiver;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.OnOffToggleStateCalculator.ValidOnOffToggle;
@@ -10,6 +9,7 @@ import io.github.ridiekel.jeletask.client.builder.message.messages.impl.EventMes
 import io.github.ridiekel.jeletask.client.builder.message.messages.impl.KeepAliveMessage;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.config.CentralUnitConfigReader;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +54,7 @@ class MessageUtilitiesTest {
     @BeforeEach
     void loadCentralUnit() throws IOException {
         try (InputStream config = getClass().getResourceAsStream("/test-config.json")) {
-            centralUnit = new ObjectMapper().readValue(config, CentralUnit.class);
+            centralUnit = CentralUnitConfigReader.read(config, "test-config.json").centralUnit();
         }
         centralUnit.getAllComponents();
         messageHandler = centralUnit.getMessageHandler();

@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.DecimalSensorSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.TemperatureState;
 
 import java.math.BigDecimal;
@@ -30,7 +31,7 @@ public class TemperatureStateCalculator extends StateCalculatorSupport<Temperatu
 
     public static BigDecimal bytesToBigDecimal(ComponentSpec component, byte[] dataBytes) {
         return BigDecimal.valueOf(NUMBER_CONVERTER.convert(dataBytes).longValue())
-                .divide(BigDecimal.TEN, component.getDecimals(), RoundingMode.HALF_UP)
+                .divide(BigDecimal.TEN, ((DecimalSensorSpec) component).getDecimals(), RoundingMode.HALF_UP)
                 .subtract(_273);
     }
 

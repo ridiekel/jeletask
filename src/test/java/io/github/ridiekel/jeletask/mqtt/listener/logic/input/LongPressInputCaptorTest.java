@@ -3,6 +3,8 @@ package io.github.ridiekel.jeletask.mqtt.listener.logic.input;
 import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InputStateCalculator;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.TestComponents;
+import io.github.ridiekel.jeletask.client.spec.component.InputSpec;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.InputState;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttPublisher;
@@ -28,9 +30,9 @@ class LongPressInputCaptorTest {
     void setUp() {
         testProcessor = new TestMqttProcessor();
         captor = new LongPressInputCaptor(testProcessor);
-        testComponent = new ComponentSpec(Function.INPUT, new InputState(InputStateCalculator.ValidInputState.OPEN), 1);
+        testComponent = TestComponents.of(Function.INPUT, new InputState(InputStateCalculator.ValidInputState.OPEN), 1);
         testComponent.setDescription("Test Button");
-        testComponent.setLong_press_duration_millis(500);
+        ((InputSpec) testComponent).setLongPressDurationMillis(500);
         captor.update(testComponent);
     }
 

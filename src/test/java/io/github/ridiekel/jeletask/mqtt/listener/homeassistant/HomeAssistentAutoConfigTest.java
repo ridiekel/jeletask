@@ -6,6 +6,8 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
+import io.github.ridiekel.jeletask.client.spec.TestComponents;
+import io.github.ridiekel.jeletask.client.spec.component.OnOffSpec;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,9 +20,7 @@ import java.util.function.Consumer;
 
 class HomeAssistentAutoConfigTest {
     private static HAConfig<?> config(Function function, Consumer<ComponentSpec> configure) {
-        ComponentSpec component = new ComponentSpec();
-        component.setFunction(function);
-        component.setNumber(35);
+        ComponentSpec component = TestComponents.of(function, 35);
         component.setDescription("Valve");
         configure.accept(component);
 
@@ -51,19 +51,19 @@ class HomeAssistentAutoConfigTest {
     @ParameterizedTest
     @EnumSource(names = {"RELAY", "FLAG", "GENMOOD", "LOCMOOD", "TIMEDMOOD", "TIMEDFNC"})
     void onOffFunctionWithTypeBinarySensor(Function function) {
-        assertReadOnlyBinarySensor(config(function, c -> c.setType("BINARY_SENSOR")), function);
+        assertReadOnlyBinarySensor(config(function, c -> ((OnOffSpec) c).setType("BINARY_SENSOR")), function);
     }
 
     @ParameterizedTest
     @EnumSource(names = {"RELAY", "FLAG", "GENMOOD", "LOCMOOD", "TIMEDMOOD", "TIMEDFNC"})
     void onOffFunctionWithHaTypeBinarySensor(Function function) {
-        assertReadOnlyBinarySensor(config(function, c -> c.setHAType("binary_sensor")), function);
+        assertReadOnlyBinarySensor(config(function, c -> c.setHaType("binary_sensor")), function);
     }
 
     @ParameterizedTest
     @EnumSource(names = {"RELAY", "FLAG", "GENMOOD", "LOCMOOD", "TIMEDMOOD", "TIMEDFNC"})
     void onOffFunctionThatCanBeSwitchedKeepsItsCommandPayloads(Function function) {
-        ObjectNode node = config(function, c -> c.setType("switch")).getConfig();
+        ObjectNode node = config(function, c -> ((OnOffSpec) c).setType("switch")).getConfig();
 
         Assertions.assertThat(node.get("payload_on").asText()).contains("\"state\": \"ON\"");
         Assertions.assertThat(node.get("state_on").asText()).isEqualTo("ON");
