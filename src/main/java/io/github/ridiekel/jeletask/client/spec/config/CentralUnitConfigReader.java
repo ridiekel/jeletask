@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonStreamContext;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -30,7 +33,8 @@ import java.util.stream.Collectors;
 /**
  * Reads the config file (the TDS config JSON) into a {@link CentralUnit}, with a {@link ComponentSpec} subclass per function and per sensor type.
  * <p>
- * Every problem is collected before giving up, so the user can fix the whole file at once:
+ * Every problem is collected before giving up, so the user can fix the whole file at once.
+ * Each one starts with the line it is on, so it can be found in an editor:
  * <ul>
  *     <li>errors (a wrong value, a missing required property, ...) end in an {@link InvalidConfigException}</li>
  *     <li>warnings (a property that does not apply to the function) are returned, the property is ignored</li>
@@ -72,6 +76,8 @@ public final class CentralUnitConfigReader {
     private final String source;
     private final List<String> errors = new ArrayList<>();
     private final List<String> warnings = new ArrayList<>();
+    // The line of every property and of every component, by its JSON pointer, e.g. /componentsTypes/RELAY/0/type
+    private Map<String, Integer> lines = Map.of();
 
     private CentralUnitConfigReader(String source) {
         this.source = source;
@@ -95,7 +101,9 @@ public final class CentralUnitConfigReader {
     private Result read(InputStream inputStream) {
         JsonNode root;
         try {
-            root = OBJECT_MAPPER.readTree(inputStream);
+            byte[] json = inputStream.readAllBytes();
+            this.lines = lines(json);
+            root = OBJECT_MAPPER.readTree(json);
         } catch (JsonProcessingException e) {
             throw invalid("is not valid JSON" + at(e.getLocation()) + ": " + e.getOriginalMessage());
         } catch (IOException e) {
@@ -110,7 +118,7 @@ public final class CentralUnitConfigReader {
         centralUnit.setComponentsTypes(this.components(root.get(COMPONENTS_TYPES)));
         root.fieldNames().forEachRemaining(name -> {
             if (!TOP_LEVEL_PROPERTIES.contains(name)) {
-                this.warnings.add("'" + name + "' is not a property of the config file, it is ignored (known properties: " + TOP_LEVEL_PROPERTIES + ")");
+                this.warnings.add(this.line(JsonPointer.empty().appendProperty(name)) + "'" + name + "' is not a property of the config file, it is ignored (known properties: " + TOP_LEVEL_PROPERTIES + ")");
             }
         });
 
@@ -128,6 +136,38 @@ public final class CentralUnitConfigReader {
         return location == null ? "" : " at line " + location.getLineNr() + ", column " + location.getColumnNr();
     }
 
+    /**
+     * The tree of {@link ObjectMapper#readTree} forgets where its nodes were, so the lines are collected in a pass of their own.
+     */
+    private static Map<String, Integer> lines(byte[] json) throws IOException {
+        Map<String, Integer> lines = new HashMap<>();
+        try (JsonParser parser = OBJECT_MAPPER.createParser(json)) {
+            for (JsonToken token = parser.nextToken(); token != null; token = parser.nextToken()) {
+                JsonStreamContext context = parser.getParsingContext();
+                if (token.isStructStart()) {
+                    // An object or list has entered its own context already, its parent knows the name or the index
+                    context = context.getParent();
+                }
+                if (token == JsonToken.FIELD_NAME || context.inArray()) {
+                    lines.putIfAbsent(context.pathAsPointer().toString(), parser.currentTokenLocation().getLineNr());
+                }
+            }
+        }
+        return lines;
+    }
+
+    private Integer lineOf(JsonPointer pointer) {
+        return this.lines.get(pointer.toString());
+    }
+
+    /**
+     * @return E.g. {@code "line 12, "}, or nothing when the line is not known.
+     */
+    private String line(JsonPointer pointer) {
+        Integer line = this.lineOf(pointer);
+        return line == null ? "" : "line " + line + ", ";
+    }
+
     private CentralUnitType centralUnitType(JsonNode type) {
         String expected = ", expected one of " + Arrays.toString(CentralUnitType.values());
         if (type == null || type.isNull()) {
@@ -135,7 +175,7 @@ public final class CentralUnitConfigReader {
             return null;
         }
         return Arrays.stream(CentralUnitType.values()).filter(t -> t.name().equalsIgnoreCase(type.asText())).findAny().orElseGet(() -> {
-            this.errors.add("'type' " + type + " is not a central unit type" + expected);
+            this.errors.add(this.line(JsonPointer.empty().appendProperty(TYPE)) + "'type' " + type + " is not a central unit type" + expected);
             return null;
         });
     }
@@ -147,26 +187,27 @@ public final class CentralUnitConfigReader {
             return components;
         }
         componentsTypes.fields().forEachRemaining(entry -> {
+            JsonPointer pointer = JsonPointer.empty().appendProperty(COMPONENTS_TYPES).appendProperty(entry.getKey());
             Optional<Function> function = Arrays.stream(Function.values()).filter(f -> f.name().equalsIgnoreCase(entry.getKey())).findAny();
             if (function.isEmpty()) {
-                this.errors.add("componentsTypes: '" + entry.getKey() + "' is not a function, expected one of " + Arrays.toString(Function.values()));
+                this.errors.add(this.line(pointer) + "componentsTypes: '" + entry.getKey() + "' is not a function, expected one of " + Arrays.toString(Function.values()));
             } else if (!entry.getValue().isArray()) {
-                this.errors.add("componentsTypes." + entry.getKey() + " must be a list of components, [ ... ]");
+                this.errors.add(this.line(pointer) + "componentsTypes." + entry.getKey() + " must be a list of components, [ ... ]");
             } else {
-                components.computeIfAbsent(function.get(), f -> new ArrayList<>()).addAll(this.components(function.get(), entry.getValue()));
+                components.computeIfAbsent(function.get(), f -> new ArrayList<>()).addAll(this.components(function.get(), pointer, entry.getValue()));
             }
         });
         return components;
     }
 
-    private List<ComponentSpec> components(Function function, JsonNode nodes) {
+    private List<ComponentSpec> components(Function function, JsonPointer functionPointer, JsonNode nodes) {
         List<ComponentSpec> components = new ArrayList<>();
         Map<Integer, String> numbers = new HashMap<>();
         for (int i = 0; i < nodes.size(); i++) {
             JsonNode node = nodes.get(i);
-            ComponentProblems problems = new ComponentProblems(label(function, i, node));
+            ComponentProblems problems = new ComponentProblems(label(function, node), functionPointer.appendIndex(i));
             Optional.ofNullable(this.component(function, node, problems)).ifPresent(component -> {
-                String other = node.hasNonNull(NUMBER) ? numbers.putIfAbsent(component.getNumber(), problems.label) : null;
+                String other = node.hasNonNull(NUMBER) ? numbers.putIfAbsent(component.getNumber(), problems.labelWithLine()) : null;
                 if (other != null) {
                     problems.error(NUMBER, component.getNumber() + " is already used by " + other);
                 }
@@ -246,9 +287,9 @@ public final class CentralUnitConfigReader {
     }
 
     /**
-     * E.g. {@code SENSOR #3 (number 321, "GAS - 4-20ma")}, taken from the JSON so it also works when the component could not be read.
+     * E.g. {@code SENSOR (number 321, "GAS - 4-20ma")}, taken from the JSON so it also works when the component could not be read.
      */
-    private static String label(Function function, int index, JsonNode node) {
+    private static String label(Function function, JsonNode node) {
         List<String> identity = new ArrayList<>();
         if (node.hasNonNull(NUMBER)) {
             identity.add("number " + node.get(NUMBER).asText());
@@ -256,14 +297,21 @@ public final class CentralUnitConfigReader {
         if (node.hasNonNull("description")) {
             identity.add("\"" + node.get("description").asText() + "\"");
         }
-        return function + " #" + (index + 1) + (identity.isEmpty() ? "" : " (" + String.join(", ", identity) + ")");
+        return function + (identity.isEmpty() ? "" : " (" + String.join(", ", identity) + ")");
     }
 
     private final class ComponentProblems implements ConfigProblems {
         private final String label;
+        private final JsonPointer pointer;
 
-        private ComponentProblems(String label) {
+        private ComponentProblems(String label, JsonPointer pointer) {
             this.label = label;
+            this.pointer = pointer;
+        }
+
+        private String labelWithLine() {
+            Integer line = lineOf(this.pointer);
+            return this.label + (line == null ? "" : " on line " + line);
         }
 
         @Override
@@ -277,7 +325,9 @@ public final class CentralUnitConfigReader {
         }
 
         private String message(String property, String message) {
-            return this.label + ": " + (property == null ? "" : "'" + property + "' ") + message;
+            // The line of the property itself when it is in the file, otherwise the one where the component starts
+            String line = property == null ? "" : line(this.pointer.appendProperty(property));
+            return (line.isEmpty() ? line(this.pointer) : line) + this.label + ": " + (property == null ? "" : "'" + property + "' ") + message;
         }
     }
 

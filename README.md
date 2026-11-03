@@ -45,8 +45,8 @@ The config file is checked at startup:
 
 * A property that does not belong to the function or sensor type is ignored, with a warning in the log.
 * A wrong value (an unknown `type`, a missing `number`, `gas_max` not above `gas_min`, ...) stops the bridge, which
-  logs every problem of the file at once, e.g.
-  `SENSOR #3 (number 321, "GAS - 4-20ma"): 'gas_max' must be greater than gas_min, but gas_min is 0 and gas_max is 0`.
+  logs every problem of the file at once, each with the line it is on, e.g.
+  `line 42, SENSOR (number 321, "GAS - 4-20ma"): 'gas_max' must be greater than gas_min, but gas_min is 0 and gas_max is 0`.
 
 `device` can be used to group devices in the MQTT addons page.
 This is just a description, repeating it (like in the example) will group everything with the same description.

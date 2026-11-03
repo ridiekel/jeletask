@@ -141,8 +141,8 @@ class CentralUnitConfigReaderTest {
 
         assertThat(result.centralUnit().getComponent(Function.RELAY, 10)).isInstanceOf(RelaySpec.class);
         assertThat(result.warnings()).containsExactly(
-                "RELAY #1 (number 10, \"Light\"): 'gas_min' is not a property of a RELAY, it is ignored (known properties: description, device, haType, number, suggested_area, type)",
-                "RELAY #1 (number 10, \"Light\"): 'long_press_duration_millis' is not a property of a RELAY, it is ignored (known properties: description, device, haType, number, suggested_area, type)"
+                "line 1, RELAY (number 10, \"Light\"): 'gas_min' is not a property of a RELAY, it is ignored (known properties: description, device, haType, number, suggested_area, type)",
+                "line 1, RELAY (number 10, \"Light\"): 'long_press_duration_millis' is not a property of a RELAY, it is ignored (known properties: description, device, haType, number, suggested_area, type)"
         );
     }
 
@@ -152,7 +152,7 @@ class CentralUnitConfigReaderTest {
                 {"number": 31, "type": "TEMPERATURE", "pulses_per_unit": 10}""");
 
         assertThat(result.warnings()).singleElement().asString()
-                .startsWith("SENSOR #1 (number 31): 'pulses_per_unit' is not a property of a SENSOR of type TEMPERATURE, it is ignored")
+                .startsWith("line 1, SENSOR (number 31): 'pulses_per_unit' is not a property of a SENSOR of type TEMPERATURE, it is ignored")
                 .contains("decimals", "ha_unit_of_measurement");
     }
 
@@ -160,7 +160,7 @@ class CentralUnitConfigReaderTest {
     void anUnknownTopLevelPropertyIsAWarning() {
         assertThat(read("""
                 {"type": "MICROS_PLUS", "host": "192.168.0.1", "componentsTypes": {}}""").warnings())
-                .containsExactly("'host' is not a property of the config file, it is ignored (known properties: [type, componentsTypes])");
+                .containsExactly("line 1, 'host' is not a property of the config file, it is ignored (known properties: [type, componentsTypes])");
     }
 
     @Test
@@ -173,29 +173,51 @@ class CentralUnitConfigReaderTest {
                 }}"""));
 
         assertThat(e.getErrors()).containsExactly(
-                "RELAY #1 (number 1): 'type' 'cover' is not supported for a RELAY, expected one of [light, switch, scene, binary_sensor]",
-                "RELAY #2 (\"No number\"): 'number' is required",
-                "INPUT #1 (number 2): 'long_press_duration_millis' must be greater than 0, but is 0",
-                "SENSOR #1 (number 3): 'gas_max' must be greater than gas_min, but gas_min is 10 and gas_max is 10"
+                "line 2, RELAY (number 1): 'type' 'cover' is not supported for a RELAY, expected one of [light, switch, scene, binary_sensor]",
+                "line 2, RELAY (\"No number\"): 'number' is required",
+                "line 3, INPUT (number 2): 'long_press_duration_millis' must be greater than 0, but is 0",
+                "line 4, SENSOR (number 3): 'gas_max' must be greater than gas_min, but gas_min is 10 and gas_max is 10"
         );
-        assertThat(e.getMessage()).startsWith("The config file test.json has 4 problems:" + System.lineSeparator() + "  - RELAY #1 (number 1): ");
+        assertThat(e.getMessage()).startsWith("The config file test.json has 4 problems:" + System.lineSeparator() + "  - line 2, RELAY (number 1): ");
+    }
+
+    @Test
+    void theLineIsTheOneOfThePropertyOrElseTheOneWhereTheComponentStarts() {
+        InvalidConfigException e = invalid(() -> read("""
+                {"type": "MICROS_PLUS", "componentsTypes": {"RELAY": [
+                  {
+                    "number": 1,
+                    "description": "Kitchen",
+                    "type": "cover"
+                  },
+                  {
+                    "description": "No number"
+                  },
+                  {"number": 1}
+                ]}}"""));
+
+        assertThat(e.getErrors()).containsExactly(
+                "line 5, RELAY (number 1, \"Kitchen\"): 'type' 'cover' is not supported for a RELAY, expected one of [light, switch, scene, binary_sensor]",
+                "line 7, RELAY (\"No number\"): 'number' is required",
+                "line 10, RELAY (number 1): 'number' 1 is already used by RELAY (number 1, \"Kitchen\") on line 2"
+        );
     }
 
     @Test
     void aWrongValueTypeNamesTheProperty() {
         assertThat(invalid("RELAY", """
                 {"number": "ten"}""").getErrors())
-                .containsExactly("RELAY #1 (number ten): 'number' \"ten\" is not a whole number");
+                .containsExactly("line 1, RELAY (number ten): 'number' \"ten\" is not a whole number");
         assertThat(invalid("SENSOR", """
                 {"number": 1, "type": "TEMPERATURECONTROL", "ha_hvac_action": "maybe"}""").getErrors())
-                .containsExactly("SENSOR #1 (number 1): 'ha_hvac_action' \"maybe\" is not true or false");
+                .containsExactly("line 1, SENSOR (number 1): 'ha_hvac_action' \"maybe\" is not true or false");
     }
 
     @Test
     void aNumberCanBeUsedOnlyOncePerFunction() {
         assertThat(invalid("FLAG", """
                 {"number": 5, "description": "First"}, {"number": 5, "description": "Second"}""").getErrors())
-                .containsExactly("FLAG #2 (number 5, \"Second\"): 'number' 5 is already used by FLAG #1 (number 5, \"First\")");
+                .containsExactly("line 1, FLAG (number 5, \"Second\"): 'number' 5 is already used by FLAG (number 5, \"First\") on line 1");
         // Another function may use the same number
         assertThat(read("""
                 {"type": "MICROS_PLUS", "componentsTypes": {"FLAG": [{"number": 5}], "RELAY": [{"number": 5}]}}""").warnings()).isEmpty();
@@ -205,21 +227,21 @@ class CentralUnitConfigReaderTest {
     void aNegativeNumberIsReservedForTheBridge() {
         assertThat(invalid("RELAY", """
                 {"number": -1}""").getErrors())
-                .containsExactly("RELAY #1 (number -1): 'number' must not be negative, negative numbers are reserved for the bridge and its devices");
+                .containsExactly("line 1, RELAY (number -1): 'number' must not be negative, negative numbers are reserved for the bridge and its devices");
     }
 
     @Test
     void anInvalidHaTypeIsAnError() {
         assertThat(invalid("DIMMER", """
                 {"number": 1, "haType": "lamp"}""").getErrors()).singleElement().asString()
-                .isEqualTo("DIMMER #1 (number 1): 'haType' 'lamp' is not a Home Assistant type, expected one of [binary_sensor, sensor, light, climate, switch, scene, cover]");
+                .isEqualTo("line 1, DIMMER (number 1): 'haType' 'lamp' is not a Home Assistant type, expected one of [binary_sensor, sensor, light, climate, switch, scene, cover]");
     }
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', quoteCharacter = '~', value = {
-            "{\"number\": 1}                         | SENSOR #1 (number 1): 'type' is required for a SENSOR, expected one of [TEMPERATURE, LIGHT, HUMIDITY, GAS, TEMPERATURECONTROL, PULSECOUNTER]",
-            "{\"number\": 1, \"type\": \"STRING\"}   | SENSOR #1 (number 1): 'type' \"STRING\" is not a sensor type, expected one of [TEMPERATURE, LIGHT, HUMIDITY, GAS, TEMPERATURECONTROL, PULSECOUNTER]",
-            "{\"number\": 1, \"type\": \"WIND\"}     | SENSOR #1 (number 1): 'type' \"WIND\" is not a sensor type, expected one of [TEMPERATURE, LIGHT, HUMIDITY, GAS, TEMPERATURECONTROL, PULSECOUNTER]",
+            "{\"number\": 1}                         | line 1, SENSOR (number 1): 'type' is required for a SENSOR, expected one of [TEMPERATURE, LIGHT, HUMIDITY, GAS, TEMPERATURECONTROL, PULSECOUNTER]",
+            "{\"number\": 1, \"type\": \"STRING\"}   | line 1, SENSOR (number 1): 'type' \"STRING\" is not a sensor type, expected one of [TEMPERATURE, LIGHT, HUMIDITY, GAS, TEMPERATURECONTROL, PULSECOUNTER]",
+            "{\"number\": 1, \"type\": \"WIND\"}     | line 1, SENSOR (number 1): 'type' \"WIND\" is not a sensor type, expected one of [TEMPERATURE, LIGHT, HUMIDITY, GAS, TEMPERATURECONTROL, PULSECOUNTER]",
     })
     void aSensorNeedsAKnownType(String sensor, String error) {
         assertThat(invalid("SENSOR", sensor).getErrors()).containsExactly(error);
@@ -235,7 +257,7 @@ class CentralUnitConfigReaderTest {
     })
     void aGasSensorIsValidated(String properties, String error) {
         assertThat(invalid("SENSOR", "{\"number\": 1, \"type\": \"GAS\", " + properties + "}").getErrors())
-                .containsExactly("SENSOR #1 (number 1): " + error);
+                .containsExactly("line 1, SENSOR (number 1): " + error);
     }
 
     @ParameterizedTest
@@ -250,7 +272,7 @@ class CentralUnitConfigReaderTest {
     })
     void aThermostatIsValidated(String properties, String error) {
         assertThat(invalid("SENSOR", "{\"number\": 1, \"type\": \"TEMPERATURECONTROL\", " + properties + "}").getErrors())
-                .containsExactly("SENSOR #1 (number 1): " + error);
+                .containsExactly("line 1, SENSOR (number 1): " + error);
     }
 
     @ParameterizedTest
@@ -263,28 +285,28 @@ class CentralUnitConfigReaderTest {
     })
     void aDisplayMessageIsValidated(String properties, String error) {
         assertThat(invalid("DISPLAYMESSAGE", "{\"number\": 1000, " + properties + "}").getErrors())
-                .containsExactly("DISPLAYMESSAGE #1 (number 1000): " + error);
+                .containsExactly("line 1, DISPLAYMESSAGE (number 1000): " + error);
     }
 
     @Test
     void aPulseCounterNeedsPulses() {
         assertThat(invalid("SENSOR", """
                 {"number": 6, "type": "PULSECOUNTER", "pulses_per_unit": -1}""").getErrors())
-                .containsExactly("SENSOR #1 (number 6): 'pulses_per_unit' must be greater than 0, but is -1");
+                .containsExactly("line 1, SENSOR (number 6): 'pulses_per_unit' must be greater than 0, but is -1");
     }
 
     @Test
     void theStructureOfTheFileIsValidated() {
         assertThat(invalid(() -> read("{\"componentsTypes\": {\"RELAIS\": [], \"FLAG\": {}}}")).getErrors()).containsExactly(
                 "'type' is required, expected one of [PICOS, NANOS, MICROS_PLUS]",
-                "componentsTypes: 'RELAIS' is not a function, expected one of [RELAY, DIMMER, MOTOR, LOCMOOD, TIMEDMOOD, GENMOOD, FLAG, SENSOR, COND, INPUT, TIMEDFNC, DISPLAYMESSAGE]",
-                "componentsTypes.FLAG must be a list of components, [ ... ]"
+                "line 1, componentsTypes: 'RELAIS' is not a function, expected one of [RELAY, DIMMER, MOTOR, LOCMOOD, TIMEDMOOD, GENMOOD, FLAG, SENSOR, COND, INPUT, TIMEDFNC, DISPLAYMESSAGE]",
+                "line 1, componentsTypes.FLAG must be a list of components, [ ... ]"
         );
         assertThat(invalid(() -> read("{\"type\": \"MEGA\"}")).getErrors()).containsExactly(
-                "'type' \"MEGA\" is not a central unit type, expected one of [PICOS, NANOS, MICROS_PLUS]",
+                "line 1, 'type' \"MEGA\" is not a central unit type, expected one of [PICOS, NANOS, MICROS_PLUS]",
                 "'componentsTypes' is required, an object with a list of components per function, e.g. {\"RELAY\": [{\"number\": 1, \"description\": \"Kitchen\"}]}"
         );
-        assertThat(invalid("RELAY", "1").getErrors()).containsExactly("RELAY #1: must be an object, { ... }");
+        assertThat(invalid("RELAY", "1").getErrors()).containsExactly("line 1, RELAY: must be an object, { ... }");
     }
 
     @ParameterizedTest
