@@ -28,7 +28,7 @@ Upgrading to 6.4 needs no configuration changes, but `TEMPERATURECONTROL` sensor
 1. An OFF thermostat now shows as `off` in Home Assistant, without a target temperature, instead of its last mode.
 2. A command with `"state": "ON"` and a mode, preset or fan speed now switches an OFF thermostat on. Home Assistant always sends that state, so `set_fan_mode` on an OFF zone turns it on too.
 
-Upgrading to 7.0 needs no configuration changes. For `TEMPERATURECONTROL` sensors, `window_open`, `output_state` and `swing_direction` now report 255 instead of -1 on MQTT, so check automations that compare these to -1.
+Upgrading to 7.0 needs no configuration changes for a correct `config.json`, but the file is now checked at startup and mistakes that used to slip through (an unknown `type`, a duplicate `number`, `gas_max` not above `gas_min`, ...) stop the bridge. The log names the line and what is wrong. For `TEMPERATURECONTROL` sensors, `window_open`, `output_state` and `swing_direction` now report 255 instead of -1 on MQTT, so check automations that compare these to -1.
 
 # Configuring
 
