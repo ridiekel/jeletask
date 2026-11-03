@@ -204,6 +204,37 @@ class CentralUnitConfigReaderTest {
     }
 
     @Test
+    void aWarningTellsTheLineOfTheProperty() {
+        CentralUnitConfigReader.Result result = read("""
+                {
+                  "type": "MICROS_PLUS",
+                  "componentsTypes": {
+                    "RELAY": [
+                      {
+                        "number": 1,
+                        "descripton": "Kitchen"
+                      }
+                    ]
+                  },
+                  "host": "192.168.0.1"
+                }""");
+
+        assertThat(result.warnings()).containsExactly(
+                "line 7, RELAY (number 1): 'descripton' is not a property of a RELAY, it is ignored (known properties: description, device, haType, number, suggested_area, type)",
+                "line 11, 'host' is not a property of the config file, it is ignored (known properties: [type, componentsTypes])"
+        );
+    }
+
+    @Test
+    void anEntryThatIsNoObjectTellsItsLine() {
+        assertThat(invalid(() -> read("""
+                {"type": "MICROS_PLUS", "componentsTypes": {"FLAG": [
+                  {"number": 1},
+                  2
+                ]}}""")).getErrors()).containsExactly("line 3, FLAG: must be an object, { ... }");
+    }
+
+    @Test
     void aWrongValueTypeNamesTheProperty() {
         assertThat(invalid("RELAY", """
                 {"number": "ten"}""").getErrors())
