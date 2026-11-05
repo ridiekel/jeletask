@@ -25,25 +25,15 @@ For that version conflict, keep the higher version.
 
 ## 3. Release notes
 
-Find the last release with `git describe --tags --match 'jeletask-*' --abbrev=0`, and read everything
-since then with `git log <tag>..HEAD`, including the diffs of what looks user-facing. This also covers
-commits made directly on `main`.
-
-The target is `release-notes/<version>.md`, where `<version>` is the version in `pom.xml` without
-`-SNAPSHOT`.
-
-- Would a user notice a change, or do they need to act on it? Then it belongs in the file. If the file
-  exists, keep its text and add only what is missing.
-- Changes only to dependencies, tests, CI or internals (including Renovate merges) need no notes. If
-  nothing since the tag needs notes, don't create a file.
-- Write in English, with only the sections that apply: `## Before you upgrade`, `## New`, `## Fixed`.
-- If users have to act, or automations can break, also add it to `# Upgrading from previous version`
-  in `README.md`.
+Read `.claude/skills/update-release-notes/SKILL.md` and follow its steps 2 to 5 on `main`, after the
+merge: they decide what goes into `release-notes/<version>.md` and `README.md`, including the
+`## Dependencies` section with the library updates, and commit it. They cover everything since the last
+release, also commits made directly on `main`. Keep the list of changes and library updates for the
+report.
 
 The add-on `Dockerfile` under `## Home Assistant OS (local add-on)` in `README.md` pins the image. Set
-its `FROM` line to `ridiekel/jeletask2mqtt:<version>-native`, also when no notes are needed.
-
-Commit any changes with the message `docs(release): release notes voor <version>`.
+its `FROM` line to `ridiekel/jeletask2mqtt:<version>-native`, also when no notes are needed, and commit
+it with the message `docs(release): release notes voor <version>`, or in the same commit as the notes.
 
 ## 4. Push
 
@@ -52,9 +42,9 @@ never start yourself.
 
 ## 5. Report
 
-Report what was merged, the notes you added, or why no notes were needed. Say so if the changes look
-too big for the version, such as a new feature on a patch version: changing the version is up to the
-user.
+Report what was merged, the notes you added, or why no notes were needed, in the form of step 6 of
+`update-release-notes`. Say so if the changes look too big for the version, such as a new feature on a
+patch version: changing the version is up to the user.
 
 The `publish-github-release` CI job turns the notes file into the GitHub Release of the version.
 Without a file there is no release. The job reads the commit on which `confirm-release` was started,
