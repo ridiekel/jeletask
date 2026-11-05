@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
 
-import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.component.TemperatureSensorSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.TemperatureState;
 import org.assertj.core.api.Assertions;

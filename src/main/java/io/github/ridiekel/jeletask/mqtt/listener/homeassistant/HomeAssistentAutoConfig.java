@@ -87,9 +87,7 @@ public class HomeAssistentAutoConfig {
     }
 
     private static java.util.function.Function<ComponentSpec, HADeviceType> switchSceneLight(HADeviceType defaultType) {
-        return c -> {
-            return Optional.ofNullable(c.getType()).map(String::toUpperCase).map(HADeviceType::valueOf).orElse(defaultType);
-        };
+        return c -> Optional.ofNullable(c.getType()).map(String::toUpperCase).map(HADeviceType::valueOf).orElse(defaultType);
     }
 
     private static <T extends Enum<T>> java.util.function.Function<ComponentSpec, HADeviceType> haDeviceTypeFromTypeToHaTypeMap(Map<T, HADeviceType> map) {
