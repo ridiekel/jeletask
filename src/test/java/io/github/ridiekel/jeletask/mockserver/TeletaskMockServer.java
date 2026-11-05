@@ -38,7 +38,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.WithBuilder.ResponseBuilder.cachedState;
 import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.WithBuilder.get;
 import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.WithBuilder.set;
 import static io.github.ridiekel.jeletask.mockserver.ExpectationBuilder.*;
@@ -59,6 +58,14 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     private Map<String, List<Supplier<MockServerResponse>>> mocks;
     // The last run of every motor, so a group get answers with where the motor is now, like a real central unit
     private final Map<Integer, MotorRun> motorRuns = new ConcurrentHashMap<>();
+    // The last state every component reported, so a get or group get answers with it, like a real central unit.
+    // Without it, the periodic refresh of the bridge reverts components to their initial state halfway through a test.
+    private final Map<StateKey, State<?>> states = new ConcurrentHashMap<>();
+    // The last brightness above 0 of every dimmer, which a real central unit restores when the dimmer is turned on
+    private final Map<Integer, Integer> previousDimmerBrightness = new ConcurrentHashMap<>();
+
+    private record StateKey(Function function, int number) {
+    }
 
     public TeletaskMockServer(int port, CentralUnit centralUnit) {
         this.port = port;
@@ -88,6 +95,66 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         mockDefinition.accept(expectationBuilder);
 
         this.mocks = expectationBuilder.getMocks().stream().collect(Collectors.toMap(e -> e.command().toString(), MockServerExpectation::responses));
+
+        // The mock definitions set the initial states, from here on the mock keeps its own copy
+        this.states.clear();
+        this.centralUnit.getAllComponents().stream()
+                .filter(c -> c.getState() != null)
+                .forEach(c -> this.states.put(new StateKey(c.getFunction(), c.getNumber()), c.getState()));
+    }
+
+    /**
+     * The state a real central unit would report now: the last one it sent, or for a motor, where it is in its run.
+     */
+    State<?> currentState(ComponentSpec component) {
+        if (component.getFunction() == Function.MOTOR) {
+            return currentMotorState(component);
+        }
+        return this.states.getOrDefault(new StateKey(component.getFunction(), component.getNumber()), component.getState());
+    }
+
+    /**
+     * Answers a group get with the current state of each component, built when the group get arrives.
+     */
+    private void respondToGroupGetWithCurrentState(ExpectationBuilder e, Function function, List<? extends ComponentSpec> components) {
+        e.when(groupGet(function, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
+                components.stream()
+                        .map(component -> (MockServerResponse) (unit, message) -> ExpectationBuilder.WhenBuilder.state(function, component.getNumber(), currentState(component)).create(unit, message))
+                        .toList()
+        );
+    }
+
+    /**
+     * The events the central unit sends back on a message, remembering the state of each, like a real central unit.
+     */
+    List<EventMessage> respondTo(MessageSupport message) {
+        List<Supplier<MockServerResponse>> responses = responsesFor(message);
+        if (responses == null) {
+            return List.of();
+        }
+        return responses.stream()
+                .map(response -> response.get().create(centralUnit, message))
+                .filter(Objects::nonNull)
+                .map(this::remember)
+                .toList();
+    }
+
+    /**
+     * The responses mocked for a message, or null when the central unit has none.
+     */
+    private List<Supplier<MockServerResponse>> responsesFor(MessageSupport message) {
+        return Optional.ofNullable(getMocks().get(new MockServerCommand(message).toString())).orElseGet(() -> echoSensorState(message));
+    }
+
+    private EventMessage remember(EventMessage eventMessage) {
+        State<?> state = eventMessage.getState();
+        if (state != null) {
+            this.states.put(new StateKey(eventMessage.getFunction(), eventMessage.getNumber()), state);
+        }
+        if (state instanceof DimmerState dimmerState && dimmerState.getBrightness() != null && dimmerState.getBrightness() > 0) {
+            this.previousDimmerBrightness.put(eventMessage.getNumber(), dimmerState.getBrightness());
+        }
+        return eventMessage;
     }
 
 
@@ -96,10 +163,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     }
 
     private void mockSensorGroupGet(ExpectationBuilder e) {
-        List<? extends ComponentSpec> components = this.centralUnit.getComponents(Function.SENSOR).filter(s -> s.getNumber() >= 0).toList();
-        e.when(groupGet(Function.SENSOR, components.stream().mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                components.stream().map(component -> ExpectationBuilder.WhenBuilder.state(Function.SENSOR, component.getNumber(), component.getState())).toList()
-        );
+        // The bridge itself is a sensor with a negative number, the central unit does not know it
+        respondToGroupGetWithCurrentState(e, Function.SENSOR, this.centralUnit.getComponents(Function.SENSOR).filter(s -> s.getNumber() >= 0).toList());
     }
 
     private void mockLightSensor(ExpectationBuilder e) {
@@ -127,23 +192,28 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         new Thread(this, "teletask-test-server").start();
 
         LOG.info("Creating mocks...");
-        this.mock(e -> {
-            mockOnOff(e);
-            mockDimmer(e);
-            mockMotor(e);
-            mockLog(e);
-            mockKeepAlive(e);
-            mockGet(e);
-            mockLightSensor(e);
-            mockTemperatureSensor();
-            mockTemperatureControlSensor();
-            mockHumiditySensor();
-            mockGasSensor(e);
-            mockInput(e);
-            mockDisplayMessage(e);
-            mockSensorGroupGet(e);
-        });
+        this.mock(this::mockAll);
         LOG.info("Finsihed creating mocks ({})!", mocks.size());
+    }
+
+    /**
+     * Every mock of the central unit, the same set the end-to-end tests run against.
+     */
+    void mockAll(ExpectationBuilder e) {
+        mockOnOff(e);
+        mockDimmer(e);
+        mockMotor(e);
+        mockLog(e);
+        mockKeepAlive(e);
+        mockGet(e);
+        mockLightSensor(e);
+        mockTemperatureSensor();
+        mockTemperatureControlSensor();
+        mockHumiditySensor();
+        mockGasSensor(e);
+        mockInput(e);
+        mockDisplayMessage(e);
+        mockSensorGroupGet(e);
     }
 
     private void mockTemperatureControlSensor() {
@@ -172,9 +242,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
         this.centralUnit.getComponents(Function.DISPLAYMESSAGE).forEach(c -> {
             c.setState(this.centralUnit.stateFromMessage(c.getFunction(), c.getNumber(), template("state").apply("0")));
         });
-        e.when(groupGet(Function.DISPLAYMESSAGE, this.centralUnit.getComponents(Function.DISPLAYMESSAGE).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.DISPLAYMESSAGE).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DISPLAYMESSAGE, component.getNumber(), component.getState())).toList()
-        );
+        respondToGroupGetWithCurrentState(e, Function.DISPLAYMESSAGE, this.centralUnit.getComponents(Function.DISPLAYMESSAGE).toList());
     }
 
     private void mockKeepAlive(ExpectationBuilder e) {
@@ -200,17 +268,15 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             });
             e.with(c.getFunction(), c.getNumber()).when(set(new DimmerState(DimmerStateCalculator.ValidDimmerState.OFF))).thenRespond(new DimmerState(0));
             e.with(c.getFunction(), c.getNumber()).when(set(new DimmerState(DimmerStateCalculator.ValidDimmerState.ON, 103))).thenRespondFunctional(() -> {
-                Integer previous = PREVIOUS_DIMMER_STATES.get(c.getNumber());
+                Integer previous = this.previousDimmerBrightness.get(c.getNumber());
                 return new DimmerState(DimmerStateCalculator.ValidDimmerState.ON, previous == null ? 100 : previous);
             });
         });
-        e.when(groupGet(Function.DIMMER, this.centralUnit.getComponents(Function.DIMMER).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.DIMMER).map(component -> ExpectationBuilder.WhenBuilder.state(Function.DIMMER, component.getNumber(), component.getState())).toList()
-        );
+        respondToGroupGetWithCurrentState(e, Function.DIMMER, this.centralUnit.getComponents(Function.DIMMER).toList());
     }
 
     private void mockGet(ExpectationBuilder e) {
-        this.centralUnit.getAllComponents().forEach(c -> e.with(c.getFunction(), c.getNumber()).when(get()).thenRespondFunctional(Collections.singletonList(cachedState())));
+        this.centralUnit.getAllComponents().forEach(c -> e.with(c.getFunction(), c.getNumber()).when(get()).thenRespondFunctional(() -> currentState(c)));
     }
 
     private @NotNull State<?> startMotorRun(ComponentSpec componentSpec, MotorState requestedState) {
@@ -293,11 +359,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                 e.with(c.getFunction(), c.getNumber()).when(set(state)).thenRespondFunctional(() -> startMotorRun(c, state));
             });
         });
-        e.when(groupGet(Function.MOTOR, this.centralUnit.getComponents(Function.MOTOR).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.MOTOR)
-                        .map(component -> (MockServerResponse) (unit, message) -> ExpectationBuilder.WhenBuilder.state(Function.MOTOR, component.getNumber(), currentMotorState(component)).create(unit, message))
-                        .toList()
-        );
+        respondToGroupGetWithCurrentState(e, Function.MOTOR, this.centralUnit.getComponents(Function.MOTOR).toList());
     }
 
     private void mockOnOff(ExpectationBuilder e) {
@@ -313,9 +375,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                 e.with(c.getFunction(), c.getNumber()).when(set(OnOffToggleStateCalculator.ValidOnOffToggle.OFF)).thenRespond(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
                 e.with(c.getFunction(), c.getNumber()).when(set(OnOffToggleStateCalculator.ValidOnOffToggle.ON)).thenRespond(new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
             });
-            e.when(groupGet(function, this.centralUnit.getComponents(function).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                    this.centralUnit.getComponents(function).map(component -> ExpectationBuilder.WhenBuilder.state(function, component.getNumber(), component.getState())).toList()
-            );
+            respondToGroupGetWithCurrentState(e, function, this.centralUnit.getComponents(function).toList());
         });
     }
 
@@ -325,12 +385,8 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
             e.with(c.getFunction(), c.getNumber()).when(set(InputStateCalculator.ValidInputState.OPEN)).thenRespond(new InputState(InputStateCalculator.ValidInputState.OPEN));
             e.with(c.getFunction(), c.getNumber()).when(set(InputStateCalculator.ValidInputState.CLOSED)).thenRespond(new InputState(InputStateCalculator.ValidInputState.CLOSED));
         });
-        e.when(groupGet(Function.INPUT, this.centralUnit.getComponents(Function.INPUT).mapToInt(ComponentSpec::getNumber).toArray())).thenRespond(
-                this.centralUnit.getComponents(Function.INPUT).map(component -> ExpectationBuilder.WhenBuilder.state(Function.INPUT, component.getNumber(), component.getState())).toList()
-        );
+        respondToGroupGetWithCurrentState(e, Function.INPUT, this.centralUnit.getComponents(Function.INPUT).toList());
     }
-
-    private static final Map<Integer, Integer> PREVIOUS_DIMMER_STATES = new HashMap<>();
 
     @Override
     public void run() {
@@ -355,46 +411,30 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                             LOG.trace(() -> String.format("Processing message: %S", message.toString()));
                             TeletaskMockServer.this.outputStream.write(ACKNOWLEDGE);
 
-                            LOG.trace(() -> "Creating mock command");
                             MockServerCommand command = new MockServerCommand(message);
-                            LOG.trace(() -> String.format("Created mock command: %s", command));
-
-                            List<Supplier<MockServerResponse>> responses = Optional.ofNullable(getMocks().get(command.toString())).orElseGet(() -> echoSensorState(message));
-                            if (responses != null) {
-                                LOG.trace(() -> String.format("Got command responses from mocks. Size: %s", responses.size()));
-                                responses.forEach(response -> {
-                                    try {
-                                        LOG.trace(() -> "Creating event message");
-                                        EventMessage eventMessage = response.get().create(centralUnit, message);
-
-                                        Optional.ofNullable(eventMessage)
-                                                .map(EventMessage::getState)
-                                                .filter(s-> s instanceof DimmerState)
-                                                .map(s -> (DimmerState) s)
-                                                .map(DimmerState::getBrightness)
-                                                .filter(b -> b > 0)
-                                                .ifPresent(b -> {
-                                                    PREVIOUS_DIMMER_STATES.put(eventMessage.getNumber(), b);
-                                                });
-
-                                        LOG.trace(() -> String.format("Created event message %s: ", eventMessage));
-                                        RESPONSE_EXECUTOR.execute(() -> {
-                                            try {
-                                                byte[] rawBytes = eventMessage.getRawBytes();
-                                                LOG.trace(() -> String.format("Sending bytes to client: %s", Bytes.bytesToHex(rawBytes)));
-                                                TeletaskMockServer.this.outputStream.write(rawBytes);
-                                                TeletaskMockServer.this.outputStream.flush();
-                                            } catch (IOException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
-                                    } catch (Exception e) {
-                                        throw new RuntimeException("Could not create response for command: " + command.command(), e);
-                                    }
-                                });
-                            } else {
+                            if (responsesFor(message) == null) {
                                 LOG.warn(AnsiOutput.toString(AnsiColor.YELLOW, "No expectations found for:\n\t", AnsiColor.BRIGHT_YELLOW, "{}"), command);
                             }
+
+                            List<EventMessage> eventMessages;
+                            try {
+                                eventMessages = respondTo(message);
+                            } catch (Exception e) {
+                                throw new RuntimeException("Could not create response for command: " + command.command(), e);
+                            }
+                            eventMessages.forEach(eventMessage -> {
+                                LOG.trace(() -> String.format("Created event message %s: ", eventMessage));
+                                RESPONSE_EXECUTOR.execute(() -> {
+                                    try {
+                                        byte[] rawBytes = eventMessage.getRawBytes();
+                                        LOG.trace(() -> String.format("Sending bytes to client: %s", Bytes.bytesToHex(rawBytes)));
+                                        TeletaskMockServer.this.outputStream.write(rawBytes);
+                                        TeletaskMockServer.this.outputStream.flush();
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                            });
 
                             TeletaskMockServer.this.outputStream.flush();
                         }
@@ -412,7 +452,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
      * Sends an event as if the state changed on the central unit itself, e.g. on a wall panel.
      */
     public void sendEvent(Function function, int number, State<?> state) {
-        EventMessage eventMessage = centralUnit.getMessageHandler().createResponseEventMessageForTesting(centralUnit, function, new MessageHandler.OutputState(number, state));
+        EventMessage eventMessage = remember(centralUnit.getMessageHandler().createResponseEventMessageForTesting(centralUnit, function, new MessageHandler.OutputState(number, state)));
         RESPONSE_EXECUTOR.execute(() -> {
             try {
                 TeletaskMockServer.this.outputStream.write(eventMessage.getRawBytes());

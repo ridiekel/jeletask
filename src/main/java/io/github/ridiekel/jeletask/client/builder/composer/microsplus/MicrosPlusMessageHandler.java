@@ -12,7 +12,6 @@ import io.github.ridiekel.jeletask.client.builder.message.strategy.GroupGetStrat
 import io.github.ridiekel.jeletask.client.builder.message.strategy.KeepAliveStrategy;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Command;
-import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.utilities.Bytes;
@@ -110,9 +109,9 @@ public class MicrosPlusMessageHandler extends MessageHandlerSupport {
 
         this.setLengthAndCheckSum(rawBytes);
 
-        ComponentSpec component = centralUnit.getComponent(function, outputState.number());
-
-        return new EventMessage(centralUnit, rawBytes, function, outputState.number(), component.getState());
+        // Parsed back, so the event carries the state its bytes hold, the same one a client reads from them,
+        // instead of the state the component happens to have in this central unit
+        return (EventMessage) this.parse(centralUnit, rawBytes);
     }
 
     private static class MicrosPlusKeepAliveStrategy implements KeepAliveStrategy {

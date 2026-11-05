@@ -159,6 +159,17 @@ class EventMessageTest {
     }
 
     @Test
+    void aCreatedEventCarriesTheStateOfItsBytesNotTheStateOfTheComponent() {
+        // Relay 3 is ON in this central unit: the event still has to say OFF, the mock server remembers that state
+        OnOffState off = new OnOffState(ValidOnOffToggle.OFF);
+
+        EventMessage created = handler.createResponseEventMessageForTesting(centralUnit, Function.RELAY, new MessageHandler.OutputState(3, off));
+
+        assertThat(created.getState()).isEqualTo(off);
+        assertThat(created).isEqualTo(handler.parse(centralUnit, created.getRawBytes()));
+    }
+
+    @Test
     void parsingTheSameFrameTwiceGivesEqualEvents() {
         assertThat(parse(RELAY_3_ON)).isEqualTo(parse(RELAY_3_ON));
         assertThat(parse(RELAY_3_ON)).isNotEqualTo(parse(RELAY_3_OFF));
