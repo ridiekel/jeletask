@@ -16,8 +16,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -364,10 +362,14 @@ class CentralUnitConfigReaderTest {
 
     @Test
     void theExampleConfigOfTheReadmeIsValid() throws IOException {
-        Matcher example = Pattern.compile("<summary>Example config \\(click me\\)</summary>\\s*```json\\s*(.*?)```", Pattern.DOTALL)
-                .matcher(Files.readString(Path.of("README.md")));
-        assertThat(example.find()).isTrue();
+        // Plain string search instead of a regex: the block is long, and a regex over it backtracks a lot
+        String readme = Files.readString(Path.of("README.md"));
+        int summary = readme.indexOf("<summary>Example config (click me)</summary>");
+        assertThat(summary).as("example config in README.md").isNotNegative();
+        int start = readme.indexOf("```json", summary) + "```json".length();
+        int end = readme.indexOf("```", start);
+        assertThat(end).as("end of the example config in README.md").isGreaterThan(start);
 
-        assertThat(read(example.group(1)).warnings()).isEmpty();
+        assertThat(read(readme.substring(start, end)).warnings()).isEmpty();
     }
 }

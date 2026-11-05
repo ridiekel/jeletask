@@ -57,7 +57,7 @@ public class DisplayMessageSpec extends ComponentSpec {
     private static boolean isByte(String number) {
         try {
             return Byte.parseByte(number) >= 0;
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return false;
         }
     }
