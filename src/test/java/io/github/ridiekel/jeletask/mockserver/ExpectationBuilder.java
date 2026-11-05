@@ -112,10 +112,6 @@ public class ExpectationBuilder {
                 thenRespond(Collections.singletonList(state));
             }
 
-            public static java.util.function.Function<WithBuilder, Supplier<MockServerResponse>> cachedState() {
-                return b -> ExpectationBuilder.WithBuilder.ResponseBuilder.state(b.getCentralUnit().getComponent(b.getFunction(), b.getNumber()).getState()).apply(b);
-            }
-
             public static java.util.function.Function<WithBuilder, Supplier<MockServerResponse>> state(State<?> state) {
                 return builder -> () -> (centralUnit, message) -> centralUnit.getMessageHandler().createResponseEventMessageForTesting(centralUnit, builder.getFunction(), new MessageHandler.OutputState(builder.getNumber(), state));
             }
