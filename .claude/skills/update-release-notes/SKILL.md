@@ -13,6 +13,10 @@ and on a feature branch alike. Merging, the add-on image pin and pushing are lef
 Stop and report if the working tree is not clean: the check reads the committed history, and the fix is
 committed on this branch.
 
+Then `git fetch --tags`, and if the branch has an upstream it is behind, `git pull --ff-only`: notes written
+on a stale branch miss what was merged since, and the fix commit could not be pushed. Stop and report if
+the branch has diverged from its upstream.
+
 Collect:
 
 - the current branch (`git branch --show-current`)
