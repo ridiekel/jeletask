@@ -321,9 +321,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     /**
-     * A command waits for the central unit at most {@link #commandMaxWait}, counted from its arrival. Before, only the
-     * first of the commands queued during an outage was given up on: the ones behind it went through once the line came
-     * back, however late that was.
+     * A command waits for the central unit at most {@link #commandMaxWait}, counted from its arrival and not from its turn
+     * in the queue: commands that piled up during an outage are not executed long after someone asked for them.
      */
     private void executeCommand(String topic, MqttMessage message, long arrivedNanos) {
         if (!this.teletaskClient.isConnected()) {
