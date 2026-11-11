@@ -45,6 +45,7 @@ abstract class ResilienceScenarios {
     private static final long LATENCY_WITHIN_LIMITS_MILLIS = 300;
     private static final long LATENCY_BEYOND_ACK_MILLIS = MessageSupport.ACK_WAIT_TIME * 2L;
     private static final long CENTRAL_STARTUP_WAIT_SECONDS = 30;
+    private static final long SLOW_LINE_KILOBYTES_PER_SECOND = 1;
     // Shorter and longer than the reconnect delays of both clients, which start at one second
     private static final long[] FLAP_MILLIS = {100, 1500, 300, 3000, 50, 800};
 
@@ -223,6 +224,27 @@ abstract class ResilienceScenarios {
         eventually().alias("subscribed again").until(() -> subscribesLogged() > subscribes);
         this.bridge.awaitCommandRoundTrip(1, ValidOnOffToggle.ON);
         assertThat(this.bridge.connections()).isEqualTo(connections);
+    }
+
+    /**
+     * The MQTT client waits at most 10 seconds for a publish, a slow line must not make it give up on the config.
+     */
+    @Test
+    void aSlowBrokerLineStillGetsTheWholeConfigToHomeAssistant() throws IOException, MqttException {
+        Proxy line = this.network.brokerLine();
+        line.toxics().bandwidth("slow-to-broker", ToxicDirection.UPSTREAM, SLOW_LINE_KILOBYTES_PER_SECOND);
+        line.toxics().latency("far-from-broker", ToxicDirection.DOWNSTREAM, LATENCY_WITHIN_LIMITS_MILLIS);
+
+        long before = System.nanoTime();
+        this.bridge.homeAssistantStarts();
+
+        eventually().alias("all config").until(() -> this.bridge.configsSeen() == ResilienceBridge.configTopics());
+        // Only a lower bound, from the payloads alone: proves the toxic is really in the way
+        long slowestPossibleMillis = this.bridge.configBytesSeen() * 1000 / (SLOW_LINE_KILOBYTES_PER_SECOND * 1024);
+        assertThat(Duration.ofNanos(System.nanoTime() - before)).isGreaterThanOrEqualTo(Duration.ofMillis(slowestPossibleMillis));
+        assertThat(processorLogged(Level.WARN, "Could not publish")).isZero();
+        this.bridge.awaitHealth(ALL_UP);
+        this.bridge.awaitCommandRoundTrip(1, ValidOnOffToggle.ON);
     }
 
     /**
