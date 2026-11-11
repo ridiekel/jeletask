@@ -104,7 +104,7 @@
                  host the broker really runs on. Only the certificate builder: signing uses the JDK's own RSA. -->
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.86</version>
+            <version>1.87</version>
             <scope>test</scope>
         </dependency>
         <dependency>
