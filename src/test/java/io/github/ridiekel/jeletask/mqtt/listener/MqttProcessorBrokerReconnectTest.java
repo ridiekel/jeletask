@@ -1,6 +1,5 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
-import com.github.dockerjava.api.DockerClient;
 import io.github.ridiekel.jeletask.HealthCheck;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
@@ -14,24 +13,30 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.Container;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.BASE_TOPIC;
+import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Real Paho client against a real broker that restarts and loses all its sessions and retained messages: mosquitto-no-auth.conf
  * has no persistence. Skipped without Docker, and not an End2End test: no Home Assistant or browser involved.
+ * <p>
+ * Only the broker process restarts, not the container: a restarted container may get another host port, and Paho
+ * reconnects to the same address. A fixed host port does not help, not every Docker host forwards every port.
  */
 @EnabledIf("dockerAvailable")
 class MqttProcessorBrokerReconnectTest {
     private static final Duration AWAIT = Duration.ofSeconds(60);
+    // While this file exists the broker stays down
+    private static final String HOLD = "/tmp/broker-down";
 
     private final FakeTeletaskClient teletask = new FakeTeletaskClient();
     private final Teletask2MqttConfigurationProperties configuration = MqttProcessorFixtures.configuration();
@@ -61,23 +66,20 @@ class MqttProcessorBrokerReconnectTest {
 
     @Test
     void afterABrokerRestartTheBridgeSubscribesAgainAndPublishesOnline() throws Exception {
-        // A fixed host port: Paho reconnects to the same address, a random one changes when the container restarts
-        broker.setPortBindings(List.of(freePort() + ":1883"));
+        broker.withCommand("sh", "-c", "while true; do [ -f " + HOLD + " ] || mosquitto -c /mosquitto-no-auth.conf; sleep 0.2; done");
         broker.start();
         processor.startup();
         processor.publishConnectionStatus();
         connectObserver();
         awaitAvailabilityOnline();
 
-        DockerClient docker = broker.getDockerClient();
-        String containerId = broker.getContainerId();
         closeObserver();
         availability.clear();
 
-        docker.stopContainerCmd(containerId).exec();
+        inBroker("touch " + HOLD + " && pkill mosquitto");
         Awaitility.await("bridge notices the broker is gone").atMost(AWAIT).until(() -> health().contains("mqtt=DOWN"));
 
-        docker.startContainerCmd(containerId).exec();
+        inBroker("rm " + HOLD);
         connectObserver();
 
         // The broker forgot its retained messages, so only the reconnect can bring this back
@@ -122,9 +124,8 @@ class MqttProcessorBrokerReconnectTest {
         return out.toString();
     }
 
-    private static int freePort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        }
+    private void inBroker(String command) throws IOException, InterruptedException {
+        Container.ExecResult result = broker.execInContainer("sh", "-c", command);
+        assertThat(result.getExitCode()).as(command + ": " + result.getStderr()).isZero();
     }
 }
