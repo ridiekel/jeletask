@@ -276,13 +276,13 @@ abstract class ResilienceScenarios {
     void aFlappingLineLeavesNoThreadsOrConnectionsBehind() throws IOException, MqttException, InterruptedException {
         int clientThreads = this.bridge.clientThreads();
         int pahoThreads = ResilienceBridge.pahoConnectionThreads();
-        Proxy central = this.network.centralLine();
-        Proxy broker = this.network.brokerLine();
+        Proxy centralLine = this.network.centralLine();
+        Proxy brokerLine = this.network.brokerLine();
 
         for (long downMillis : FLAP_MILLIS) {
-            flap(downMillis, central);
-            flap(downMillis, broker);
-            flap(downMillis, central, broker);
+            flap(downMillis, centralLine);
+            flap(downMillis, brokerLine);
+            flap(downMillis, centralLine, brokerLine);
         }
 
         this.bridge.awaitHealth(ALL_UP);
