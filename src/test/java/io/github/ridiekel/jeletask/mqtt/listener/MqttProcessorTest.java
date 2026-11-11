@@ -76,6 +76,24 @@ class MqttProcessorTest {
         assertThat(failure).hasCause(cause);
     }
 
+    /**
+     * Characterization, not a wish: no retry of its own. The application stops, and its restart policy brings it back.
+     */
+    @Test
+    void startupFailsWhenTheBrokerCannotBeReached() {
+        MqttException cause = new MqttException(MqttException.REASON_CODE_SERVER_CONNECT_ERROR);
+        MqttProcessor unreachable = new MqttProcessor(MqttProcessorFixtures.centralUnit(), teletask, configuration, exitCodes::add, (_, _) -> {
+            FakeMqttClient client = new FakeMqttClient();
+            client.failConnect = cause;
+            return client;
+        });
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class, unreachable::startup);
+
+        assertThat(failure).hasCause(cause);
+        assertThat(teletask.groupGets).hasValue(0);
+    }
+
     @Test
     void blankCentralIdAndPrefixFallBackToTheCentralUnitAddressAndTheClientId() {
         configuration.getCentral().setId("  ");
@@ -596,6 +614,7 @@ class MqttProcessorTest {
         volatile boolean echoPublishes = true;
         volatile String failSubscribeTo;
         volatile CountDownLatch blockSubscribes;
+        volatile MqttException failConnect;
         final AtomicInteger subscribesWaiting = new AtomicInteger();
         final AtomicInteger failedSubscribes = new AtomicInteger();
         volatile String failPublishTo;
@@ -616,7 +635,10 @@ class MqttProcessorTest {
         }
 
         @Override
-        public void connect(MqttConnectOptions options) {
+        public void connect(MqttConnectOptions options) throws MqttException {
+            if (failConnect != null) {
+                throw failConnect;
+            }
             this.options = options;
             connected = true;
             callback.connectComplete(false, getServerURI());
