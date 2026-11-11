@@ -40,6 +40,7 @@ final class ResilienceBridge implements AutoCloseable {
     static final Set<Function> LOGGED_FUNCTIONS = Set.of(Function.RELAY, Function.LOCMOOD, Function.GENMOOD, Function.MOTOR, Function.DIMMER, Function.COND, Function.SENSOR, Function.FLAG, Function.TIMEDFNC, Function.INPUT);
 
     private static final Duration AWAIT = Duration.ofSeconds(90);
+    private static final List<String> PAHO_CONNECTION_THREADS = List.of("MQTT Rec:", "MQTT Snd:", "MQTT Call:", "MQTT Ping:");
     private static final int KEEP_ALIVE_MILLIS = 1000;
     private static final long STATUS_INTERVAL_MILLIS = 250;
     private static final int FRAME_NUMBER_HIGH_INDEX = 5;
@@ -103,6 +104,31 @@ final class ResilienceBridge implements AutoCloseable {
 
     int connections() {
         return this.central.connectionCount();
+    }
+
+    int openCentralConnections() {
+        return this.central.openConnectionCount();
+    }
+
+    /**
+     * The io, keep-alive and event listener threads of this bridge's Teletask client.
+     */
+    int clientThreads() {
+        return this.threads.started().size();
+    }
+
+    /**
+     * The threads Paho runs for the connection of this bridge: receiver, sender, callback and ping.
+     * <p>
+     * Leaves out the connect and reconnect threads: Paho 1.2.5, the last mqttv3 release, can leave those behind when a
+     * connection drops while it is being set up. CommsReceiver.start then waits forever for a receiver that already ended.
+     */
+    static int pahoConnectionThreads() {
+        String clientId = MqttProcessorFixtures.configuration().getMqtt().getClientId();
+        return (int) Thread.getAllStackTraces().keySet().stream()
+                .map(Thread::getName)
+                .filter(name -> PAHO_CONNECTION_THREADS.stream().anyMatch(name::startsWith) && name.endsWith(clientId))
+                .count();
     }
 
     int keepAlives() {

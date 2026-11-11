@@ -45,6 +45,8 @@ abstract class ResilienceScenarios {
     private static final long LATENCY_WITHIN_LIMITS_MILLIS = 300;
     private static final long LATENCY_BEYOND_ACK_MILLIS = MessageSupport.ACK_WAIT_TIME * 2L;
     private static final long CENTRAL_STARTUP_WAIT_SECONDS = 30;
+    // Shorter and longer than the reconnect delays of both clients, which start at one second
+    private static final long[] FLAP_MILLIS = {100, 1500, 300, 3000, 50, 800};
 
     private LogCapture quietClient;
     private LogCapture quietProcessor;
@@ -224,6 +226,35 @@ abstract class ResilienceScenarios {
     }
 
     /**
+     * Short outages one after the other, of both lines and of both at once, the way a bad cable or switch behaves.
+     */
+    @Test
+    void aFlappingLineLeavesNoThreadsOrConnectionsBehind() throws IOException, MqttException, InterruptedException {
+        int clientThreads = this.bridge.clientThreads();
+        int pahoThreads = ResilienceBridge.pahoConnectionThreads();
+        Proxy central = this.network.centralLine();
+        Proxy broker = this.network.brokerLine();
+
+        for (long downMillis : FLAP_MILLIS) {
+            flap(downMillis, central);
+            flap(downMillis, broker);
+            flap(downMillis, central, broker);
+        }
+
+        this.bridge.awaitHealth(ALL_UP);
+        this.bridge.awaitAvailability(ONLINE);
+        this.bridge.awaitStatusRequestsOnLatestConnection();
+        this.bridge.forgetSeen();
+        this.bridge.relayChangesOnCentral(1, ValidOnOffToggle.ON);
+        this.bridge.awaitOnMqtt(1, ValidOnOffToggle.ON);
+        this.bridge.awaitCommandRoundTrip(2, ValidOnOffToggle.ON);
+
+        eventually().alias("one connection to the central unit").until(() -> this.bridge.openCentralConnections() == 1);
+        eventually().alias("no extra client threads").until(() -> this.bridge.clientThreads() == clientThreads);
+        eventually().alias("no extra Paho connection threads").until(() -> ResilienceBridge.pahoConnectionThreads() == pahoThreads);
+    }
+
+    /**
      * Characterization, not a wish: an MQTT command during a short outage waits for the reconnect.
      */
     @Test
@@ -299,6 +330,19 @@ abstract class ResilienceScenarios {
     private void awaitClientNoticed() {
         this.bridge.awaitHealth(TELETASK_DOWN_MQTT_UP);
         this.bridge.awaitAvailability(OFFLINE);
+    }
+
+    // How long the lines stay down and up is the disturbance itself, the input of the test, not a wait for a result
+    @SuppressWarnings("java:S2925")
+    private static void flap(long downMillis, Proxy... lines) throws IOException, InterruptedException {
+        for (Proxy line : lines) {
+            line.disable();
+        }
+        Thread.sleep(downMillis);
+        for (Proxy line : lines) {
+            line.enable();
+        }
+        Thread.sleep(downMillis);
     }
 
     private int notExecutedLogged() {
