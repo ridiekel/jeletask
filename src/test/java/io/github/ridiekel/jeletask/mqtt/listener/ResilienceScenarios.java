@@ -110,6 +110,28 @@ abstract class ResilienceScenarios {
         assertThat(this.bridge.connections()).isEqualTo(1);
     }
 
+    /**
+     * A bad cable or a misbehaving central unit: bytes nobody expects, a length that claims too much, a wrong checksum.
+     */
+    @Test
+    void garbageFromTheCentralUnitDoesNotCostTheEventsAroundIt() throws MqttException {
+        ValidOnOffToggle on = ValidOnOffToggle.ON;
+        byte stx = (byte) this.bridge.unit().getMessageHandler().getStxValue();
+        byte[] noise = {0x7F, 0x00, 0x55};
+        byte[] lengthTooLong = {stx, 0x40};
+        byte[] wrongChecksum = relayEvent(3, on);
+        wrongChecksum[wrongChecksum.length - 1]++;
+
+        this.bridge.centralSends(Bytes.concat(noise, relayEvent(1, on), lengthTooLong, relayEvent(2, on), wrongChecksum, relayEvent(4, on)));
+
+        this.bridge.awaitOnMqtt(1, on);
+        this.bridge.awaitOnMqtt(2, on);
+        this.bridge.awaitOnMqtt(4, on);
+        assertThat(this.bridge.sawOnMqtt(3, on)).isFalse();
+        assertThat(this.bridge.connections()).isEqualTo(1);
+        this.bridge.awaitCommandRoundTrip(5, on);
+    }
+
     @Test
     void latencyWithinTheLimitsChangesNothing() throws IOException, MqttException {
         Proxy line = this.network.centralLine();
@@ -365,6 +387,10 @@ abstract class ResilienceScenarios {
             line.enable();
         }
         Thread.sleep(downMillis);
+    }
+
+    private byte[] relayEvent(int relay, ValidOnOffToggle state) {
+        return this.bridge.unit().event(Function.RELAY, relay, new OnOffState(state));
     }
 
     private int notExecutedLogged() {
