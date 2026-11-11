@@ -40,10 +40,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -264,9 +264,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     /**
      * Completes once the reconnect work submitted so far is done.
      */
-    static Future<?> afterReconnectWork() {
-        return RECONNECT_EXECUTOR.submit(() -> {
-        });
+    static CompletableFuture<Void> afterReconnectWork() {
+        return CompletableFuture.runAsync(() -> {
+        }, RECONNECT_EXECUTOR);
     }
 
     private void subscribe() throws MqttException {
