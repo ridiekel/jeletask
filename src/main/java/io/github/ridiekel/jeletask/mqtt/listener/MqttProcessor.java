@@ -44,7 +44,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -74,7 +73,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private final HomeAssistentAutoConfig homeAssistentAutoConfig;
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     // Apart from EXECUTOR: a resubscribe that waits for the broker must not hold back the commands queued there
-    private static final ExecutorService RECONNECT_EXECUTOR = Executors.newSingleThreadExecutor(Thread.ofPlatform().name("mqtt-reconnect").daemon().factory());
+    private static final ScheduledExecutorService RECONNECT_EXECUTOR = Executors.newSingleThreadScheduledExecutor(Thread.ofPlatform().name("mqtt-reconnect").daemon().factory());
+    private static final int RESUBSCRIBE_ATTEMPTS = 5;
     // Paho's blocking calls wait forever by default, a reply that never comes would hang the calling thread for good
     static final long MQTT_TIME_TO_WAIT_MILLIS = 10_000;
     private static final long COMMAND_POLL_MILLIS = 50;
@@ -97,6 +97,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     // As long as TeletaskClientImpl waits for its startup
     @Setter(AccessLevel.PACKAGE)
     private Duration commandMaxWait = Duration.ofSeconds(30);
+    @Setter(AccessLevel.PACKAGE)
+    private Duration resubscribeDelay = Duration.ofSeconds(5);
 
     // Required: with more than one constructor, Spring otherwise looks for a no-arg one.
     @Autowired
@@ -222,11 +224,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                     // A restarted broker may have lost our session. Subscribing again is harmless when it did not.
                     // Not in this callback thread: blocking client calls from a callback can deadlock.
                     RECONNECT_EXECUTOR.execute(() -> {
-                        try {
-                            subscribe();
-                        } catch (MqttException e) {
-                            log(LOG::error, What.CONNECTION, STATUS, "Could not subscribe again after reconnect: " + e.getMessage());
-                        }
+                        resubscribe(1);
                         // The broker published our last will when the connection dropped, so overwrite it right away.
                         publishConnectionStatus();
                     });
@@ -265,6 +263,21 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         options.setWill(this.getAvailabilityTopic(), OFFLINE.getBytes(), 1, true);
         MqttTls.apply(this.configuration.getMqtt(), options);
         return options;
+    }
+
+    /**
+     * A subscribe that times out leaves the connection up, so no new reconnect would ever try again.
+     */
+    private void resubscribe(int attempt) {
+        try {
+            subscribe();
+        } catch (MqttException e) {
+            boolean again = attempt < RESUBSCRIBE_ATTEMPTS && this.mqttClient.isConnected();
+            log(LOG::error, What.CONNECTION, STATUS, String.format("Could not subscribe again after reconnect (attempt %d of %d%s): %s", attempt, RESUBSCRIBE_ATTEMPTS, again ? ", trying again" : "", e.getMessage()));
+            if (again) {
+                RECONNECT_EXECUTOR.schedule(() -> resubscribe(attempt + 1), this.resubscribeDelay.toMillis(), TimeUnit.MILLISECONDS);
+            }
+        }
     }
 
     /**

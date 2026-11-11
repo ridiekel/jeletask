@@ -262,6 +262,44 @@ class MqttProcessorTest {
     }
 
     @Test
+    void aFailedResubscribeIsTriedAgainWhileTheConnectionStaysUp() {
+        processor.setResubscribeDelay(Duration.ofMillis(50));
+        processor.startup();
+        mqtt.clearRecordings();
+        mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
+
+        mqtt.callback.connectComplete(true, "tcp://broker");
+        Awaitility.await("a second attempt").atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() >= 2);
+        mqtt.failSubscribeTo = null;
+
+        Awaitility.await("subscribed again").atMost(AWAIT).untilAsserted(() -> assertThat(mqtt.subscribed).contains(STOP_TOPIC));
+    }
+
+    @Test
+    void aResubscribeThatKeepsFailingIsGivenUpOn() {
+        processor.setResubscribeDelay(Duration.ofMillis(10));
+        processor.startup();
+        mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
+
+        mqtt.callback.connectComplete(true, "tcp://broker");
+
+        Awaitility.await("five attempts and no more").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() == 5);
+    }
+
+    @Test
+    void aResubscribeIsNotTriedAgainOnceTheConnectionIsGone() {
+        processor.setResubscribeDelay(Duration.ofMillis(10));
+        processor.startup();
+        mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
+        mqtt.connected = false;
+
+        mqtt.callback.connectComplete(true, "tcp://broker");
+
+        // The next reconnect subscribes again by itself
+        Awaitility.await("one attempt").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() == 1);
+    }
+
+    @Test
     void aResubscribeThatWaitsForTheBrokerDoesNotHoldBackCommands() {
         processor.startup();
         mqtt.blockSubscribes = new CountDownLatch(1);
@@ -559,6 +597,7 @@ class MqttProcessorTest {
         volatile String failSubscribeTo;
         volatile CountDownLatch blockSubscribes;
         final AtomicInteger subscribesWaiting = new AtomicInteger();
+        final AtomicInteger failedSubscribes = new AtomicInteger();
         volatile String failPublishTo;
 
         FakeMqttClient() throws MqttException {
@@ -591,6 +630,7 @@ class MqttProcessorTest {
         @Override
         public void subscribe(String topicFilter, int qos, IMqttMessageListener listener) throws MqttException {
             if (topicFilter.equals(failSubscribeTo)) {
+                failedSubscribes.incrementAndGet();
                 throw new MqttException(MqttException.REASON_CODE_SUBSCRIBE_FAILED);
             }
             awaitSubscribeUnblocked();
