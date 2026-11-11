@@ -18,6 +18,7 @@ import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigPa
 import io.github.ridiekel.jeletask.mqtt.listener.logic.input.LongPressInputCaptor;
 import io.github.ridiekel.jeletask.mqtt.listener.logic.motor.MotorProgressor;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -75,6 +77,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private static final ExecutorService RECONNECT_EXECUTOR = Executors.newSingleThreadExecutor(Thread.ofPlatform().name("mqtt-reconnect").daemon().factory());
     // Paho's blocking calls wait forever by default, a reply that never comes would hang the calling thread for good
     static final long MQTT_TIME_TO_WAIT_MILLIS = 10_000;
+    private static final long COMMAND_POLL_MILLIS = 50;
     private static final long STALE_CONFIG_COLLECT_MILLIS = 1000;
 
     private PingMesage pingMesage;
@@ -91,6 +94,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private final Teletask2MqttConfigurationProperties configuration;
     private final IntConsumer exitHandler;
     private final MqttClientFactory mqttClientFactory;
+    // As long as TeletaskClientImpl waits for its startup
+    @Setter(AccessLevel.PACKAGE)
+    private Duration commandMaxWait = Duration.ofSeconds(30);
 
     // Required: with more than one constructor, Spring otherwise looks for a no-arg one.
     @Autowired
@@ -270,8 +276,10 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     private void subscribe() throws MqttException {
-        this.subscribe(this.getBaseTopic() + "/+/+/set", (topic, message) ->
-                EXECUTOR.execute(() -> new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message)));
+        this.subscribe(this.getBaseTopic() + "/+/+/set", (topic, message) -> {
+            long arrived = System.nanoTime();
+            EXECUTOR.execute(() -> this.executeCommand(topic, message, arrived));
+        });
         this.subscribe(getPingTopic(), (_, _) -> {
             if (this.pingMesage != null) {
                 this.pingMesage.setReceived(Instant.now());
@@ -297,6 +305,37 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                 }, seconds, TimeUnit.SECONDS);
             }
         });
+    }
+
+    /**
+     * A command waits for the central unit at most {@link #commandMaxWait}, counted from its arrival. Before, only the
+     * first of the commands queued during an outage was given up on: the ones behind it went through once the line came
+     * back, however late that was.
+     */
+    private void executeCommand(String topic, MqttMessage message, long arrivedNanos) {
+        if (!this.teletaskClient.isConnected()) {
+            LOG.info(() -> String.format("MQTT topic '%s' waits for the central unit -- %s", topic, message));
+        }
+        if (!this.awaitCentralUnit(arrivedNanos)) {
+            LOG.warn(() -> String.format("MQTT topic '%s' not executed: waited %d seconds for the central unit -- %s", topic, this.commandMaxWait.toSeconds(), message));
+            return;
+        }
+        new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message);
+    }
+
+    private boolean awaitCentralUnit(long arrivedNanos) {
+        while (!this.teletaskClient.isConnected()) {
+            if (System.nanoTime() - arrivedNanos >= this.commandMaxWait.toNanos()) {
+                return false;
+            }
+            try {
+                Thread.sleep(COMMAND_POLL_MILLIS);
+            } catch (InterruptedException _) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return true;
     }
 
     private void subscribe(String topic, IMqttMessageListener target) throws MqttException {

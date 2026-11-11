@@ -42,6 +42,7 @@ class MqttProcessorTest {
     private static final String AVAILABILITY_TOPIC = BASE_TOPIC + "/state";
     private static final String STOP_TOPIC = BASE_TOPIC + "/stop";
     private static final String REFRESH_TOPIC = BASE_TOPIC + "/refresh";
+    private static final String RELAY_1_SET_TOPIC = BASE_TOPIC + "/relay/1/set";
     private static final String DISCOVERY_TOPICS_TOPIC = "teletask2mqtt/bridges/fixture_client/discovery";
     private static final String RELAY_1_CONFIG_TOPIC = "homeassistant/light/fixture_central/relay_1/config";
     private static final String BRIDGE_CONFIG_TOPIC = "homeassistant/sensor/fixture_central/sensor_-1/config";
@@ -272,6 +273,33 @@ class MqttProcessorTest {
         } finally {
             mqtt.blockSubscribes.countDown();
         }
+    }
+
+    @Test
+    void aCommandWaitsForTheCentralUnitAndIsExecutedOnceItIsBack() throws Exception {
+        processor.startup();
+        teletask.connected = false;
+
+        mqtt.deliver(RELAY_1_SET_TOPIC, "{\"state\":\"ON\"}");
+        Awaitility.await("not executed while away").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> teletask.commandsReceived.get() == 0);
+
+        teletask.connected = true;
+        Awaitility.await("executed").atMost(AWAIT).until(() -> teletask.commandsReceived.get() == 1);
+    }
+
+    @Test
+    void aCommandIsNotExecutedWhenTheCentralUnitStaysAwayLongerThanItWaits() throws Exception {
+        processor.setCommandMaxWait(Duration.ofMillis(200));
+        processor.startup();
+        teletask.connected = false;
+
+        mqtt.deliver(RELAY_1_SET_TOPIC, "{\"state\":\"ON\"}");
+        // Behind the command on the same executor, so it ends after the command gave up
+        awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "sentinel"));
+        teletask.connected = true;
+
+        awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "sentinel"));
+        assertThat(teletask.commandsReceived).hasValue(0);
     }
 
     @Test

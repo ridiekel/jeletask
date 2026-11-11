@@ -61,6 +61,7 @@ final class MqttProcessorFixtures {
 
     static final class FakeTeletaskClient implements TeletaskClient {
         final AtomicInteger groupGets = new AtomicInteger();
+        final AtomicInteger commandsReceived = new AtomicInteger();
         volatile boolean connected = true;
         volatile boolean groupGetFails;
 
@@ -89,6 +90,8 @@ final class MqttProcessorFixtures {
 
         @Override
         public CentralUnit getCentralUnit() {
+            // The first thing a command asks for
+            commandsReceived.incrementAndGet();
             throw new UnsupportedOperationException();
         }
 

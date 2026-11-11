@@ -233,7 +233,7 @@ abstract class ResilienceScenarios {
         awaitClientNoticed();
 
         this.bridge.publishSet(1, ValidOnOffToggle.ON);
-        eventually().alias("command picked up").until(() -> !this.quietCommands.messages(Level.INFO).isEmpty());
+        eventually().alias("command waiting").until(() -> processorLogged(Level.INFO, "waits for the central unit") == 1);
         assertThat(this.bridge.setFrames()).isZero();
 
         line.enable();
@@ -243,8 +243,8 @@ abstract class ResilienceScenarios {
     }
 
     /**
-     * Characterization, not a wish: see TeletaskClientImpl.withStarted. A command waits 30 seconds for the client and is
-     * then gone, without anyone being told over MQTT and without a retry after the reconnect.
+     * Characterization, not a wish: a command waits 30 seconds for the central unit and is then gone, without anyone being
+     * told over MQTT and without a retry after the reconnect.
      */
     @Test
     void characterizationACommandDuringALongOutageIsLostAfterThirtySeconds() throws IOException, MqttException {
@@ -254,10 +254,10 @@ abstract class ResilienceScenarios {
 
         long before = System.nanoTime();
         this.bridge.publishSet(1, ValidOnOffToggle.ON);
-        eventually().alias("command given up on").until(() -> !this.quietCommands.messages(Level.WARN).isEmpty());
+        eventually().alias("command given up on").until(() -> notExecutedLogged() == 1);
 
         assertThat(Duration.ofNanos(System.nanoTime() - before)).isGreaterThanOrEqualTo(Duration.ofSeconds(CENTRAL_STARTUP_WAIT_SECONDS));
-        assertThat(this.quietCommands.messages(Level.WARN)).singleElement().asString().contains("Teletask Client Startup");
+        assertThat(this.quietCommands.messages(Level.WARN)).isEmpty();
 
         line.enable();
 
@@ -270,12 +270,43 @@ abstract class ResilienceScenarios {
     }
 
     /**
+     * Commands that arrive together share one fate: each waits 30 seconds from its arrival, not from when the one before
+     * it gave up.
+     */
+    @Test
+    void commandsThatPiledUpDuringALongOutageAreNotExecutedLongAfterTheFact() throws IOException, MqttException {
+        Proxy line = this.network.centralLine();
+        line.disable();
+        awaitClientNoticed();
+
+        for (int relay = 1; relay <= ResilienceBridge.RELAYS; relay++) {
+            this.bridge.publishSet(relay, ValidOnOffToggle.ON);
+        }
+        eventually().alias("none executed").until(() -> notExecutedLogged() == ResilienceBridge.RELAYS);
+
+        line.enable();
+
+        this.bridge.awaitHealth(ALL_UP);
+        this.bridge.awaitStatusRequestsOnLatestConnection();
+        this.bridge.awaitCommandRoundTrip(2, ValidOnOffToggle.ON);
+        assertThat(this.bridge.setFrames()).isEqualTo(1);
+    }
+
+    /**
      * Health alone would not do here: the file has a fixed path, so another test run on this machine can write DOWN too.
      * A command sent before the client noticed is a different story, it goes down the dead line.
      */
     private void awaitClientNoticed() {
         this.bridge.awaitHealth(TELETASK_DOWN_MQTT_UP);
         this.bridge.awaitAvailability(OFFLINE);
+    }
+
+    private int notExecutedLogged() {
+        return processorLogged(Level.WARN, "not executed");
+    }
+
+    private int processorLogged(Level level, String text) {
+        return (int) this.quietProcessor.messages(level).stream().filter(line -> line.contains(text)).count();
     }
 
     private int subscribesLogged() {
