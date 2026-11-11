@@ -41,7 +41,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +71,10 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private final ConnectedStatus connectedStatus = new ConnectedStatus();
     private final HomeAssistentAutoConfig homeAssistentAutoConfig;
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    // Apart from EXECUTOR: a resubscribe that waits for the broker must not hold back the commands queued there
+    private static final ExecutorService RECONNECT_EXECUTOR = Executors.newSingleThreadExecutor(Thread.ofPlatform().name("mqtt-reconnect").daemon().factory());
+    // Paho's blocking calls wait forever by default, a reply that never comes would hang the calling thread for good
+    static final long MQTT_TIME_TO_WAIT_MILLIS = 10_000;
     private static final long STALE_CONFIG_COLLECT_MILLIS = 1000;
 
     private PingMesage pingMesage;
@@ -190,6 +196,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         log(LOG::info, What.CONNECTION, STATUS, String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s, ca_file=%s)...)", brokerUrl, clientId, username, password != null, !this.configuration.getMqtt().isSsl() ? "-" : MqttTls.caFile(this.configuration.getMqtt()).map(Path::toString).orElse("<jvm trust store>")));
 
         this.mqttClient = this.mqttClientFactory.create(brokerUrl, clientId);
+        this.mqttClient.setTimeToWait(MQTT_TIME_TO_WAIT_MILLIS);
 
         MqttConnectOptions options = this.connectOptions(username, password);
 
@@ -208,7 +215,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                 if (reconnect) {
                     // A restarted broker may have lost our session. Subscribing again is harmless when it did not.
                     // Not in this callback thread: blocking client calls from a callback can deadlock.
-                    EXECUTOR.execute(() -> {
+                    RECONNECT_EXECUTOR.execute(() -> {
                         try {
                             subscribe();
                         } catch (MqttException e) {
@@ -252,6 +259,14 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         options.setWill(this.getAvailabilityTopic(), OFFLINE.getBytes(), 1, true);
         MqttTls.apply(this.configuration.getMqtt(), options);
         return options;
+    }
+
+    /**
+     * Completes once the reconnect work submitted so far is done.
+     */
+    static Future<?> afterReconnectWork() {
+        return RECONNECT_EXECUTOR.submit(() -> {
+        });
     }
 
     private void subscribe() throws MqttException {

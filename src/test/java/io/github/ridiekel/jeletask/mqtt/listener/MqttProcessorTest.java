@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.BASE_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -250,8 +253,32 @@ class MqttProcessorTest {
         mqtt.callback.connectComplete(true, "tcp://broker");
 
         awaitAvailabilityPublished("online");
-        // The shared executor survived the failure
-        awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "still alive"));
+        // The reconnect executor survived the failure
+        mqtt.failSubscribeTo = null;
+        mqtt.clearRecordings();
+        mqtt.callback.connectComplete(true, "tcp://broker");
+        Awaitility.await("subscribed again").atMost(AWAIT).untilAsserted(() -> assertThat(mqtt.subscribed).contains(STOP_TOPIC));
+    }
+
+    @Test
+    void aResubscribeThatWaitsForTheBrokerDoesNotHoldBackCommands() {
+        processor.startup();
+        mqtt.blockSubscribes = new CountDownLatch(1);
+        try {
+            mqtt.callback.connectComplete(true, "tcp://broker");
+            Awaitility.await("resubscribe waiting").atMost(AWAIT).until(() -> mqtt.subscribesWaiting.get() > 0);
+
+            awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "while resubscribing"));
+        } finally {
+            mqtt.blockSubscribes.countDown();
+        }
+    }
+
+    @Test
+    void theMqttClientStopsWaitingForAnAnswerOfTheBroker() {
+        processor.startup();
+
+        assertThat(mqtt.getTimeToWait()).isEqualTo(MqttProcessor.MQTT_TIME_TO_WAIT_MILLIS);
     }
 
     @Test
@@ -262,8 +289,7 @@ class MqttProcessorTest {
 
         mqtt.callback.connectComplete(false, "tcp://broker");
 
-        // Runs on the same single threaded executor as the reconnect work, so that would be done by then
-        awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "sentinel"));
+        assertDoesNotThrow(() -> MqttProcessor.afterReconnectWork().get(AWAIT.toSeconds(), TimeUnit.SECONDS));
         assertThat(mqtt.subscribed).isEmpty();
     }
 
@@ -503,6 +529,8 @@ class MqttProcessorTest {
         volatile boolean connected;
         volatile boolean echoPublishes = true;
         volatile String failSubscribeTo;
+        volatile CountDownLatch blockSubscribes;
+        final AtomicInteger subscribesWaiting = new AtomicInteger();
         volatile String failPublishTo;
 
         FakeMqttClient() throws MqttException {
@@ -537,10 +565,31 @@ class MqttProcessorTest {
             if (topicFilter.equals(failSubscribeTo)) {
                 throw new MqttException(MqttException.REASON_CODE_SUBSCRIBE_FAILED);
             }
+            awaitSubscribeUnblocked();
             subscribed.add(topicFilter);
             listeners.put(topicFilter, listener);
             deliverOnSubscribe(topicFilter, listener, retainedOnBroker, true);
             deliverOnSubscribe(topicFilter, listener, liveOnBroker, false);
+        }
+
+        // Like a SUBACK that is slow to come
+        private void awaitSubscribeUnblocked() throws MqttException {
+            CountDownLatch block = blockSubscribes;
+            if (block == null) {
+                return;
+            }
+            subscribesWaiting.incrementAndGet();
+            try {
+                // Longer than any test waits, so a held back command times the test out first
+                if (!block.await(AWAIT.toSeconds() * 3, TimeUnit.SECONDS)) {
+                    throw new MqttException(MqttException.REASON_CODE_CLIENT_TIMEOUT);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new MqttException(e);
+            } finally {
+                subscribesWaiting.decrementAndGet();
+            }
         }
 
         private static void deliverOnSubscribe(String topicFilter, IMqttMessageListener listener, Map<String, String> messages, boolean retained) {
