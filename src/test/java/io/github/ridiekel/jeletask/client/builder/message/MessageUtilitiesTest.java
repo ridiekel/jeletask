@@ -11,6 +11,7 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.config.CentralUnitConfigReader;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
+import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessageFactory;
@@ -249,7 +250,41 @@ class MessageUtilitiesTest {
 
         assertRelayEvents(receive(chunks(concat(corrupt, relayOnEvent(OTHER_RELAY)))), OTHER_RELAY);
 
-        assertThat(logged()).contains("ERROR").contains("Checksum not correct");
+        assertThat(logged()).contains("WARN").contains("wrong checksum").doesNotContain("ERROR");
+    }
+
+    @Test
+    @Timeout(value = 3, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void aLengthThatIsTooLongDoesNotSwallowTheMessagesBehindIt() throws Exception {
+        byte[] tooLong = {(byte) messageHandler.getStxValue(), 0x40};
+
+        // Never completes: only the two bytes of the corrupt start go, after the silence
+        assertRelayEvents(receive(chunks(concat(tooLong, concat(relayOnEvent(OTHER_RELAY), relayOnEvent(OTHER_RELAY))))), OTHER_RELAY, OTHER_RELAY);
+
+        assertThat(logged()).contains("Dropping incomplete message: " + hex(tooLong));
+    }
+
+    @Test
+    void aMessageWithACorruptLengthDoesNotTakeTheNextMessageWithIt() throws Exception {
+        byte[] next = relayOnEvent(OTHER_RELAY);
+        // Claims itself and the whole next message: complete, but the checksum cannot be right
+        byte[] corrupt = {(byte) messageHandler.getStxValue(), (byte) (next.length + 2), 0x01};
+
+        assertRelayEvents(receive(chunks(concat(corrupt, next))), OTHER_RELAY);
+
+        assertThat(logged()).contains("wrong checksum: " + hex(corrupt));
+    }
+
+    @Test
+    void aCorruptMessageWithTheAcknowledgeValueInsideDoesNotAcknowledge() throws Exception {
+        byte[] corrupt = relayOnEvent(RELAY_WHOSE_NUMBER_EQUALS_ACKNOWLEDGE);
+        corrupt[corrupt.length - 1]++;
+        KeepAliveMessage running = new KeepAliveMessage(centralUnit);
+
+        List<MessageSupport> messages = MessageUtilities.receive(logger, receiver(chunks(concat(corrupt, relayOnEvent(OTHER_RELAY)))), running);
+
+        assertThat(running.isAcknowledged()).isFalse();
+        assertRelayEvents(messages, OTHER_RELAY);
     }
 
     @Test
@@ -315,6 +350,10 @@ class MessageUtilitiesTest {
             assertThat(event.getNumber()).isEqualTo(numbers[i]);
             assertThat(event.getState().getState()).isEqualTo(ValidOnOffToggle.ON);
         }
+    }
+
+    private static String hex(byte[] bytes) {
+        return Bytes.bytesToHex(bytes);
     }
 
     private String logged() {
