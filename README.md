@@ -260,7 +260,7 @@ function to `config.json` always needs a restart, because the bridge reads that 
 | TELETASK_MQTT_PREFIX                             | Optional | teletask2mqtt | The MQTT message topic prefix                                                                                                                                               |
 | TELETASK_MQTT_RETAINED                           | Optional | false         | Whether state messages are retained by the broker. Discovery config and availability are always retained, the ping never.                                                   |
 | TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                                    |
-| TELETASK_MQTT_EXIT_ON_DISCONNECT                 | Optional | false         | Stop the container (return code 5) when the mqtt connection is lost. Make sure your restart config is set (always or unless-stopped).                                       |
+| TELETASK_MQTT_EXIT_ON_DISCONNECT                 | Optional | false         | Stop the container (return code 5) when the mqtt connection is lost, or (return code 1) when the broker cannot be reached at startup. Make sure your restart config is set (always or unless-stopped). Without it the bridge keeps trying to reach the broker.                                       |
 | TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                           |
 | TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL         | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds).                                                                                       |
 | TELETASK_PUBLISH_STATES_INTERVAL                 | Optional | 300           | How frequently the states are force refreshed (in seconds). A negative value disables the force refresh of states.                                                          |
@@ -412,6 +412,10 @@ The container is healthy when:
 
 - it is connected to the central unit,
 - it is connected to the MQTT broker and the last MQTT ping (sent every minute) came back.
+
+A bridge that starts before the MQTT broker can be reached keeps running and tries again every 10 seconds, so the start order of the containers does not matter.
+Until the broker answers the container is `unhealthy` and the log shows `Could not start on MQTT (attempt ...)` with the reason, also when the broker refuses the username or password.
+With `TELETASK_MQTT_EXIT_ON_DISCONNECT` the bridge exits instead (return code 1).
 
 The check starts after a grace period of 2 minutes and runs every 30 seconds; after 3 failed checks in a row the container is marked `unhealthy`.
 To see why, run:
