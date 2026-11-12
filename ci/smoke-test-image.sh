@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Starts a built image next to an MQTT broker and a stand-in central unit, and
-# waits until the image's HEALTHCHECK reports the container as healthy.
+# waits until the image's HEALTHCHECK reports the container as healthy. Healthy
+# only says the bridge connected, so the test then checks both directions over
+# MQTT: the bridge publishes that it is online, and it stops when asked to on
+# its stop topic.
 #
 # Usage: ci/smoke-test-image.sh <image> <platform> [timeout-seconds]
 set -euo pipefail
@@ -44,32 +47,71 @@ docker create --name "${NAME}-app" --platform "${PLATFORM}" --network "${NAME}" 
   -e TELETASK_CONFIGFILE=file:/tmp/config.json \
   -e TELETASK_CENTRAL_HOST=central \
   -e TELETASK_CENTRAL_PORT=1234 \
+  -e TELETASK_CENTRAL_ID=smoke \
   -e TELETASK_MQTT_HOST=mqtt \
   "${IMAGE}" > /dev/null
 docker cp src/test/resources/test-config.json "${NAME}-app:/tmp/config.json"
 docker start "${NAME}-app" > /dev/null
 
-for ((waited = 0; waited < TIMEOUT; waited += 5)); do
+fail() {
+  echo "Smoke test failed: $1"
+  show_logs
+  exit 1
+}
+
+running() {
+  [ "$(docker inspect -f '{{.State.Running}}' "${NAME}-app")" = "true" ]
+}
+
+# Waits until the given check passes, for as long as the container runs and
+# the timeout allows. Usage: wait_for <what> <check...>
+wait_for() {
+  local what="$1"
+  shift
+  for (( ; waited < TIMEOUT; waited += 5)); do
+    if "$@"; then
+      echo "${what} after ~${waited}s"
+      return 0
+    fi
+    running || fail "container stopped while waiting: ${what}"
+    sleep 5
+  done
+  fail "not within ${TIMEOUT}s: ${what}"
+}
+
+is_healthy() {
+  local health
   health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${NAME}-app")"
   case "${health}" in
-    healthy)
-      echo "Smoke test passed: healthy after ~${waited}s"
-      exit 0
-      ;;
-    unhealthy | none)
-      echo "Smoke test failed: health status is ${health}"
-      show_logs
-      exit 1
-      ;;
+    unhealthy | none) fail "health status is ${health}" ;;
   esac
-  if [ "$(docker inspect -f '{{.State.Running}}' "${NAME}-app")" != "true" ]; then
-    echo "Smoke test failed: container stopped"
-    show_logs
-    exit 1
-  fi
-  sleep 5
-done
+  [ "${health}" = "healthy" ]
+}
 
-echo "Smoke test failed: not healthy within ${TIMEOUT}s"
-show_logs
-exit 1
+# The retained availability: published by the bridge once the central unit answers
+is_online() {
+  [ "$(docker exec "${NAME}-mqtt" mosquitto_sub -t "${BASE_TOPIC}/state" -C 1 -W 3 2> /dev/null)" = "online" ]
+}
+
+# Not retained and the bridge subscribes late in its startup, so asked again until it listens
+stopped_on_request() {
+  docker exec "${NAME}-mqtt" mosquitto_pub -t "${BASE_TOPIC}/stop" -m "smoke test" || true
+  sleep 2
+  ! running
+}
+
+BASE_TOPIC="teletask2mqtt/smoke"
+waited=0
+wait_for "Healthy" is_healthy
+wait_for "Online on MQTT" is_online
+# From here on a stopped container is the goal, not a failure
+for (( ; waited < TIMEOUT; waited += 5)); do
+  if stopped_on_request; then
+    exit_code="$(docker inspect -f '{{.State.ExitCode}}' "${NAME}-app")"
+    [ "${exit_code}" = "0" ] || fail "stopped with exit code ${exit_code} after a message on its stop topic"
+    echo "Smoke test passed: stopped on request after ~${waited}s"
+    exit 0
+  fi
+  sleep 3
+done
+fail "did not stop within ${TIMEOUT}s after messages on its stop topic"
