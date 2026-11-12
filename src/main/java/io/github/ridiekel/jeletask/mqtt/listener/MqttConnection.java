@@ -11,7 +11,7 @@ import java.util.Arrays;
 public interface MqttConnection {
     /**
      * Connects and from then on reconnects by itself. Fails when the first connect does not succeed, without trying
-     * again.
+     * again: the caller decides whether a broker that is not there yet is worth waiting for.
      */
     void connect(MqttConnectionSettings settings, Listener listener) throws MqttConnectionException;
 

@@ -27,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.BASE_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,35 +48,86 @@ class MqttProcessorTest {
     private final Teletask2MqttConfigurationProperties configuration = MqttProcessorFixtures.configuration();
     private final List<Integer> exitCodes = new CopyOnWriteArrayList<>();
     private FakeMqttClient mqtt;
+    private MqttConnection.Factory mqttFactory = () -> mqtt = new FakeMqttClient();
     private final MqttProcessor processor = new MqttProcessor(
             MqttProcessorFixtures.centralUnit(),
             teletask,
             configuration,
             exitCodes::add,
-            () -> mqtt = new FakeMqttClient()
+            () -> mqttFactory.create()
     );
 
     private final Map<String, String> retainedOnBroker = new ConcurrentHashMap<>();
     // Published by someone else while the bridge subscribes, so not retained
     private final Map<String, String> liveOnBroker = new ConcurrentHashMap<>();
 
+    @Test
+    void startupKeepsTryingUntilTheBrokerCanBeReached() {
+        List<FakeMqttClient> clients = unreachableFor(2, client -> client.failConnect = new MqttConnectionException("Could not connect: Connection refused"));
+
+        assertDoesNotThrow(processor::startup);
+
+        Awaitility.await("startup on the third attempt").atMost(AWAIT).until(() -> teletask.groupGets.get() == 1);
+        assertThat(clients).hasSize(3);
+        assertThat(clients.get(2).subscribed).containsOnlyOnce(STOP_TOPIC);
+        assertThat(exitCodes).isEmpty();
+    }
+
+    @Test
+    void aStartupThatFailsAfterTheConnectStartsOverWithAConnectionOfItsOwn() {
+        List<FakeMqttClient> clients = unreachableFor(1, client -> client.failSubscribeTo = STOP_TOPIC);
+
+        processor.startup();
+
+        Awaitility.await("startup on the second attempt").atMost(AWAIT).until(() -> teletask.groupGets.get() == 1);
+        assertThat(clients.get(0).isConnected()).as("the connection of the failed attempt is closed").isFalse();
+        assertThat(clients.get(1).subscribed).containsOnlyOnce(STOP_TOPIC);
+    }
+
     /**
-     * Characterization, not a wish: no retry of its own. The failure ends the process (StartupFailureExitTest), and
-     * the restart policy of the container brings the bridge back.
+     * The same choice as for a lost connection: whoever asks to exit leaves the waiting to the restart policy.
      */
     @Test
-    void startupFailsWhenTheBrokerCannotBeReached() {
+    void startupFailsWhenTheBrokerCannotBeReachedWithExitOnDisconnect() {
+        configuration.getMqtt().setExitOnDisconnect(true);
         MqttConnectionException cause = new MqttConnectionException("Could not connect: Connection refused");
-        MqttProcessor unreachable = new MqttProcessor(MqttProcessorFixtures.centralUnit(), teletask, configuration, exitCodes::add, () -> {
-            FakeMqttClient client = new FakeMqttClient();
-            client.failConnect = cause;
-            return client;
-        });
+        List<FakeMqttClient> clients = unreachableFor(1, client -> client.failConnect = cause);
 
-        IllegalStateException failure = assertThrows(IllegalStateException.class, unreachable::startup);
+        IllegalStateException failure = assertThrows(IllegalStateException.class, processor::startup);
 
         assertThat(failure).hasCause(cause);
         assertThat(teletask.groupGets).hasValue(0);
+        assertThat(clients).hasSize(1);
+    }
+
+    /**
+     * Nothing else would start the central unit's client later on, so the restart policy has to.
+     */
+    @Test
+    void aCentralUnitThatCannotBeStartedOnceTheBrokerIsThereEndsTheProcess() {
+        unreachableFor(1, client -> client.failConnect = new MqttConnectionException("Could not connect: Connection refused"));
+        teletask.groupGetFails = true;
+
+        processor.startup();
+
+        Awaitility.await("exit").atMost(AWAIT).untilAsserted(() -> assertThat(exitCodes).containsExactly(1));
+    }
+
+    /**
+     * The first clients the processor asks for get the given failure, the ones after that work.
+     */
+    private List<FakeMqttClient> unreachableFor(int attempts, Consumer<FakeMqttClient> failure) {
+        List<FakeMqttClient> clients = new CopyOnWriteArrayList<>();
+        processor.setStartupRetryDelay(Duration.ofMillis(50));
+        mqttFactory = () -> {
+            FakeMqttClient client = new FakeMqttClient();
+            if (clients.size() < attempts) {
+                failure.accept(client);
+            }
+            clients.add(client);
+            return mqtt = client;
+        };
+        return clients;
     }
 
     @Test
