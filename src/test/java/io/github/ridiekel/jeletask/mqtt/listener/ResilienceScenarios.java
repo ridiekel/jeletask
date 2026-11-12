@@ -18,12 +18,17 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.TestWatcher;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.ResilienceBridge.eventually;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,9 +57,29 @@ abstract class ResilienceScenarios {
     private LogCapture quietClient;
     private LogCapture quietProcessor;
     private LogCapture quietCommands;
+    private LogCapture quietConnection;
     private FakeCentral central;
     private ResilienceNetwork network;
     private ResilienceBridge bridge;
+
+    // A scenario that fails once in a while on CI must say where things got stuck: the logs are quiet otherwise
+    @RegisterExtension
+    final TestWatcher dumpOnFailure = new TestWatcher() {
+        @Override
+        public void testFailed(ExtensionContext context, Throwable cause) {
+            StringBuilder dump = new StringBuilder("----- " + context.getDisplayName() + " failed, what the bridge logged -----");
+            Stream.of(quietClient, quietProcessor, quietCommands, quietConnection)
+                    .filter(Objects::nonNull)
+                    .flatMap(capture -> capture.lines().stream())
+                    .sorted()
+                    .forEach(line -> dump.append(System.lineSeparator()).append(line));
+            if (bridge != null) {
+                dump.append(System.lineSeparator()).append("----- the last messages the observer saw -----");
+                bridge.lastSeen(40).forEach(line -> dump.append(System.lineSeparator()).append(line));
+            }
+            System.out.println(dump);
+        }
+    };
 
     abstract ResilienceNetwork startNetwork(int centralPort) throws IOException;
 
@@ -63,6 +88,7 @@ abstract class ResilienceScenarios {
         this.quietClient = LogCapture.quietClient();
         this.quietProcessor = LogCapture.of(MqttProcessor.class, Level.INFO);
         this.quietCommands = LogCapture.of(MQTTMessageToTeletaskCommand.class, Level.INFO);
+        this.quietConnection = LogCapture.of(HiveMqConnection.class, Level.DEBUG);
         this.central = new FakeCentral().goOnline();
         this.network = startNetwork(this.central.port());
         this.bridge = new ResilienceBridge(this.central, this.network);
@@ -81,6 +107,7 @@ abstract class ResilienceScenarios {
             }
             this.central.close();
             this.quietCommands.close();
+            this.quietConnection.close();
             this.quietProcessor.close();
             this.quietClient.close();
         }

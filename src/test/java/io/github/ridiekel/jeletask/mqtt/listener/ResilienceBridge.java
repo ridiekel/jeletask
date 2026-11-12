@@ -194,6 +194,14 @@ final class ResilienceBridge implements AutoCloseable {
         return this.central.frames(Command.SET).size();
     }
 
+    /**
+     * The last messages the observer saw, for a failure message.
+     */
+    List<String> lastSeen(int count) {
+        List<Seen> all = List.copyOf(this.seen);
+        return all.subList(Math.max(0, all.size() - count), all.size()).stream().map(message -> message.topic() + " " + message.payload()).toList();
+    }
+
     void forgetSeen() {
         this.seen.clear();
     }

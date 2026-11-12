@@ -6,6 +6,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -20,6 +21,8 @@ public final class LogCapture implements AutoCloseable {
     private final AppenderBase<ILoggingEvent> appender = new AppenderBase<>() {
         @Override
         protected void append(ILoggingEvent event) {
+            // Logback fills in the thread name when asked, which for a later read would be the reading thread
+            event.prepareForDeferredProcessing();
             LogCapture.this.events.add(event);
         }
     };
@@ -43,6 +46,15 @@ public final class LogCapture implements AutoCloseable {
      */
     public static LogCapture quietClient() {
         return new LogCapture("io.github.ridiekel.jeletask.client", Level.INFO);
+    }
+
+    /**
+     * Everything captured, oldest first, with time and level: for a failure message.
+     */
+    public List<String> lines() {
+        return this.events.stream()
+                .map(event -> Instant.ofEpochMilli(event.getTimeStamp()) + " " + event.getLevel() + " [" + event.getThreadName() + "] " + event.getFormattedMessage())
+                .toList();
     }
 
     public List<String> messages(Level level) {
