@@ -27,9 +27,12 @@ case "${KIND}" in
       -Dspring-boot.build-image.imageName="${LOCAL_IMAGE}" \
       -Dspring-boot.build-image.imagePlatform="linux/${ARCH}" \
       -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-${ARCH}"
-    # Buildpacks cannot set a HEALTHCHECK, so it is added as metadata on top
-    docker build --platform "linux/${ARCH}" -t "${LOCAL_IMAGE}" - <<EOF
+    # Buildpacks cannot set a HEALTHCHECK, so it is added as metadata on top. The licences go along: the binary has
+    # the libraries compiled in, but not their notices.
+    docker build --platform "linux/${ARCH}" -t "${LOCAL_IMAGE}" -f - target/classes/META-INF <<EOF
 FROM ${LOCAL_IMAGE}
+COPY LICENSE.md /licenses/
+COPY third-party /licenses/third-party
 HEALTHCHECK --interval=30s --timeout=10s --start-period=2m --retries=3 CMD ["/cnb/process/web","--healthcheck"]
 EOF
     ;;

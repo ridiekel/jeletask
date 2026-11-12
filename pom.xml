@@ -27,6 +27,7 @@
         <sonar.coverage.exclusions>**/Teletask2MqttApplication.java</sonar.coverage.exclusions>
         <spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>-march=compatibility</spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>
         <!-- Fixed buildpack cache volumes, so the cache survives version bumps; override per target architecture -->
+        <third-party.directory>${project.build.directory}/third-party</third-party.directory>
         <build-image.cache-name>${project.artifactId}-build-image</build-image.cache-name>
     </properties>
 
@@ -50,10 +51,6 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
@@ -75,6 +72,11 @@
         </dependency>
 
         <!--    Test dependencies    -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -177,6 +179,23 @@
                     <include>**/*.sql</include>
                 </includes>
             </resource>
+            <!-- What has to travel with every distributed build: our own licence and the third-party notices.
+                 The images copy them from the jar to /licenses. -->
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>LICENSE.md</include>
+                </includes>
+                <targetPath>META-INF</targetPath>
+            </resource>
+            <resource>
+                <directory>src/main/third-party</directory>
+                <targetPath>META-INF/third-party</targetPath>
+            </resource>
+            <resource>
+                <directory>${third-party.directory}</directory>
+                <targetPath>META-INF/third-party</targetPath>
+            </resource>
         </resources>
         <pluginManagement>
             <plugins>
@@ -188,6 +207,50 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <!-- THIRD-PARTY.txt: every library in the application with its licence, from its POM -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.9.0</version>
+                <executions>
+                    <execution>
+                        <id>third-party-list</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-third-party</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${third-party.directory}</outputDirectory>
+                            <excludedScopes>test,provided,system</excludedScopes>
+                            <failOnMissing>true</failOnMissing>
+                            <!-- The resource below puts it under META-INF/third-party instead of the root of the jar -->
+                            <addOutputDirectoryAsResourceDir>false</addOutputDirectoryAsResourceDir>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- The NOTICE and LICENSE files the libraries ship themselves; Apache 2.0 asks to pass the NOTICE on -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>third-party-notices</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <includes>META-INF/NOTICE*,META-INF/notice*,META-INF/LICENSE*,META-INF/license*,about.html</includes>
+                            <outputDirectory>${third-party.directory}/libraries</outputDirectory>
+                            <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
+                            <stripVersion>true</stripVersion>
+                            <stripType>true</stripType>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>
@@ -285,8 +348,8 @@
 
     <licenses>
         <license>
-            <name>GNU Lesser General Public License v3.0</name>
-            <url>https://www.gnu.org/licenses/lgpl-3.0.en.html</url>
+            <name>GNU General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.en.html</url>
         </license>
     </licenses>
     <profiles>
