@@ -115,6 +115,39 @@ class TeletaskClientImplConnectionTest {
         awaitLogMessagesOn(1);
     }
 
+    /**
+     * The line hiccups right after a reconnect: the new connection stays up, but its log messages get no answer. Without
+     * them the central unit reports no changes, and a keep-alive would keep finding that connection fine.
+     */
+    @Test
+    void aReconnectThatCouldNotAskForTheStateChangesReconnectsAgain() {
+        this.central.goOnline();
+        TestCentralUnit unit = TestCentralUnit.withoutKeepAlive(this.central.port());
+        TeletaskClientImpl client = client(unit);
+        client.start();
+        awaitLogMessagesOn(0);
+        this.central.acknowledgingOnly(frame -> frame.connection() != 1 || frame.command() != Command.LOG);
+
+        client.restart();
+
+        awaitLogMessagesOn(2);
+        OnOffState on = new OnOffState(ValidOnOffToggle.ON);
+        this.central.send(unit.event(Function.RELAY, RELAY_1, on));
+        eventually().until(() -> on.equals(unit.getComponent(Function.RELAY, RELAY_1).getState()));
+    }
+
+    @Test
+    void aStartThatCouldNotAskForTheStateChangesReconnects() {
+        this.central.goOnline();
+        this.central.acknowledgingOnly(frame -> frame.connection() != 0 || frame.command() != Command.LOG);
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
+
+        client.start();
+
+        awaitLogMessagesOn(1);
+        eventually().until(client::isConnected);
+    }
+
     @Test
     void startKeepsTryingUntilTheCentralUnitComesOnline() {
         TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));
@@ -259,6 +292,8 @@ class TeletaskClientImplConnectionTest {
         this.central.goOnline();
         TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
         client.start();
+        // Not while the start still sends its log messages: a failure there replaces the connection
+        awaitLogMessagesOn(0);
         client.getOutputStream().close();
 
         TeletaskClientImpl.CommunicationException failure = assertThrows(TeletaskClientImpl.CommunicationException.class,
