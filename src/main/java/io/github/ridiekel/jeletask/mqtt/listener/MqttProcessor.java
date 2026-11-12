@@ -392,12 +392,12 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         String discoveryTopicsTopic = this.getDiscoveryTopicsTopic();
         this.mqttClient.subscribe(filter, (topic, message) -> {
             // An empty payload means the config was cleared already
-            if (message.isRetained() && message.getPayload().length > 0) {
+            if (message.retained() && message.payload().length > 0) {
                 previous.add(topic);
             }
         });
         this.mqttClient.subscribe(discoveryTopicsTopic, (_, message) -> {
-            if (message.isRetained() && message.getPayload().length > 0) {
+            if (message.retained() && message.payload().length > 0) {
                 previous.addAll(readDiscoveryTopics(message));
             }
         });
@@ -422,7 +422,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private static List<String> readDiscoveryTopics(MqttConnection.Message message) {
         try {
-            return StringUtilities.OBJECT_MAPPER.readValue(message.getPayload(), new TypeReference<>() {
+            return StringUtilities.OBJECT_MAPPER.readValue(message.payload(), new TypeReference<>() {
             });
         } catch (IOException e) {
             LOG.warn(() -> "Ignoring the list of previously published discovery topics, it is not readable: " + e.getMessage());

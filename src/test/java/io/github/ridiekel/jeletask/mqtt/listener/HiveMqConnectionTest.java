@@ -145,7 +145,7 @@ class HiveMqConnectionTest {
             bridge.subscribe("hivemq-test/retained", (_, message) -> received.add(message));
 
             await().atMost(10, TimeUnit.SECONDS).until(() -> !received.isEmpty());
-            assertThat(received.getFirst().isRetained()).isTrue();
+            assertThat(received.getFirst().retained()).isTrue();
             assertThat(received.getFirst()).hasToString("kept");
         }
 

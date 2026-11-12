@@ -355,7 +355,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
         }
     }
 
-    private MqttClient newClient() throws MqttException, MqttConnectionException {
+    private MqttClient newClient() throws MqttException {
         String broker = "tcp://" + this.mqtt().getHost() + ":" + this.mqtt().getPort();
         MqttClient client = new MqttClient(broker, "retained-test-" + UUID.randomUUID(), new MemoryPersistence());
         MqttConnectOptions options = new MqttConnectOptions();

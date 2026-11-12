@@ -50,30 +50,23 @@ public interface MqttConnection {
     /**
      * A message from the broker. {@link #toString()} is the payload as text.
      */
-    final class Message {
-        private final byte[] payload;
-        private final boolean retained;
-
-        public Message(byte[] payload, boolean retained) {
-            this.payload = payload.clone();
-            this.retained = retained;
+    record Message(byte[] payload, boolean retained) {
+        public Message {
+            payload = payload.clone();
         }
 
         public static Message of(String payload) {
             return new Message(payload.getBytes(StandardCharsets.UTF_8), false);
         }
 
-        public byte[] getPayload() {
+        @Override
+        public byte[] payload() {
             return this.payload.clone();
-        }
-
-        public boolean isRetained() {
-            return this.retained;
         }
 
         @Override
         public boolean equals(Object other) {
-            return other instanceof Message message && this.retained == message.retained && Arrays.equals(this.payload, message.payload);
+            return other instanceof Message(byte[] otherPayload, boolean otherRetained) && this.retained == otherRetained && Arrays.equals(this.payload, otherPayload);
         }
 
         @Override

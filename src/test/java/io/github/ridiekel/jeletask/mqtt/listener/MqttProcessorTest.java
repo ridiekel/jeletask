@@ -313,7 +313,7 @@ class MqttProcessorTest {
     }
 
     @Test
-    void aCommandWaitsForTheCentralUnitAndIsExecutedOnceItIsBack() throws Exception {
+    void aCommandWaitsForTheCentralUnitAndIsExecutedOnceItIsBack() {
         processor.startup();
         teletask.connected = false;
 
@@ -325,7 +325,7 @@ class MqttProcessorTest {
     }
 
     @Test
-    void aCommandIsNotExecutedWhenTheCentralUnitStaysAwayLongerThanItWaits() throws Exception {
+    void aCommandIsNotExecutedWhenTheCentralUnitStaysAwayLongerThanItWaits() {
         processor.setCommandMaxWait(Duration.ofMillis(200));
         processor.startup();
         teletask.connected = false;
@@ -359,7 +359,7 @@ class MqttProcessorTest {
     }
 
     @Test
-    void stopTopicExitsWithStatus0() throws Exception {
+    void stopTopicExitsWithStatus0() {
         processor.startup();
 
         mqtt.deliver(STOP_TOPIC, "maintenance");
