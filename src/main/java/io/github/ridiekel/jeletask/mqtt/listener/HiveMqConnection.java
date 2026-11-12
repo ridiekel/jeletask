@@ -110,7 +110,7 @@ public final class HiveMqConnection implements MqttConnection {
     private static MqttClientTransportConfig transport(MqttConnectionSettings settings) {
         MqttClientTransportConfigBuilder transport = MqttClientTransportConfig.builder()
                 .serverHost(settings.mqtt().getHost())
-                .serverPort(Integer.parseInt(settings.mqtt().getPort().trim()))
+                .serverPort(MqttTls.port(settings.mqtt()))
                 .socketConnectTimeout(settings.connectTimeout().toMillis(), TimeUnit.MILLISECONDS)
                 .mqttConnectTimeout(settings.connectTimeout().toMillis(), TimeUnit.MILLISECONDS);
         return MqttTls.sslConfig(settings.mqtt()).map(transport::sslConfig).orElse(transport).build();
@@ -124,17 +124,29 @@ public final class HiveMqConnection implements MqttConnection {
     @Override
     public void subscribe(String topicFilter, MessageHandler handler) throws MqttConnectionException {
         // Before the SUBSCRIBE: the broker sends the retained messages right away, maybe before its answer arrives
-        this.handlers.put(topicFilter, handler);
+        MessageHandler previous = this.handlers.put(topicFilter, handler);
         Mqtt3SubAck subAck;
         try {
             subAck = this.await(this.client.subscribeWith().topicFilter(topicFilter).qos(MqttQos.AT_MOST_ONCE).send(), "subscribe to " + topicFilter);
         } catch (MqttConnectionException e) {
-            this.handlers.remove(topicFilter, handler);
+            this.restore(topicFilter, handler, previous);
             throw e;
         }
         if (subAck.getReturnCodes().contains(Mqtt3SubAckReturnCode.FAILURE)) {
-            this.handlers.remove(topicFilter, handler);
+            this.restore(topicFilter, handler, previous);
             throw new MqttConnectionException("The broker refused the subscription to " + topicFilter);
+        }
+    }
+
+    /**
+     * A subscribe that failed leaves the filter as it was. The broker may still hold the earlier subscription of our
+     * session and keep delivering, and those messages need the handler that was there.
+     */
+    private void restore(String topicFilter, MessageHandler failed, MessageHandler previous) {
+        if (previous == null) {
+            this.handlers.remove(topicFilter, failed);
+        } else {
+            this.handlers.replace(topicFilter, failed, previous);
         }
     }
 
@@ -162,8 +174,10 @@ public final class HiveMqConnection implements MqttConnection {
     private void dispatch(Mqtt3Publish publish) {
         MqttTopic topic = publish.getTopic();
         Message message = new Message(publish.getPayloadAsBytes(), publish.isRetain());
+        AtomicBoolean handled = new AtomicBoolean();
         this.handlers.forEach((filter, handler) -> {
             if (MqttTopicFilter.of(filter).matches(topic)) {
+                handled.set(true);
                 try {
                     handler.arrived(topic.toString(), message);
                 } catch (RuntimeException e) {
@@ -172,6 +186,10 @@ public final class HiveMqConnection implements MqttConnection {
                 }
             }
         });
+        if (!handled.get()) {
+            // Expected for a moment around an unsubscribe; anything else is a subscription nobody listens to
+            LOG.debug("No handler for MQTT topic '{}', the message is dropped", topic);
+        }
     }
 
     private <T> T await(CompletableFuture<T> future, String what) throws MqttConnectionException {

@@ -65,6 +65,55 @@ class HiveMqConnectionTest {
         assertThat(connection.isConnected()).isFalse();
     }
 
+    /**
+     * The broker may still hold the subscription of before the reconnect and keep delivering: those messages need
+     * the handler that was there, also while the answer to the new subscribe stays away.
+     */
+    @Test
+    void aSubscribeThatGetsNoAnswerKeepsTheHandlerThatWasThere() throws IOException, MqttConnectionException {
+        try (FakeBroker broker = new FakeBroker()) {
+            MqttConnection bridge = this.connection();
+            bridge.connect(settings(config("127.0.0.1", broker.port()), "silent-broker", Duration.ofMillis(500)), IGNORE);
+            List<String> received = new CopyOnWriteArrayList<>();
+            bridge.subscribe("hivemq-test/silent", (_, message) -> received.add("first " + message));
+            broker.stopAnsweringSubscribes();
+
+            assertThatThrownBy(() -> bridge.subscribe("hivemq-test/silent", (_, message) -> received.add("second " + message)))
+                    .isInstanceOf(MqttConnectionException.class)
+                    .hasMessageContaining("No answer of the broker within 500 ms to subscribe to hivemq-test/silent");
+            assertThat(broker.subscribesSeen()).isEqualTo(2);
+            broker.publish("hivemq-test/silent", "on");
+
+            await().atMost(10, TimeUnit.SECONDS).until(() -> !received.isEmpty());
+            assertThat(received).containsExactly("first on");
+        }
+    }
+
+    @Test
+    void aFirstSubscribeThatGetsNoAnswerLeavesNoHandlerBehind() throws IOException, MqttConnectionException {
+        try (FakeBroker broker = new FakeBroker()) {
+            MqttConnection bridge = this.connection();
+            bridge.connect(settings(config("127.0.0.1", broker.port()), "silent-broker", Duration.ofMillis(500)), IGNORE);
+            List<String> received = new CopyOnWriteArrayList<>();
+            // Answered: its handler tells when the message below has gone through the connection
+            bridge.subscribe("hivemq-test/#", (_, message) -> received.add("all " + message));
+            broker.stopAnsweringSubscribes();
+
+            assertThatThrownBy(() -> bridge.subscribe("hivemq-test/silent", (_, message) -> received.add("silent " + message)))
+                    .isInstanceOf(MqttConnectionException.class);
+            broker.publish("hivemq-test/silent", "on");
+
+            await().atMost(10, TimeUnit.SECONDS).until(() -> !received.isEmpty());
+            assertThat(received).containsExactly("all on");
+        }
+    }
+
+    private static MqttConnectionSettings settings(MqttConfiguration mqtt, String clientId, Duration timeToWait) {
+        MqttConnectionSettings settings = MqttTlsTest.settings(mqtt, clientId);
+        return new MqttConnectionSettings(settings.mqtt(), settings.clientId(), settings.username(), settings.password(), settings.keepAlive(), settings.connectTimeout(),
+                settings.reconnectDelay(), settings.maxReconnectDelay(), timeToWait, settings.willTopic(), settings.willPayload());
+    }
+
     private MqttConnection connection() {
         MqttConnection connection = new HiveMqConnection();
         this.connections.add(connection);

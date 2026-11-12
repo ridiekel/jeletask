@@ -193,7 +193,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         String clientId = this.configuration.getMqtt().getClientId();
 
         String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
-        String password = configuration.getMqtt().getPassword();
+        // Empty is the default of application.yml: no password, like an empty username is no username
+        String password = Optional.ofNullable(configuration.getMqtt().getPassword()).filter(p -> !p.isEmpty()).orElse(null);
 
         log(LOG::info, What.CONNECTION, STATUS, String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s, ca_file=%s)...)", brokerUrl, clientId, username, password != null, !this.configuration.getMqtt().isSsl() ? "-" : MqttTls.caFile(this.configuration.getMqtt()).map(Path::toString).orElse("<jvm trust store>")));
 

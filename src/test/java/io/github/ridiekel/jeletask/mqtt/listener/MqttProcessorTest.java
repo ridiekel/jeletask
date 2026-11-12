@@ -1,10 +1,12 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
+import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.ridiekel.jeletask.HealthCheck;
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.mockserver.LogCapture;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.FakeTeletaskClient;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
 import org.awaitility.Awaitility;
@@ -58,7 +60,8 @@ class MqttProcessorTest {
     private final Map<String, String> liveOnBroker = new ConcurrentHashMap<>();
 
     /**
-     * Characterization, not a wish: no retry of its own. The application stops, and its restart policy brings it back.
+     * Characterization, not a wish: no retry of its own. The failure ends the process (StartupFailureExitTest), and
+     * the restart policy of the container brings the bridge back.
      */
     @Test
     void startupFailsWhenTheBrokerCannotBeReached() {
@@ -120,6 +123,23 @@ class MqttProcessorTest {
         processor.startup();
 
         assertThat(mqtt.settings.username()).isEqualTo("bridge");
+        assertThat(mqtt.settings.password()).isNull();
+    }
+
+    /**
+     * What every setup without credentials has: application.yml sets both to an empty text, not to nothing.
+     */
+    @Test
+    void anEmptyPasswordIsNoPasswordAndDoesNotWarn() {
+        configuration.getMqtt().setUsername("");
+        configuration.getMqtt().setPassword("");
+
+        try (LogCapture log = LogCapture.of(MqttProcessor.class, Level.INFO)) {
+            processor.startup();
+
+            assertThat(log.messages(Level.WARN)).noneMatch(message -> message.contains("password without a username"));
+            assertThat(log.messages(Level.INFO)).anyMatch(message -> message.contains("Connecting to MQTT") && message.contains("password_provided=false"));
+        }
         assertThat(mqtt.settings.password()).isNull();
     }
 
