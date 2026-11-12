@@ -617,3 +617,12 @@ A new `SensorType` needs an entry in two maps: `MicrosPlusFunctionConfiguration.
 `MqttLogger` is a formatting helper, it has no log methods. Use its static helpers with the class's own `LOG`, and don't write the `[MQTT ]` format by hand.
 
 `pom.xml` declares no Log4j2 dependency. `log4j-api` only comes in through the `log4j-to-slf4j` bridge of `spring-boot-starter-logging`, so every `LogManager.getLogger` call ends up in Logback. Removing or replacing that starter breaks the build.
+
+# License
+
+Jeletask is free software under the [GNU General Public License v3.0](LICENSE.md).
+
+The images contain third-party libraries, each under its own licence. Their notices and licence texts are in
+`/licenses` inside every image (and under `META-INF/third-party` in the jar): `THIRD-PARTY.txt` lists every library
+with its version and licence. The build collects them, and `ThirdPartyNoticesTest` fails when a new library brings
+no licence text along; add one under `src/main/third-party/licenses` then.
