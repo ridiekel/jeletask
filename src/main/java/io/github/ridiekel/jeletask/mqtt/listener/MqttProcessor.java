@@ -81,7 +81,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private PingMesage pingMesage;
     private volatile boolean lastPingSucceeded = true;
-    // Replaced by the thread that keeps trying to start, read by all the others
+    // Replaced by the thread that keeps trying to start, read by all the others.
+    // Only the reference changes hands, and that is what volatile is for: a connection takes calls from any thread.
+    @SuppressWarnings("java:S3077")
     private volatile MqttConnection mqttClient;
     @Getter
     private final String prefix;
