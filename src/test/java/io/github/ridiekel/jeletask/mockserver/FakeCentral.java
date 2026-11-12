@@ -89,6 +89,13 @@ public final class FakeCentral implements AutoCloseable {
         return this.connections.size();
     }
 
+    /**
+     * Connections that neither side closed yet.
+     */
+    public int openConnectionCount() {
+        return (int) this.connections.stream().filter(connection -> !connection.closedByClient && !connection.socket.isClosed()).count();
+    }
+
     public boolean closedByClient(int connection) {
         return this.connections.size() > connection && this.connections.get(connection).closedByClient;
     }

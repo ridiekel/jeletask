@@ -42,6 +42,7 @@ class MqttProcessorTest {
     private static final String AVAILABILITY_TOPIC = BASE_TOPIC + "/state";
     private static final String STOP_TOPIC = BASE_TOPIC + "/stop";
     private static final String REFRESH_TOPIC = BASE_TOPIC + "/refresh";
+    private static final String RELAY_1_SET_TOPIC = BASE_TOPIC + "/relay/1/set";
     private static final String DISCOVERY_TOPICS_TOPIC = "teletask2mqtt/bridges/fixture_client/discovery";
     private static final String RELAY_1_CONFIG_TOPIC = "homeassistant/light/fixture_central/relay_1/config";
     private static final String BRIDGE_CONFIG_TOPIC = "homeassistant/sensor/fixture_central/sensor_-1/config";
@@ -73,6 +74,24 @@ class MqttProcessorTest {
         IllegalStateException failure = assertThrows(IllegalStateException.class, failing::startup);
 
         assertThat(failure).hasCause(cause);
+    }
+
+    /**
+     * Characterization, not a wish: no retry of its own. The application stops, and its restart policy brings it back.
+     */
+    @Test
+    void startupFailsWhenTheBrokerCannotBeReached() {
+        MqttException cause = new MqttException(MqttException.REASON_CODE_SERVER_CONNECT_ERROR);
+        MqttProcessor unreachable = new MqttProcessor(MqttProcessorFixtures.centralUnit(), teletask, configuration, exitCodes::add, (_, _) -> {
+            FakeMqttClient client = new FakeMqttClient();
+            client.failConnect = cause;
+            return client;
+        });
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class, unreachable::startup);
+
+        assertThat(failure).hasCause(cause);
+        assertThat(teletask.groupGets).hasValue(0);
     }
 
     @Test
@@ -261,6 +280,44 @@ class MqttProcessorTest {
     }
 
     @Test
+    void aFailedResubscribeIsTriedAgainWhileTheConnectionStaysUp() {
+        processor.setResubscribeDelay(Duration.ofMillis(50));
+        processor.startup();
+        mqtt.clearRecordings();
+        mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
+
+        mqtt.callback.connectComplete(true, "tcp://broker");
+        Awaitility.await("a second attempt").atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() >= 2);
+        mqtt.failSubscribeTo = null;
+
+        Awaitility.await("subscribed again").atMost(AWAIT).untilAsserted(() -> assertThat(mqtt.subscribed).contains(STOP_TOPIC));
+    }
+
+    @Test
+    void aResubscribeThatKeepsFailingIsGivenUpOn() {
+        processor.setResubscribeDelay(Duration.ofMillis(10));
+        processor.startup();
+        mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
+
+        mqtt.callback.connectComplete(true, "tcp://broker");
+
+        Awaitility.await("five attempts and no more").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() == 5);
+    }
+
+    @Test
+    void aResubscribeIsNotTriedAgainOnceTheConnectionIsGone() {
+        processor.setResubscribeDelay(Duration.ofMillis(10));
+        processor.startup();
+        mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
+        mqtt.connected = false;
+
+        mqtt.callback.connectComplete(true, "tcp://broker");
+
+        // The next reconnect subscribes again by itself
+        Awaitility.await("one attempt").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() == 1);
+    }
+
+    @Test
     void aResubscribeThatWaitsForTheBrokerDoesNotHoldBackCommands() {
         processor.startup();
         mqtt.blockSubscribes = new CountDownLatch(1);
@@ -272,6 +329,33 @@ class MqttProcessorTest {
         } finally {
             mqtt.blockSubscribes.countDown();
         }
+    }
+
+    @Test
+    void aCommandWaitsForTheCentralUnitAndIsExecutedOnceItIsBack() throws Exception {
+        processor.startup();
+        teletask.connected = false;
+
+        mqtt.deliver(RELAY_1_SET_TOPIC, "{\"state\":\"ON\"}");
+        Awaitility.await("not executed while away").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> teletask.commandsReceived.get() == 0);
+
+        teletask.connected = true;
+        Awaitility.await("executed").atMost(AWAIT).until(() -> teletask.commandsReceived.get() == 1);
+    }
+
+    @Test
+    void aCommandIsNotExecutedWhenTheCentralUnitStaysAwayLongerThanItWaits() throws Exception {
+        processor.setCommandMaxWait(Duration.ofMillis(200));
+        processor.startup();
+        teletask.connected = false;
+
+        mqtt.deliver(RELAY_1_SET_TOPIC, "{\"state\":\"ON\"}");
+        // Behind the command on the same executor, so it ends after the command gave up
+        awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "sentinel"));
+        teletask.connected = true;
+
+        awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "sentinel"));
+        assertThat(teletask.commandsReceived).hasValue(0);
     }
 
     @Test
@@ -530,7 +614,9 @@ class MqttProcessorTest {
         volatile boolean echoPublishes = true;
         volatile String failSubscribeTo;
         volatile CountDownLatch blockSubscribes;
+        volatile MqttException failConnect;
         final AtomicInteger subscribesWaiting = new AtomicInteger();
+        final AtomicInteger failedSubscribes = new AtomicInteger();
         volatile String failPublishTo;
 
         FakeMqttClient() throws MqttException {
@@ -549,7 +635,10 @@ class MqttProcessorTest {
         }
 
         @Override
-        public void connect(MqttConnectOptions options) {
+        public void connect(MqttConnectOptions options) throws MqttException {
+            if (failConnect != null) {
+                throw failConnect;
+            }
             this.options = options;
             connected = true;
             callback.connectComplete(false, getServerURI());
@@ -563,6 +652,7 @@ class MqttProcessorTest {
         @Override
         public void subscribe(String topicFilter, int qos, IMqttMessageListener listener) throws MqttException {
             if (topicFilter.equals(failSubscribeTo)) {
+                failedSubscribes.incrementAndGet();
                 throw new MqttException(MqttException.REASON_CODE_SUBSCRIBE_FAILED);
             }
             awaitSubscribeUnblocked();

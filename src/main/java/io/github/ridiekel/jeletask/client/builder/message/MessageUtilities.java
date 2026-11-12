@@ -49,15 +49,44 @@ public final class MessageUtilities {
             }
             long now = System.currentTimeMillis();
             if (overflow.length > 0 && (now - lastDataTime > FRAGMENT_SILENCE_MILLIS || now - startTime > MAX_RECEIVE_MILLIS)) {
-                if (logger.isWarnEnabled()) {
-                    logger.warn("Receive - Dropping incomplete message: {}", Bytes.bytesToHex(overflow));
-                }
-                overflow = new byte[0];
+                overflow = dropIncompleteMessage(logger, teletaskReceiver.getCentralUnit(), responses, overflow, currentlyRunningMessage);
             }
             Thread.sleep(10);
         } while (overflow.length > 0);
 
         return responses;
+    }
+
+    /**
+     * Only the message that never completed goes: a corrupt length makes it claim the messages behind it, those still count.
+     */
+    private static byte[] dropIncompleteMessage(Logger logger, CentralUnit centralUnit, Collection<MessageSupport> responses, byte[] overflow, MessageSupport currentlyRunningMessage) {
+        int next = indexOfStx(centralUnit.getMessageHandler(), overflow, 1, overflow.length);
+        byte[] dropped = Arrays.copyOfRange(overflow, 0, next);
+        if (logger.isWarnEnabled()) {
+            logger.warn("Receive - Dropping incomplete message: {}", Bytes.bytesToHex(dropped));
+        }
+        if (next == overflow.length) {
+            return new byte[0];
+        }
+        return extractMessages(logger, centralUnit, responses, Arrays.copyOfRange(overflow, next, overflow.length), currentlyRunningMessage);
+    }
+
+    private static int indexOfStx(MessageHandler messageHandler, byte[] data, int from, int to) {
+        for (int i = from; i < to; i++) {
+            if (data[i] == messageHandler.getStxValue()) {
+                return i;
+            }
+        }
+        return to;
+    }
+
+    private static boolean hasCorrectChecksum(byte[] message) {
+        byte sum = 0;
+        for (int i = 0; i < message.length - 1; i++) {
+            sum += message[i];
+        }
+        return sum == message[message.length - 1];
     }
 
     private static byte[] extractMessages(Logger logger, CentralUnit centralUnit, Collection<MessageSupport> responses, byte[] data, MessageSupport currentlyRunningMessage) {
@@ -82,8 +111,16 @@ public final class MessageUtilities {
                 int eventLengthInclChkSum = data[i + 1] + 1; // +1 for checksum
                 byte[] event = Arrays.copyOfRange(data, i, i + eventLengthInclChkSum);
                 logger.trace("Receive - Found message bytes: {}", () -> Bytes.bytesToHex(event));
-                parseMessage(logger, centralUnit, messageHandler, event, responses);
-                i += eventLengthInclChkSum;
+                if (hasCorrectChecksum(event)) {
+                    parseMessage(logger, centralUnit, messageHandler, event, responses);
+                    i += eventLengthInclChkSum;
+                } else {
+                    // A corrupt length may have taken the start of the next message along, so look for it inside
+                    int next = indexOfStx(messageHandler, data, i + 1, i + eventLengthInclChkSum);
+                    byte[] skipped = Arrays.copyOfRange(data, i, next);
+                    logger.warn("Receive - Skipping bytes with a wrong checksum: {}", () -> Bytes.bytesToHex(skipped));
+                    i = next;
+                }
             }
         }
         return new byte[0];

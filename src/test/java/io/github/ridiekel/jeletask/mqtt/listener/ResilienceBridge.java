@@ -40,6 +40,8 @@ final class ResilienceBridge implements AutoCloseable {
     static final Set<Function> LOGGED_FUNCTIONS = Set.of(Function.RELAY, Function.LOCMOOD, Function.GENMOOD, Function.MOTOR, Function.DIMMER, Function.COND, Function.SENSOR, Function.FLAG, Function.TIMEDFNC, Function.INPUT);
 
     private static final Duration AWAIT = Duration.ofSeconds(90);
+    private static final String CONFIG_TOPICS = "homeassistant/+/" + MqttProcessorFixtures.configuration().getCentral().getId() + "/+/config";
+    private static final List<String> PAHO_CONNECTION_THREADS = List.of("MQTT Rec:", "MQTT Snd:", "MQTT Call:", "MQTT Ping:");
     private static final int KEEP_ALIVE_MILLIS = 1000;
     private static final long STATUS_INTERVAL_MILLIS = 250;
     private static final int FRAME_NUMBER_HIGH_INDEX = 5;
@@ -84,6 +86,7 @@ final class ResilienceBridge implements AutoCloseable {
         this.observer = new MqttClient(this.observerBrokerUrl, "resilience-observer", new MemoryPersistence());
         this.observer.connect();
         this.observer.subscribe(this.baseTopic + "/#", 1, (topic, message) -> this.seen.add(new Seen(topic, new String(message.getPayload()))));
+        this.observer.subscribe(CONFIG_TOPICS, 1, (topic, message) -> this.seen.add(new Seen(topic, new String(message.getPayload()))));
 
         this.processor.startup();
         this.status.scheduleWithFixedDelay(this::checkStatus, 0, STATUS_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
@@ -103,6 +106,31 @@ final class ResilienceBridge implements AutoCloseable {
 
     int connections() {
         return this.central.connectionCount();
+    }
+
+    int openCentralConnections() {
+        return this.central.openConnectionCount();
+    }
+
+    /**
+     * The io, keep-alive and event listener threads of this bridge's Teletask client.
+     */
+    int clientThreads() {
+        return this.threads.started().size();
+    }
+
+    /**
+     * The threads Paho runs for the connection of this bridge: receiver, sender, callback and ping.
+     * <p>
+     * Leaves out the connect and reconnect threads: Paho 1.2.5, the last mqttv3 release, can leave those behind when a
+     * connection drops while it is being set up. CommsReceiver.start then waits forever for a receiver that already ended.
+     */
+    static int pahoConnectionThreads() {
+        String clientId = MqttProcessorFixtures.configuration().getMqtt().getClientId();
+        return (int) Thread.getAllStackTraces().keySet().stream()
+                .map(Thread::getName)
+                .filter(name -> PAHO_CONNECTION_THREADS.stream().anyMatch(name::startsWith) && name.endsWith(clientId))
+                .count();
     }
 
     int keepAlives() {
@@ -130,6 +158,28 @@ final class ResilienceBridge implements AutoCloseable {
      */
     void relayChangesOnCentralWhileAway(int relay, ValidOnOffToggle state) {
         this.relaysOnCentral.put(relay, state);
+    }
+
+    /**
+     * What Home Assistant says when it starts: the bridge answers with its whole config.
+     */
+    void homeAssistantStarts() throws MqttException {
+        this.observer.publish("homeassistant/status", "online".getBytes(), 1, false);
+    }
+
+    /**
+     * Every component and the bridge itself have a config topic.
+     */
+    static int configTopics() {
+        return RELAYS + 1;
+    }
+
+    long configBytesSeen() {
+        return this.seen.stream().filter(message -> message.topic().endsWith("/config")).mapToLong(message -> message.payload().length()).sum();
+    }
+
+    long configsSeen() {
+        return this.seen.stream().filter(message -> message.topic().endsWith("/config") && !message.payload().isEmpty()).map(Seen::topic).distinct().count();
     }
 
     void publishSet(int relay, ValidOnOffToggle state) throws MqttException {

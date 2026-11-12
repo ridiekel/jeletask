@@ -45,6 +45,9 @@ abstract class ResilienceScenarios {
     private static final long LATENCY_WITHIN_LIMITS_MILLIS = 300;
     private static final long LATENCY_BEYOND_ACK_MILLIS = MessageSupport.ACK_WAIT_TIME * 2L;
     private static final long CENTRAL_STARTUP_WAIT_SECONDS = 30;
+    private static final long SLOW_LINE_KILOBYTES_PER_SECOND = 1;
+    // Shorter and longer than the reconnect delays of both clients, which start at one second
+    private static final long[] FLAP_MILLIS = {100, 1500, 300, 3000, 50, 800};
 
     private LogCapture quietClient;
     private LogCapture quietProcessor;
@@ -105,6 +108,28 @@ abstract class ResilienceScenarios {
                     .isGreaterThan(1);
         }
         assertThat(this.bridge.connections()).isEqualTo(1);
+    }
+
+    /**
+     * A bad cable or a misbehaving central unit: bytes nobody expects, a length that claims too much, a wrong checksum.
+     */
+    @Test
+    void garbageFromTheCentralUnitDoesNotCostTheEventsAroundIt() throws MqttException {
+        ValidOnOffToggle on = ValidOnOffToggle.ON;
+        byte stx = (byte) this.bridge.unit().getMessageHandler().getStxValue();
+        byte[] noise = {0x7F, 0x00, 0x55};
+        byte[] lengthTooLong = {stx, 0x40};
+        byte[] wrongChecksum = relayEvent(3, on);
+        wrongChecksum[wrongChecksum.length - 1]++;
+
+        this.bridge.centralSends(Bytes.concat(noise, relayEvent(1, on), lengthTooLong, relayEvent(2, on), wrongChecksum, relayEvent(4, on)));
+
+        this.bridge.awaitOnMqtt(1, on);
+        this.bridge.awaitOnMqtt(2, on);
+        this.bridge.awaitOnMqtt(4, on);
+        assertThat(this.bridge.sawOnMqtt(3, on)).isFalse();
+        assertThat(this.bridge.connections()).isEqualTo(1);
+        this.bridge.awaitCommandRoundTrip(5, on);
     }
 
     @Test
@@ -224,6 +249,56 @@ abstract class ResilienceScenarios {
     }
 
     /**
+     * The MQTT client waits at most 10 seconds for a publish, a slow line must not make it give up on the config.
+     */
+    @Test
+    void aSlowBrokerLineStillGetsTheWholeConfigToHomeAssistant() throws IOException, MqttException {
+        Proxy line = this.network.brokerLine();
+        line.toxics().bandwidth("slow-to-broker", ToxicDirection.UPSTREAM, SLOW_LINE_KILOBYTES_PER_SECOND);
+        line.toxics().latency("far-from-broker", ToxicDirection.DOWNSTREAM, LATENCY_WITHIN_LIMITS_MILLIS);
+
+        long before = System.nanoTime();
+        this.bridge.homeAssistantStarts();
+
+        eventually().alias("all config").until(() -> this.bridge.configsSeen() == ResilienceBridge.configTopics());
+        // Only a lower bound, from the payloads alone: proves the toxic is really in the way
+        long slowestPossibleMillis = this.bridge.configBytesSeen() * 1000 / (SLOW_LINE_KILOBYTES_PER_SECOND * 1024);
+        assertThat(Duration.ofNanos(System.nanoTime() - before)).isGreaterThanOrEqualTo(Duration.ofMillis(slowestPossibleMillis));
+        assertThat(processorLogged(Level.WARN, "Could not publish")).isZero();
+        this.bridge.awaitHealth(ALL_UP);
+        this.bridge.awaitCommandRoundTrip(1, ValidOnOffToggle.ON);
+    }
+
+    /**
+     * Short outages one after the other, of both lines and of both at once, the way a bad cable or switch behaves.
+     */
+    @Test
+    void aFlappingLineLeavesNoThreadsOrConnectionsBehind() throws IOException, MqttException, InterruptedException {
+        int clientThreads = this.bridge.clientThreads();
+        int pahoThreads = ResilienceBridge.pahoConnectionThreads();
+        Proxy centralLine = this.network.centralLine();
+        Proxy brokerLine = this.network.brokerLine();
+
+        for (long downMillis : FLAP_MILLIS) {
+            flap(downMillis, centralLine);
+            flap(downMillis, brokerLine);
+            flap(downMillis, centralLine, brokerLine);
+        }
+
+        this.bridge.awaitHealth(ALL_UP);
+        this.bridge.awaitAvailability(ONLINE);
+        this.bridge.awaitStatusRequestsOnLatestConnection();
+        this.bridge.forgetSeen();
+        this.bridge.relayChangesOnCentral(1, ValidOnOffToggle.ON);
+        this.bridge.awaitOnMqtt(1, ValidOnOffToggle.ON);
+        this.bridge.awaitCommandRoundTrip(2, ValidOnOffToggle.ON);
+
+        eventually().alias("one connection to the central unit").until(() -> this.bridge.openCentralConnections() == 1);
+        eventually().alias("no extra client threads").until(() -> this.bridge.clientThreads() == clientThreads);
+        eventually().alias("no extra Paho connection threads").until(() -> ResilienceBridge.pahoConnectionThreads() == pahoThreads);
+    }
+
+    /**
      * Characterization, not a wish: an MQTT command during a short outage waits for the reconnect.
      */
     @Test
@@ -233,7 +308,7 @@ abstract class ResilienceScenarios {
         awaitClientNoticed();
 
         this.bridge.publishSet(1, ValidOnOffToggle.ON);
-        eventually().alias("command picked up").until(() -> !this.quietCommands.messages(Level.INFO).isEmpty());
+        eventually().alias("command waiting").until(() -> processorLogged(Level.INFO, "waits for the central unit") == 1);
         assertThat(this.bridge.setFrames()).isZero();
 
         line.enable();
@@ -243,8 +318,8 @@ abstract class ResilienceScenarios {
     }
 
     /**
-     * Characterization, not a wish: see TeletaskClientImpl.withStarted. A command waits 30 seconds for the client and is
-     * then gone, without anyone being told over MQTT and without a retry after the reconnect.
+     * Characterization, not a wish: a command waits 30 seconds for the central unit and is then gone, without anyone being
+     * told over MQTT and without a retry after the reconnect.
      */
     @Test
     void characterizationACommandDuringALongOutageIsLostAfterThirtySeconds() throws IOException, MqttException {
@@ -254,10 +329,10 @@ abstract class ResilienceScenarios {
 
         long before = System.nanoTime();
         this.bridge.publishSet(1, ValidOnOffToggle.ON);
-        eventually().alias("command given up on").until(() -> !this.quietCommands.messages(Level.WARN).isEmpty());
+        eventually().alias("command given up on").until(() -> notExecutedLogged() == 1);
 
         assertThat(Duration.ofNanos(System.nanoTime() - before)).isGreaterThanOrEqualTo(Duration.ofSeconds(CENTRAL_STARTUP_WAIT_SECONDS));
-        assertThat(this.quietCommands.messages(Level.WARN)).singleElement().asString().contains("Teletask Client Startup");
+        assertThat(this.quietCommands.messages(Level.WARN)).isEmpty();
 
         line.enable();
 
@@ -270,12 +345,60 @@ abstract class ResilienceScenarios {
     }
 
     /**
+     * Commands that arrive together share one fate: each waits 30 seconds from its arrival, not from when the one before
+     * it gave up.
+     */
+    @Test
+    void commandsThatPiledUpDuringALongOutageAreNotExecutedLongAfterTheFact() throws IOException, MqttException {
+        Proxy line = this.network.centralLine();
+        line.disable();
+        awaitClientNoticed();
+
+        for (int relay = 1; relay <= ResilienceBridge.RELAYS; relay++) {
+            this.bridge.publishSet(relay, ValidOnOffToggle.ON);
+        }
+        eventually().alias("none executed").until(() -> notExecutedLogged() == ResilienceBridge.RELAYS);
+
+        line.enable();
+
+        this.bridge.awaitHealth(ALL_UP);
+        this.bridge.awaitStatusRequestsOnLatestConnection();
+        this.bridge.awaitCommandRoundTrip(2, ValidOnOffToggle.ON);
+        assertThat(this.bridge.setFrames()).isEqualTo(1);
+    }
+
+    /**
      * Health alone would not do here: the file has a fixed path, so another test run on this machine can write DOWN too.
      * A command sent before the client noticed is a different story, it goes down the dead line.
      */
     private void awaitClientNoticed() {
         this.bridge.awaitHealth(TELETASK_DOWN_MQTT_UP);
         this.bridge.awaitAvailability(OFFLINE);
+    }
+
+    // How long the lines stay down and up is the disturbance itself, the input of the test, not a wait for a result
+    @SuppressWarnings("java:S2925")
+    private static void flap(long downMillis, Proxy... lines) throws IOException, InterruptedException {
+        for (Proxy line : lines) {
+            line.disable();
+        }
+        Thread.sleep(downMillis);
+        for (Proxy line : lines) {
+            line.enable();
+        }
+        Thread.sleep(downMillis);
+    }
+
+    private byte[] relayEvent(int relay, ValidOnOffToggle state) {
+        return this.bridge.unit().event(Function.RELAY, relay, new OnOffState(state));
+    }
+
+    private int notExecutedLogged() {
+        return processorLogged(Level.WARN, "not executed");
+    }
+
+    private int processorLogged(Level level, String text) {
+        return (int) this.quietProcessor.messages(level).stream().filter(line -> line.contains(text)).count();
     }
 
     private int subscribesLogged() {
