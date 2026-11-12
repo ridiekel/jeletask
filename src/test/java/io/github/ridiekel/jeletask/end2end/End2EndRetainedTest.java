@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class End2EndRetainedTest extends MockingTeletaskTestSupport {
     @AfterEach
-    void restoreDefaults() throws MqttException, MqttConnectionException {
+    void restoreDefaults() throws MqttException {
         this.config.getMqtt().setRetained(false);
         // States retained during a test would stick around on the broker for the other tests
         for (String topic : retained(this.config.getMqtt().getPrefix() + "/+/+/+/state").keySet()) {
@@ -42,7 +42,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
 
     @ParameterizedTest(name = "retained flag {0}")
     @ValueSource(booleans = {false, true})
-    void discoveryConfigIsAlwaysRetained(boolean retainedFlag) throws MqttException, MqttConnectionException {
+    void discoveryConfigIsAlwaysRetained(boolean retainedFlag) throws MqttException {
         MqttProcessor processor = this.mqtt().processor();
         // Start from an empty broker, otherwise the config from startup would make this pass anyway
         processor.removeConfig();
@@ -55,7 +55,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
 
     @ParameterizedTest(name = "retained flag {0}")
     @ValueSource(booleans = {false, true})
-    void removingTheConfigClearsTheRetainedConfig(boolean retainedFlag) throws MqttException, MqttConnectionException {
+    void removingTheConfigClearsTheRetainedConfig(boolean retainedFlag) throws MqttException {
         MqttProcessor processor = this.mqtt().processor();
         this.config.getMqtt().setRetained(retainedFlag);
         try {
@@ -89,7 +89,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void staleConfigFromBeforeStartupIsRemovedOnStartup() throws MqttException, MqttConnectionException {
+    void staleConfigFromBeforeStartupIsRemovedOnStartup() throws MqttException {
         assertThat(retained(this.mqtt().staleConfigTopicBeforeStartup())).isEmpty();
     }
 
@@ -243,7 +243,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void statesAreOnlyRetainedWhenConfigured() throws MqttException, MqttConnectionException {
+    void statesAreOnlyRetainedWhenConfigured() throws MqttException {
         String stateTopic = this.config.getMqtt().getPrefix() + "/+/relay/10/state";
 
         this.teletask().relay(10).turnOff();
@@ -262,7 +262,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
 
     @ParameterizedTest(name = "retained flag {0}")
     @ValueSource(booleans = {false, true})
-    void pingIsNeverRetained(boolean retainedFlag) throws MqttException, MqttConnectionException {
+    void pingIsNeverRetained(boolean retainedFlag) throws MqttException {
         this.config.getMqtt().setRetained(retainedFlag);
 
         this.mqtt().processor().pingMqtt();
@@ -273,7 +273,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     /**
      * Subscribes with a fresh client, so only messages the broker kept can show up.
      */
-    private Map<String, MqttMessage> retained(String topicFilter) throws MqttException, MqttConnectionException {
+    private Map<String, MqttMessage> retained(String topicFilter) throws MqttException {
         Map<String, MqttMessage> received = new ConcurrentHashMap<>();
         MqttClient client = newClient();
         try {
@@ -305,7 +305,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
         processor.publishConnectionStatus();
     }
 
-    private String onlyTopic(String topicFilter) throws MqttException, MqttConnectionException {
+    private String onlyTopic(String topicFilter) throws MqttException {
         Map<String, MqttMessage> found = retained(topicFilter);
         assertThat(found).hasSize(1);
         return found.keySet().iterator().next();
@@ -318,7 +318,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
                 .until(() -> this.ha().teletaskStates().stream().anyMatch(e -> e.getEntity_id().endsWith("_" + objectId)) == present);
     }
 
-    private List<String> discoveryTopics(String topic) throws MqttException, MqttConnectionException {
+    private List<String> discoveryTopics(String topic) throws MqttException {
         return Optional.ofNullable(retained(topic).get(topic))
                 .map(message -> {
                     try {
@@ -331,7 +331,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
                 .orElse(List.of());
     }
 
-    private void addToDiscoveryTopics(String topic, String configTopic) throws MqttException, MqttConnectionException {
+    private void addToDiscoveryTopics(String topic, String configTopic) throws MqttException {
         List<String> topics = new ArrayList<>(discoveryTopics(topic));
         topics.add(configTopic);
         try {
@@ -341,11 +341,11 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
         }
     }
 
-    private void clear(String topic) throws MqttException, MqttConnectionException {
+    private void clear(String topic) throws MqttException {
         publishRetained(topic, "");
     }
 
-    private void publishRetained(String topic, String payload) throws MqttException, MqttConnectionException {
+    private void publishRetained(String topic, String payload) throws MqttException {
         MqttClient client = newClient();
         try {
             client.publish(topic, payload.getBytes(), 1, true);
