@@ -5,18 +5,17 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnection;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttLogger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttLogger.*;
 
-public class MQTTMessageToTeletaskCommand implements IMqttMessageListener {
+public class MQTTMessageToTeletaskCommand implements MqttConnection.MessageHandler {
     private static final Logger LOG = LogManager.getLogger();
 
     private final Pattern teletaskComponentPattern;
@@ -28,8 +27,8 @@ public class MQTTMessageToTeletaskCommand implements IMqttMessageListener {
     }
 
     @Override
-    public void messageArrived(String topic, MqttMessage mqttMessage) {
-        LOG.trace(() -> String.format("MQTT message arrived '%s': '%s'", topic, new String(mqttMessage.getPayload())));
+    public void arrived(String topic, MqttConnection.Message mqttMessage) {
+        LOG.trace(() -> String.format("MQTT message arrived '%s': '%s'", topic, mqttMessage.toString()));
         String message = mqttMessage.toString();
         try {
             Matcher matcher = this.teletaskComponentPattern.matcher(topic);
@@ -42,7 +41,7 @@ public class MQTTMessageToTeletaskCommand implements IMqttMessageListener {
                 State<?> state = centralUnit.stateFromMessage(function, number, message);
 
                 String componentLog = getLoggingStringForComponent(centralUnit.getComponent(function, number)).get();
-                LOG.info(() -> String.format(WHAT_LOG_PATTERNS.get(MqttLogger.What.RECEIVE), getWhat(MqttLogger.What.RECEIVE), componentLog, payloadToLogWithColors(new String(mqttMessage.getPayload()))));
+                LOG.info(() -> String.format(WHAT_LOG_PATTERNS.get(MqttLogger.What.RECEIVE), getWhat(MqttLogger.What.RECEIVE), componentLog, payloadToLogWithColors(mqttMessage.toString())));
 
                 if (function == Function.DISPLAYMESSAGE) {
                     teletaskClient.displaymessage(number, (DisplayMessageState) state,

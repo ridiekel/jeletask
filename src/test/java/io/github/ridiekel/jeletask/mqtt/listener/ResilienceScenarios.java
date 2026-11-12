@@ -275,7 +275,7 @@ abstract class ResilienceScenarios {
     @Test
     void aFlappingLineLeavesNoThreadsOrConnectionsBehind() throws IOException, MqttException, InterruptedException {
         int clientThreads = this.bridge.clientThreads();
-        int pahoThreads = ResilienceBridge.pahoConnectionThreads();
+        int mqttThreads = ResilienceBridge.mqttClientThreads();
         Proxy centralLine = this.network.centralLine();
         Proxy brokerLine = this.network.brokerLine();
 
@@ -295,7 +295,7 @@ abstract class ResilienceScenarios {
 
         eventually().alias("one connection to the central unit").until(() -> this.bridge.openCentralConnections() == 1);
         eventually().alias("no extra client threads").until(() -> this.bridge.clientThreads() == clientThreads);
-        eventually().alias("no extra Paho connection threads").until(() -> ResilienceBridge.pahoConnectionThreads() == pahoThreads);
+        eventually().alias("no extra MQTT client threads").until(() -> ResilienceBridge.mqttClientThreads() == mqttThreads);
     }
 
     /**

@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.MockingTeletaskTestSupport;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
 import org.awaitility.Awaitility;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnectionException;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -31,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class End2EndRetainedTest extends MockingTeletaskTestSupport {
     @AfterEach
-    void restoreDefaults() throws MqttException {
+    void restoreDefaults() throws MqttException, MqttConnectionException {
         this.config.getMqtt().setRetained(false);
         // States retained during a test would stick around on the broker for the other tests
         for (String topic : retained(this.config.getMqtt().getPrefix() + "/+/+/+/state").keySet()) {
@@ -41,7 +42,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
 
     @ParameterizedTest(name = "retained flag {0}")
     @ValueSource(booleans = {false, true})
-    void discoveryConfigIsAlwaysRetained(boolean retainedFlag) throws MqttException {
+    void discoveryConfigIsAlwaysRetained(boolean retainedFlag) throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         // Start from an empty broker, otherwise the config from startup would make this pass anyway
         processor.removeConfig();
@@ -54,7 +55,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
 
     @ParameterizedTest(name = "retained flag {0}")
     @ValueSource(booleans = {false, true})
-    void removingTheConfigClearsTheRetainedConfig(boolean retainedFlag) throws MqttException {
+    void removingTheConfigClearsTheRetainedConfig(boolean retainedFlag) throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         this.config.getMqtt().setRetained(retainedFlag);
         try {
@@ -67,7 +68,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void staleConfigOfThisBridgeIsRemoved() throws MqttException {
+    void staleConfigOfThisBridgeIsRemoved() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String ownConfigs = "homeassistant/+/" + processor.getTeletaskIdentifier() + "/+/config";
         String stale = "homeassistant/switch/" + processor.getTeletaskIdentifier() + "/relay_999/config";
@@ -88,12 +89,12 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void staleConfigFromBeforeStartupIsRemovedOnStartup() throws MqttException {
+    void staleConfigFromBeforeStartupIsRemovedOnStartup() throws MqttException, MqttConnectionException {
         assertThat(retained(this.mqtt().staleConfigTopicBeforeStartup())).isEmpty();
     }
 
     @Test
-    void configUnderAPreviousTypeIsRemoved() throws MqttException {
+    void configUnderAPreviousTypeIsRemoved() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String relayConfigs = "homeassistant/+/" + processor.getTeletaskIdentifier() + "/relay_10/config";
         String current = onlyTopic(relayConfigs);
@@ -111,7 +112,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void configsThatAreNotOfThisBridgeAreLeftAlone() throws MqttException {
+    void configsThatAreNotOfThisBridgeAreLeftAlone() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         List<String> notOfThisBridge = List.of(
                 // Another bridge whose id starts with ours
@@ -139,7 +140,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void configUnderAPreviousDiscoveryPrefixIsRemoved() throws MqttException {
+    void configUnderAPreviousDiscoveryPrefixIsRemoved() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String previousPrefixConfigs = "homeassistant/+/" + processor.getTeletaskIdentifier() + "/+/config";
         String stale = "custom/switch/" + processor.getTeletaskIdentifier() + "/relay_999/config";
@@ -163,7 +164,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void configOfAPreviousCentralIdIsRemoved() throws MqttException {
+    void configOfAPreviousCentralIdIsRemoved() throws MqttException, MqttConnectionException {
         String previous = "homeassistant/switch/previous_central_id/relay_10/config";
 
         publishRetained(previous, "{}");
@@ -178,7 +179,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void discoveryTopicsListTheCurrentConfig() throws MqttException {
+    void discoveryTopicsListTheCurrentConfig() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
 
         processor.removeStaleConfig();
@@ -188,7 +189,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void onlyConfigTopicsFromTheDiscoveryTopicsAreCleared() throws MqttException {
+    void onlyConfigTopicsFromTheDiscoveryTopicsAreCleared() throws MqttException, MqttConnectionException {
         String notAConfig = "somewhere/else/state";
 
         publishRetained(notAConfig, "ON");
@@ -203,7 +204,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void discoveryTopicsOfAnotherBridgeAreIgnored() throws MqttException {
+    void discoveryTopicsOfAnotherBridgeAreIgnored() throws MqttException, MqttConnectionException {
         String otherBridgeTopics = "teletask2mqtt/bridges/other_client_id/discovery";
         String otherBridgeConfig = "homeassistant/switch/other_central_id/relay_10/config";
 
@@ -220,7 +221,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void homeAssistantRemovesTheStaleEntity() throws MqttException {
+    void homeAssistantRemovesTheStaleEntity() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String relaySwitch = "homeassistant/switch/" + processor.getTeletaskIdentifier() + "/relay_11/config";
         String stale = "homeassistant/switch/" + processor.getTeletaskIdentifier() + "/relay_999/config";
@@ -242,7 +243,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void statesAreOnlyRetainedWhenConfigured() throws MqttException {
+    void statesAreOnlyRetainedWhenConfigured() throws MqttException, MqttConnectionException {
         String stateTopic = this.config.getMqtt().getPrefix() + "/+/relay/10/state";
 
         this.teletask().relay(10).turnOff();
@@ -261,7 +262,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
 
     @ParameterizedTest(name = "retained flag {0}")
     @ValueSource(booleans = {false, true})
-    void pingIsNeverRetained(boolean retainedFlag) throws MqttException {
+    void pingIsNeverRetained(boolean retainedFlag) throws MqttException, MqttConnectionException {
         this.config.getMqtt().setRetained(retainedFlag);
 
         this.mqtt().processor().pingMqtt();
@@ -272,7 +273,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     /**
      * Subscribes with a fresh client, so only messages the broker kept can show up.
      */
-    private Map<String, MqttMessage> retained(String topicFilter) throws MqttException {
+    private Map<String, MqttMessage> retained(String topicFilter) throws MqttException, MqttConnectionException {
         Map<String, MqttMessage> received = new ConcurrentHashMap<>();
         MqttClient client = newClient();
         try {
@@ -304,7 +305,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
         processor.publishConnectionStatus();
     }
 
-    private String onlyTopic(String topicFilter) throws MqttException {
+    private String onlyTopic(String topicFilter) throws MqttException, MqttConnectionException {
         Map<String, MqttMessage> found = retained(topicFilter);
         assertThat(found).hasSize(1);
         return found.keySet().iterator().next();
@@ -317,7 +318,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
                 .until(() -> this.ha().teletaskStates().stream().anyMatch(e -> e.getEntity_id().endsWith("_" + objectId)) == present);
     }
 
-    private List<String> discoveryTopics(String topic) throws MqttException {
+    private List<String> discoveryTopics(String topic) throws MqttException, MqttConnectionException {
         return Optional.ofNullable(retained(topic).get(topic))
                 .map(message -> {
                     try {
@@ -330,7 +331,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
                 .orElse(List.of());
     }
 
-    private void addToDiscoveryTopics(String topic, String configTopic) throws MqttException {
+    private void addToDiscoveryTopics(String topic, String configTopic) throws MqttException, MqttConnectionException {
         List<String> topics = new ArrayList<>(discoveryTopics(topic));
         topics.add(configTopic);
         try {
@@ -340,11 +341,11 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
         }
     }
 
-    private void clear(String topic) throws MqttException {
+    private void clear(String topic) throws MqttException, MqttConnectionException {
         publishRetained(topic, "");
     }
 
-    private void publishRetained(String topic, String payload) throws MqttException {
+    private void publishRetained(String topic, String payload) throws MqttException, MqttConnectionException {
         MqttClient client = newClient();
         try {
             client.publish(topic, payload.getBytes(), 1, true);
@@ -354,7 +355,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
         }
     }
 
-    private MqttClient newClient() throws MqttException {
+    private MqttClient newClient() throws MqttException, MqttConnectionException {
         String broker = "tcp://" + this.mqtt().getHost() + ":" + this.mqtt().getPort();
         MqttClient client = new MqttClient(broker, "retained-test-" + UUID.randomUUID(), new MemoryPersistence());
         MqttConnectOptions options = new MqttConnectOptions();

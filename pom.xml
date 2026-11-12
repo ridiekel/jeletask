@@ -61,9 +61,9 @@
 
         <!--   Application run dependencies: manual, since no spring boot     -->
         <dependency>
-            <groupId>org.eclipse.paho</groupId>
-            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-            <version>1.2.5</version>
+            <groupId>com.hivemq</groupId>
+            <artifactId>hivemq-mqtt-client</artifactId>
+            <version>1.4.2</version>
         </dependency>
         <dependency>
             <groupId>ch.obermuhlner</groupId>
@@ -72,6 +72,13 @@
         </dependency>
 
         <!--    Test dependencies    -->
+        <dependency>
+            <!-- An independent client for the tests that watch the broker from the outside -->
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>1.2.5</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>

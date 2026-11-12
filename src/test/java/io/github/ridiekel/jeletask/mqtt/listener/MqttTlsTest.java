@@ -1,10 +1,7 @@
 package io.github.ridiekel.jeletask.mqtt.listener;
 
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties.MqttConfiguration;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import com.hivemq.client.mqtt.MqttClientSslConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,6 +18,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The TLS settings of the bridge, against a small TLS broker in this JVM that answers a CONNECT with an accepting
- * CONNACK. Paho itself makes the connection, so what is tested is what the bridge does: which certificates it
+ * CONNACK. The client of the bridge itself makes the connection, so what is tested is what the bridge does: which certificates it
  * trusts and whether it checks the broker's name. No docker needed; {@code End2EndTlsTest} does the same against
  * a real mosquitto.
  */
@@ -62,25 +60,23 @@ class MqttTlsTest {
     // --- options ---------------------------------------------------------------------------
 
     @Test
-    void withoutSslTheOptionsAreLeftAlone() throws IOException {
+    void withoutSslThereIsNoTlsConfig() throws IOException {
         Path ca = TestCertificates.ca("unused").writeCertificate(directory, "ca.pem");
-        MqttConnectOptions options = new MqttConnectOptions();
-        MqttTls.apply(config("localhost", "1883", false, ca.toString()), options);
-        assertThat(options.getSocketFactory()).isNull();
+        assertThat(MqttTls.sslConfig(config("localhost", "1883", false, ca.toString()))).isEmpty();
     }
 
     @Test
     void withSslAndNoCaFileTheJvmTrustStoreIsUsed() {
-        MqttConnectOptions options = new MqttConnectOptions();
-        MqttTls.apply(config("localhost", "8883", true, "  "), options);
-        assertThat(options.getSocketFactory()).isNull();
-        assertThat(options.isHttpsHostnameVerificationEnabled()).isTrue();
+        MqttClientSslConfig ssl = MqttTls.sslConfig(config("localhost", "8883", true, "  ")).orElseThrow();
+        assertThat(ssl.getTrustManagerFactory()).isEmpty();
+        // No verifier of our own: the client then checks the host name like HTTPS does
+        assertThat(ssl.getHostnameVerifier()).isEmpty();
     }
 
     @Test
     void aCaFileWithoutCertificatesIsRefused() throws IOException {
         Path empty = Files.writeString(directory.resolve("empty.pem"), "");
-        assertThatThrownBy(() -> MqttTls.socketFactory(empty))
+        assertThatThrownBy(() -> MqttTls.trustManagers(empty))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No certificate");
     }
@@ -88,7 +84,7 @@ class MqttTlsTest {
     @Test
     void anUnreadableCaFileIsAClearError() {
         Path missing = directory.resolve("missing.pem");
-        assertThatThrownBy(() -> MqttTls.socketFactory(missing))
+        assertThatThrownBy(() -> MqttTls.trustManagers(missing))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(missing.toString());
     }
@@ -101,13 +97,12 @@ class MqttTlsTest {
         broker = new FakeTlsBroker(TestCertificates.server(ca, "localhost", "127.0.0.1"));
         MqttConfiguration mqtt = config("localhost", broker.port(), true, ca.writeCertificate(directory, "ca.pem").toString());
 
-        MqttClient client = connect(mqtt);
+        MqttConnection client = connect(mqtt);
         try {
             assertThat(client.isConnected()).isTrue();
             assertThat(broker.handshakes()).isEqualTo(1);
         } finally {
-            client.disconnectForcibly(0, 0, false);
-            client.close(true);
+            client.close();
         }
     }
 
@@ -145,7 +140,7 @@ class MqttTlsTest {
         broker = new FakeTlsBroker(TestCertificates.server(ca, "localhost", "127.0.0.1"));
 
         assertThatThrownBy(() -> connect(config("localhost", broker.port(), false, null)))
-                .isInstanceOf(MqttException.class);
+                .isInstanceOf(MqttConnectionException.class);
         assertThat(broker.handshakes()).isZero();
     }
 
@@ -153,10 +148,18 @@ class MqttTlsTest {
 
     private void assertRefusedDuringHandshake(MqttConfiguration mqtt) {
         assertThatThrownBy(() -> connect(mqtt))
-                .isInstanceOf(MqttException.class)
+                .isInstanceOf(MqttConnectionException.class)
                 .satisfies(e -> assertThat(hasCause(e, SSLHandshakeException.class))
-                        .as("an SSLHandshakeException in the cause chain").isTrue());
+                        .as("an SSLHandshakeException in the cause chain of %s", chain(e)).isTrue());
         assertThat(broker.handshakes()).isZero();
+    }
+
+    private static String chain(Throwable error) {
+        StringBuilder chain = new StringBuilder();
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            chain.append(" <- ").append(t);
+        }
+        return chain.toString();
     }
 
     private static boolean hasCause(Throwable error, Class<? extends Throwable> type) {
@@ -168,18 +171,25 @@ class MqttTlsTest {
         return false;
     }
 
-    private static MqttClient connect(MqttConfiguration mqtt) throws MqttException {
-        MqttClient client = new MqttClient(MqttTls.brokerUrl(mqtt), "mqtt-tls-test", new MemoryPersistence());
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setConnectionTimeout(5);
-        MqttTls.apply(mqtt, options);
-        try {
-            client.connect(options);
-        } catch (MqttException e) {
-            client.close(true);
-            throw e;
-        }
+    private static MqttConnection connect(MqttConfiguration mqtt) throws MqttConnectionException {
+        MqttConnection client = new HiveMqConnection();
+        client.connect(settings(mqtt, "mqtt-tls-test"), new MqttConnection.Listener() {
+            @Override
+            public void connected(boolean reconnect) {
+                // Only the outcome of connect matters here
+            }
+
+            @Override
+            public void connectionLost(Throwable cause) {
+                // Only the outcome of connect matters here
+            }
+        });
         return client;
+    }
+
+    static MqttConnectionSettings settings(MqttConfiguration mqtt, String clientId) {
+        Duration second = Duration.ofSeconds(1);
+        return new MqttConnectionSettings(mqtt, clientId, null, null, Duration.ofSeconds(10), Duration.ofSeconds(5), second, second, Duration.ofSeconds(10), clientId + "/state", "offline");
     }
 
     private static MqttConfiguration config(String host, String port, boolean ssl, String caFile) {

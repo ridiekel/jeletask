@@ -3,8 +3,10 @@ package io.github.ridiekel.jeletask.end2end;
 import io.github.ridiekel.jeletask.MockingTeletaskTestSupport;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import org.awaitility.Awaitility;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties.MqttConfiguration;
+import io.github.ridiekel.jeletask.mqtt.listener.HiveMqConnection;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnection;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnectionSettings;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,19 +26,41 @@ class End2EndLastWillTest extends MockingTeletaskTestSupport {
         // Retained, so a new subscriber gets it straight away
         awaitLast(received, "online");
 
-        String broker = "tcp://" + this.mqtt().getHost() + ":" + this.mqtt().getPort();
-        try (MqttClient bridge = new MqttClient(broker, "last-will-test-client", new MemoryPersistence())) {
-            bridge.connect(processor.connectOptions(null, null));
+        MqttConnection bridge = new HiveMqConnection();
+        try (TcpRelay relay = new TcpRelay(this.mqtt().getHost(), this.mqtt().getPort())) {
+            bridge.connect(throughRelay(processor.connectionSettings(null, null), relay), new MqttConnection.Listener() {
+                @Override
+                public void connected(boolean reconnect) {
+                    // Only the last will matters here
+                }
+
+                @Override
+                public void connectionLost(Throwable cause) {
+                    // Expected: the relay drops the connection
+                }
+            });
 
             // Drop the connection without a DISCONNECT packet, like a crash would
-            bridge.disconnectForcibly(0, 0, false);
+            relay.cut();
 
             awaitLast(received, "offline");
         } finally {
+            bridge.close();
             processor.publishConnectionStatus();
         }
 
         awaitLast(received, "online");
+    }
+
+    /**
+     * The settings of the bridge, under another client id: the same one would push the running bridge off the broker.
+     */
+    private static MqttConnectionSettings throughRelay(MqttConnectionSettings bridge, TcpRelay relay) {
+        MqttConfiguration mqtt = new MqttConfiguration();
+        mqtt.setHost(relay.host());
+        mqtt.setPort(String.valueOf(relay.port()));
+        return new MqttConnectionSettings(mqtt, "last-will-test-client", bridge.username(), bridge.password(), bridge.keepAlive(), bridge.connectTimeout(),
+                bridge.reconnectDelay(), bridge.maxReconnectDelay(), bridge.timeToWait(), bridge.willTopic(), bridge.willPayload());
     }
 
     private static void awaitLast(List<String> received, String expected) {

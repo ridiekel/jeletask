@@ -1,13 +1,12 @@
 package io.github.ridiekel.jeletask.end2end;
 
 import io.github.ridiekel.jeletask.Teletask2MqttConfigurationProperties.MqttConfiguration;
-import io.github.ridiekel.jeletask.mqtt.listener.MqttTls;
+import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3ConnAckException;
+import io.github.ridiekel.jeletask.mqtt.listener.HiveMqConnection;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnection;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnectionException;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnectionSettings;
 import io.github.ridiekel.jeletask.mqtt.listener.TestCertificates;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttSecurityException;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -79,17 +78,17 @@ class End2EndTlsTest {
     @Test
     void theBridgeConnectsOverTlsAndMessagesGoBothWays() throws Exception {
         MqttConfiguration mqtt = tls(ca.writeCertificate(directory, "ca.pem"));
-        MqttClient bridge = connect(mqtt, USER, PASSWORD, "tls-bridge");
-        MqttClient other = connect(mqtt, USER, PASSWORD, "tls-other");
+        MqttConnection bridge = connect(mqtt, USER, PASSWORD, "tls-bridge");
+        MqttConnection other = connect(mqtt, USER, PASSWORD, "tls-other");
         try {
             List<String> received = new CopyOnWriteArrayList<>();
-            other.subscribe("teletask2mqtt/tls/test", 1, (_, message) -> received.add(new String(message.getPayload())));
-            bridge.publish("teletask2mqtt/tls/test", "over tls".getBytes(), 1, false);
+            other.subscribe("teletask2mqtt/tls/test", (_, message) -> received.add(message.toString()));
+            bridge.publish("teletask2mqtt/tls/test", "over tls".getBytes(), false);
 
             await("message over TLS").atMost(30, TimeUnit.SECONDS).until(() -> received.contains("over tls"));
         } finally {
-            close(bridge);
-            close(other);
+            bridge.close();
+            other.close();
         }
     }
 
@@ -97,7 +96,8 @@ class End2EndTlsTest {
     void aWrongPasswordIsRefusedByTheBroker() throws Exception {
         MqttConfiguration mqtt = tls(ca.writeCertificate(directory, "ca.pem"));
         assertThatThrownBy(() -> connect(mqtt, USER, "wrong", "tls-wrong-password"))
-                .isInstanceOf(MqttSecurityException.class);
+                .isInstanceOf(MqttConnectionException.class)
+                .satisfies(e -> assertThat(causedBy(e, Mqtt3ConnAckException.class)).as("refused by the broker in its CONNACK").isTrue());
     }
 
     @Test
@@ -105,7 +105,7 @@ class End2EndTlsTest {
         TestCertificates.Issued stranger = TestCertificates.ca("someone else");
         MqttConfiguration mqtt = tls(stranger.writeCertificate(directory, "stranger.pem"));
         assertThatThrownBy(() -> connect(mqtt, USER, PASSWORD, "tls-stranger"))
-                .isInstanceOf(MqttException.class)
+                .isInstanceOf(MqttConnectionException.class)
                 .satisfies(e -> assertThat(causedBy(e, SSLHandshakeException.class))
                         .as("an SSLHandshakeException in the cause chain").isTrue());
     }
@@ -115,7 +115,7 @@ class End2EndTlsTest {
         MqttConfiguration mqtt = tls(null);
         mqtt.setSsl(false);
         assertThatThrownBy(() -> connect(mqtt, USER, PASSWORD, "tls-plain"))
-                .isInstanceOf(MqttException.class);
+                .isInstanceOf(MqttConnectionException.class);
     }
 
     private static MqttConfiguration tls(Path caFile) {
@@ -127,27 +127,21 @@ class End2EndTlsTest {
         return mqtt;
     }
 
-    private static MqttClient connect(MqttConfiguration mqtt, String user, String password, String clientId) throws MqttException {
-        MqttClient client = new MqttClient(MqttTls.brokerUrl(mqtt), clientId, new MemoryPersistence());
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setUserName(user);
-        options.setPassword(password.toCharArray());
-        options.setConnectionTimeout(10);
-        MqttTls.apply(mqtt, options);
-        try {
-            client.connect(options);
-        } catch (MqttException e) {
-            client.close(true);
-            throw e;
-        }
-        return client;
-    }
+    private static MqttConnection connect(MqttConfiguration mqtt, String user, String password, String clientId) throws MqttConnectionException {
+        Duration second = Duration.ofSeconds(1);
+        MqttConnection client = new HiveMqConnection();
+        client.connect(new MqttConnectionSettings(mqtt, clientId, user, password, Duration.ofSeconds(10), Duration.ofSeconds(10), second, second, Duration.ofSeconds(10), clientId + "/state", "offline"), new MqttConnection.Listener() {
+            @Override
+            public void connected(boolean reconnect) {
+                // Only the outcome of connect matters here
+            }
 
-    private static void close(MqttClient client) throws MqttException {
-        if (client.isConnected()) {
-            client.disconnect();
-        }
-        client.close(true);
+            @Override
+            public void connectionLost(Throwable cause) {
+                // Only the outcome of connect matters here
+            }
+        });
+        return client;
     }
 
     private static boolean causedBy(Throwable error, Class<? extends Throwable> type) {
