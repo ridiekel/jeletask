@@ -8,6 +8,7 @@ import io.github.ridiekel.jeletask.client.spec.Command;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import io.github.ridiekel.jeletask.utilities.Wait;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -15,15 +16,14 @@ import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.awaitility.Awaitility;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -78,16 +78,12 @@ public abstract class MessageSupport {
     private void waitForAcknowledge(TeletaskClientImpl client) throws AcknowledgeException {
         long startWaitingTime = System.currentTimeMillis();
         try {
-            Awaitility.await(String.format("Acknowlegde - %s", this.getId()))
-                    .pollInterval(5, TimeUnit.MILLISECONDS)
-                    .atMost(ACK_WAIT_TIME, TimeUnit.MILLISECONDS)
-                    .pollInSameThread()
-                    .until(() -> {
+            Wait.until(String.format("Acknowledge - %s", this.getId()), Duration.ofMillis(ACK_WAIT_TIME), Duration.ofMillis(5), () -> {
                         LOG.debug(AnsiOutput.toString(toColoredLogLine(AnsiColor.GREEN, "WAIT_ACK"), AnsiColor.BLUE, " - Waiting: " + (System.currentTimeMillis() - startWaitingTime) + "ms", AnsiColor.DEFAULT));
                         try {
                             client.handleReceiveEvents(MessageUtilities.receive(LOG, client, this));
                         } catch (InterruptedException _) {
-                            // Keep the interrupt: the next poll of Awaitility then stops waiting for the acknowledge
+                            // Keep the interrupt: the next poll then stops waiting for the acknowledge
                             Thread.currentThread().interrupt();
                         } catch (Exception e) {
                             LOG.error("Exception ({}) caught in execute: {}", e.getClass().getName(), e.getMessage(), e);

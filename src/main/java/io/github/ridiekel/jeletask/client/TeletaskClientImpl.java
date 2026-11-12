@@ -20,7 +20,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.awaitility.Awaitility;
+import io.github.ridiekel.jeletask.utilities.Wait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,11 +101,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
                         (f, n, s) -> LOG.info("State for {} / {} was somehow null, we reset the state to: {}", component.getFunction(), component.getNumber(), component.getState()),
                         (f, n, s, e) -> {
                         });
-                Awaitility.await("State update")
-                        .atMost(5, TimeUnit.SECONDS)
-                        .pollInSameThread()
-                        .pollInterval(10, TimeUnit.MILLISECONDS)
-                        .until(() -> !Objects.isNull(component.getState()));
+                Wait.until("State update", Duration.ofSeconds(5), Duration.ofMillis(10), () -> !Objects.isNull(component.getState()));
             }
 
             if (!Objects.equals(component.getState(), state)) {
@@ -149,7 +146,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
                 this.start();
             }
 
-            Awaitility.await("Teletask Client Startup").atMost(30, TimeUnit.SECONDS).until(started::get);
+            Wait.until("Teletask Client Startup", Duration.ofSeconds(30), Duration.ofMillis(100), started::get);
         }
 
         runnable.run();
@@ -205,11 +202,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         String host = this.getCentralUnit().getHost();
         int port = this.getCentralUnit().getPort();
 
-        Awaitility.await("Connect")
-                .pollInSameThread()
-                .pollInterval(1, TimeUnit.SECONDS)
-                .atMost(10, TimeUnit.MINUTES)
-                .until(() -> this.stopping.get() || this.connect(host, port));
+        // A second before every attempt, also the first: a central unit that just dropped us is not hammered right away
+        Wait.until("Connect", Duration.ofMinutes(10), Duration.ofSeconds(1), Duration.ofSeconds(1), () -> this.stopping.get() || this.connect(host, port));
 
         if (this.stopping.get()) {
             throw new IllegalStateException("Stopped while connecting to the central unit");

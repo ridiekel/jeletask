@@ -24,7 +24,7 @@ import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.awaitility.Awaitility;
+import io.github.ridiekel.jeletask.utilities.Wait;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -514,7 +514,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             this.pingMesage = new PingMesage(Instant.now());
             // Never retained, otherwise the old ping comes back on resubscribe and passes for an answer.
             this.publish(What.PING, () -> padded("SEND"), getPingTopic(), StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage), false, LOG::debug);
-            Awaitility.await("Waiting for ping response").atMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> Objects.nonNull(this.pingMesage.getReceived()));
+            Wait.until("Waiting for ping response", Duration.ofSeconds(5), Duration.ofMillis(10), () -> Objects.nonNull(this.pingMesage.getReceived()));
             log(LOG::debug, What.PING, "CHECK", AnsiOutput.toString(AnsiColor.BLUE, this.pingMesage.received.toEpochMilli() - this.pingMesage.sent.toEpochMilli() + "ms  - ", AnsiColor.DEFAULT, StringUtilities.OBJECT_MAPPER.writeValueAsString(pingMesage)));
             this.lastPingSucceeded = true;
         } catch (Exception e) {
