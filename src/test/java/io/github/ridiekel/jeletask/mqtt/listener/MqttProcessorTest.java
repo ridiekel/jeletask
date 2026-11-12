@@ -58,7 +58,8 @@ class MqttProcessorTest {
     private final Map<String, String> liveOnBroker = new ConcurrentHashMap<>();
 
     /**
-     * Characterization, not a wish: no retry of its own. The application stops, and its restart policy brings it back.
+     * Characterization, not a wish: no retry of its own. The failure ends the process (StartupFailureExitTest), and
+     * the restart policy of the container brings the bridge back.
      */
     @Test
     void startupFailsWhenTheBrokerCannotBeReached() {

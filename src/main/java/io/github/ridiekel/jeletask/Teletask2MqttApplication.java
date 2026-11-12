@@ -25,11 +25,25 @@ public class Teletask2MqttApplication {
 
         handleDeprecations();
 
-        ApplicationContext context = SpringApplication.run(Teletask2MqttApplication.class, args);
+        ApplicationContext context = start(args);
 
         Teletask2MqttConfigurationProperties configuration = context.getBean(Teletask2MqttConfigurationProperties.class);
 
         LOG.info(() -> String.format("Teletask2Mqtt %s started!", configuration.getCentral().getVersion()));
+    }
+
+    /**
+     * A startup that fails ends the process. Otherwise the threads that are already running keep alive a JVM that
+     * never became a bridge, and the restart policy of the container never gets to bring it back.
+     */
+    private static ApplicationContext start(String[] args) {
+        try {
+            return SpringApplication.run(Teletask2MqttApplication.class, args);
+        } catch (RuntimeException e) {
+            // Spring has logged the cause already
+            System.exit(1);
+            throw e;
+        }
     }
 
     public static void handleDeprecations() {
