@@ -110,7 +110,7 @@ public final class HiveMqConnection implements MqttConnection {
     private static MqttClientTransportConfig transport(MqttConnectionSettings settings) {
         MqttClientTransportConfigBuilder transport = MqttClientTransportConfig.builder()
                 .serverHost(settings.mqtt().getHost())
-                .serverPort(Integer.parseInt(settings.mqtt().getPort().trim()))
+                .serverPort(MqttTls.port(settings.mqtt()))
                 .socketConnectTimeout(settings.connectTimeout().toMillis(), TimeUnit.MILLISECONDS)
                 .mqttConnectTimeout(settings.connectTimeout().toMillis(), TimeUnit.MILLISECONDS);
         return MqttTls.sslConfig(settings.mqtt()).map(transport::sslConfig).orElse(transport).build();

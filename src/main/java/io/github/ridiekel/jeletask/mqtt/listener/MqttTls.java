@@ -19,11 +19,35 @@ import java.util.Optional;
  * How the bridge reaches the broker: plain tcp:// or TLS (ssl://), and which certificates it trusts for TLS.
  */
 public final class MqttTls {
+    private static final int DEFAULT_PORT = 1883;
+    private static final int DEFAULT_TLS_PORT = 8883;
+    private static final int MAX_PORT = 65535;
+
     private MqttTls() {
     }
 
     public static String brokerUrl(MqttConfiguration mqtt) {
-        return (mqtt.isSsl() ? "ssl://" : "tcp://") + mqtt.getHost() + ":" + mqtt.getPort();
+        return (mqtt.isSsl() ? "ssl://" : "tcp://") + mqtt.getHost() + ":" + port(mqtt);
+    }
+
+    /**
+     * An empty port is the standard one of MQTT, with or without TLS: an environment variable that is set but empty
+     * must not stop the bridge.
+     */
+    static int port(MqttConfiguration mqtt) {
+        String port = Optional.ofNullable(mqtt.getPort()).map(String::trim).orElse("");
+        if (port.isEmpty()) {
+            return mqtt.isSsl() ? DEFAULT_TLS_PORT : DEFAULT_PORT;
+        }
+        try {
+            int number = Integer.parseInt(port);
+            if (number >= 1 && number <= MAX_PORT) {
+                return number;
+            }
+        } catch (NumberFormatException _) {
+            // Reported below, together with a number that is no port
+        }
+        throw new IllegalArgumentException("TELETASK_MQTT_PORT is not a port number: '" + port + "'");
     }
 
     /**

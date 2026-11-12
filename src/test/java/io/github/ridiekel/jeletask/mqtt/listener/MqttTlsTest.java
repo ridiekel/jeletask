@@ -19,6 +19,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,6 +59,27 @@ class MqttTlsTest {
     }
 
     // --- options ---------------------------------------------------------------------------
+
+    /**
+     * An environment variable that is set but empty, for instance from a compose file with a variable that has no value.
+     */
+    @Test
+    void anEmptyPortIsTheStandardPort() {
+        assertThat(MqttTls.brokerUrl(config("broker.local", " ", false, null))).isEqualTo("tcp://broker.local:1883");
+        assertThat(MqttTls.brokerUrl(config("broker.local", "", true, null))).isEqualTo("ssl://broker.local:8883");
+        assertThat(MqttTls.brokerUrl(config("broker.local", null, false, null))).isEqualTo("tcp://broker.local:1883");
+    }
+
+    @Test
+    void aPortThatIsNoPortNumberIsAClearError() {
+        for (String port : List.of("mqtt", "0", "65536", "-1")) {
+            MqttConfiguration mqtt = config("127.0.0.1", port, false, null);
+
+            assertThatThrownBy(() -> connect(mqtt))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("TELETASK_MQTT_PORT is not a port number: '" + port + "'");
+        }
+    }
 
     @Test
     void withoutSslThereIsNoTlsConfig() throws IOException {
