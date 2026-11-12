@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 
 /**
  * A central unit on a real socket that, unlike {@link TeletaskMockServer}, can lose its connections, go offline and
@@ -29,7 +30,7 @@ public final class FakeCentral implements AutoCloseable {
     private final List<Connection> connections = new CopyOnWriteArrayList<>();
     private final int port;
     private volatile ServerSocket server;
-    private volatile boolean acknowledging = true;
+    private volatile Predicate<Frame> acknowledging = _ -> true;
     private volatile java.util.function.Function<Frame, byte[]> responder = frame -> NO_RESPONSE;
 
     public FakeCentral() {
@@ -67,7 +68,14 @@ public final class FakeCentral implements AutoCloseable {
     }
 
     public void acknowledging(boolean acknowledging) {
-        this.acknowledging = acknowledging;
+        this.acknowledging = _ -> acknowledging;
+    }
+
+    /**
+     * Only the frames that match get an acknowledge, the others are left without an answer.
+     */
+    public void acknowledgingOnly(Predicate<Frame> frames) {
+        this.acknowledging = frames;
     }
 
     /**
@@ -157,7 +165,7 @@ public final class FakeCentral implements AutoCloseable {
 
     private void handle(Connection connection, Frame frame) {
         // Decided before the frame shows up, so a test that saw it knows what happens to it whatever it changes next
-        boolean acknowledge = this.acknowledging;
+        boolean acknowledge = this.acknowledging.test(frame);
         this.frames.add(frame);
         if (acknowledge) {
             write(connection.socket, new byte[]{(byte) HANDLER.getAcknowledgeValue()});
