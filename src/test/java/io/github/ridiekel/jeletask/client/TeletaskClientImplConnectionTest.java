@@ -92,6 +92,29 @@ class TeletaskClientImplConnectionTest {
         assertThat(listener.received()).contains(unit.getComponent(Function.RELAY, RELAY_1));
     }
 
+    /**
+     * Nothing else starts the client again: commands that arrive wait for it, they do not wake it up. One restart, as
+     * the keep-alive of a real central unit asks for: it only comes by once a minute.
+     */
+    @Test
+    void aReconnectNeverGivesUpHoweverLongTheCentralUnitStaysAway() {
+        this.central.goOnline();
+        TeletaskClientImpl client = client(TestCentralUnit.withoutKeepAlive(this.central.port()));
+        client.setConnectMaxWait(Duration.ofSeconds(2));
+        client.start();
+        awaitLogMessagesOn(0);
+        this.central.goOffline();
+
+        CompletableFuture<Void> restart = CompletableFuture.runAsync(client::restart);
+        // Twice as long as one round of connecting lasts
+        eventually().during(4, TimeUnit.SECONDS).until(() -> !client.isConnected() && !restart.isDone());
+        this.central.goOnline();
+
+        eventually().until(() -> restart.isDone() && client.isConnected());
+        assertFalse(restart.isCompletedExceptionally());
+        awaitLogMessagesOn(1);
+    }
+
     @Test
     void startKeepsTryingUntilTheCentralUnitComesOnline() {
         TeletaskClientImpl client = client(TestCentralUnit.on(this.central.port()));

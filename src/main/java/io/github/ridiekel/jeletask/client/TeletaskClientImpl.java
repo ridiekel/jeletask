@@ -16,7 +16,9 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.LogState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,6 +68,9 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private final AtomicBoolean stopping = new AtomicBoolean(false);
     private final AtomicBoolean eventListenerQueued = new AtomicBoolean(false);
     private final SocketFactory socketFactory;
+    // One round of connecting: a start fails after it, a reconnect begins the next one
+    @Setter(AccessLevel.PACKAGE)
+    private Duration connectMaxWait = Duration.ofMinutes(10);
 
     @Autowired
     public TeletaskClientImpl(CentralUnit centralUnit) {
@@ -203,10 +208,29 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         int port = this.getCentralUnit().getPort();
 
         // A second before every attempt, also the first: a central unit that just dropped us is not hammered right away
-        Wait.until("Connect", Duration.ofMinutes(10), Duration.ofSeconds(1), Duration.ofSeconds(1), () -> this.stopping.get() || this.connect(host, port));
+        Wait.until("Connect", this.connectMaxWait, Duration.ofSeconds(1), Duration.ofSeconds(1), () -> this.stopping.get() || this.connect(host, port));
 
         if (this.stopping.get()) {
             throw new IllegalStateException("Stopped while connecting to the central unit");
+        }
+    }
+
+    /**
+     * A reconnect only ends when the client is stopped. Nothing else would start the client again once it gave up:
+     * the keep-alive only runs on a started client, and commands wait for the client without starting it.
+     */
+    private void connectAndKeepTrying() {
+        boolean connected = false;
+        while (!connected) {
+            try {
+                this.connectAndWait();
+                connected = true;
+            } catch (IllegalStateException e) {
+                if (this.stopping.get() || Thread.currentThread().isInterrupted()) {
+                    throw e;
+                }
+                LOG.warn("The central unit has been out of reach for {} minute(s), still trying to connect", this.connectMaxWait.toMinutes());
+            }
         }
     }
 
@@ -220,7 +244,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             this.closeOutputStream();
             this.closeSocket();
 
-            this.connectAndWait();
+            this.connectAndKeepTrying();
 
             this.getIoService().execute(() -> {
                 this.groupGet();
