@@ -26,11 +26,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.BASE_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 /**
- * Real Paho client against a real broker that restarts and loses all its sessions and retained messages: mosquitto-no-auth.conf
+ * The real MQTT client against a real broker that restarts and loses all its sessions and retained messages: mosquitto-no-auth.conf
  * has no persistence. Skipped without Docker, and not an End2End test: no Home Assistant or browser involved.
  * <p>
- * Only the broker process restarts, not the container: a restarted container may get another host port, and Paho
- * reconnects to the same address. A fixed host port does not help, not every Docker host forwards every port.
+ * Only the broker process restarts, not the container: a restarted container may get another host port, and the
+ * client reconnects to the same address. A fixed host port does not help, not every Docker host forwards every port.
  */
 @EnabledIf("dockerAvailable")
 class MqttProcessorBrokerReconnectTest {
@@ -42,10 +42,10 @@ class MqttProcessorBrokerReconnectTest {
     private final Teletask2MqttConfigurationProperties configuration = MqttProcessorFixtures.configuration();
     private final CentralUnit centralUnit = MqttProcessorFixtures.centralUnit();
     private final MqttProcessor processor = new MqttProcessor(centralUnit, teletask, configuration, _ -> {
-    }, (brokerUrl, clientId) -> bridge = new MqttClient(brokerUrl, clientId, new MemoryPersistence()));
+    }, () -> bridge = new HiveMqConnection());
     private final MqttContainer broker = new MqttContainer(configuration, processor, centralUnit);
     private final List<String> availability = new CopyOnWriteArrayList<>();
-    private MqttClient bridge;
+    private MqttConnection bridge;
     private MqttClient observer;
 
     static boolean dockerAvailable() {
@@ -57,7 +57,9 @@ class MqttProcessorBrokerReconnectTest {
         try {
             closeObserver();
             // They reconnect automatically, and a later broker can get the same port
-            close(bridge);
+            if (bridge != null) {
+                bridge.close();
+            }
             broker.closeCaptureClient();
         } finally {
             broker.stop();

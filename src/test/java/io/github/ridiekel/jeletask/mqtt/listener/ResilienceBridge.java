@@ -41,7 +41,7 @@ final class ResilienceBridge implements AutoCloseable {
 
     private static final Duration AWAIT = Duration.ofSeconds(90);
     private static final String CONFIG_TOPICS = "homeassistant/+/" + MqttProcessorFixtures.configuration().getCentral().getId() + "/+/config";
-    private static final List<String> PAHO_CONNECTION_THREADS = List.of("MQTT Rec:", "MQTT Snd:", "MQTT Call:", "MQTT Ping:");
+    private static final String MQTT_CLIENT_THREAD = "com.hivemq.client.mqtt";
     private static final int KEEP_ALIVE_MILLIS = 1000;
     private static final long STATUS_INTERVAL_MILLIS = 250;
     private static final int FRAME_NUMBER_HIGH_INDEX = 5;
@@ -59,7 +59,7 @@ final class ResilienceBridge implements AutoCloseable {
     private final List<Seen> seen = new CopyOnWriteArrayList<>();
     // Spring runs the status check every 5 seconds, this keeps a scenario from waiting for it
     private final ScheduledExecutorService status = Executors.newSingleThreadScheduledExecutor(runnable -> new Thread(runnable, "resilience-status"));
-    private MqttClient bridgeMqtt;
+    private MqttConnection bridgeMqtt;
     private MqttClient observer;
 
     ResilienceBridge(FakeCentral central, ResilienceNetwork network) {
@@ -76,7 +76,7 @@ final class ResilienceBridge implements AutoCloseable {
         this.client = new TeletaskClientImpl(this.unit);
         this.processor = new MqttProcessor(this.unit, this.client, configuration, _ -> {
             // Nothing asks this bridge to exit, a scenario would notice it stops answering
-        }, (brokerUrl, clientId) -> this.bridgeMqtt = new MqttClient(brokerUrl, clientId, new MemoryPersistence()));
+        }, () -> this.bridgeMqtt = new HiveMqConnection());
         this.baseTopic = MqttProcessorFixtures.BASE_TOPIC;
 
         central.respondWith(this::respond);
@@ -120,16 +120,14 @@ final class ResilienceBridge implements AutoCloseable {
     }
 
     /**
-     * The threads Paho runs for the connection of this bridge: receiver, sender, callback and ping.
-     * <p>
-     * Leaves out the connect and reconnect threads: Paho 1.2.5, the last mqttv3 release, can leave those behind when a
-     * connection drops while it is being set up. CommsReceiver.start then waits forever for a receiver that already ended.
+     * The threads the MQTT client of the bridge runs for its connection. The observer is a Paho client, so it does not
+     * count here.
      */
-    static int pahoConnectionThreads() {
-        String clientId = MqttProcessorFixtures.configuration().getMqtt().getClientId();
+    static int mqttClientThreads() {
         return (int) Thread.getAllStackTraces().keySet().stream()
+                .filter(Thread::isAlive)
                 .map(Thread::getName)
-                .filter(name -> PAHO_CONNECTION_THREADS.stream().anyMatch(name::startsWith) && name.endsWith(clientId))
+                .filter(name -> name.startsWith(MQTT_CLIENT_THREAD))
                 .count();
     }
 
@@ -196,6 +194,14 @@ final class ResilienceBridge implements AutoCloseable {
         return this.central.frames(Command.SET).size();
     }
 
+    /**
+     * The last messages the observer saw, for a failure message.
+     */
+    List<String> lastSeen(int count) {
+        List<Seen> all = List.copyOf(this.seen);
+        return all.subList(Math.max(0, all.size() - count), all.size()).stream().map(message -> message.topic() + " " + message.payload()).toList();
+    }
+
     void forgetSeen() {
         this.seen.clear();
     }
@@ -254,7 +260,9 @@ final class ResilienceBridge implements AutoCloseable {
             // A test has to outlive its client, see ClientThreads
             this.threads.awaitAllGone();
         } finally {
-            close(this.bridgeMqtt);
+            if (this.bridgeMqtt != null) {
+                this.bridgeMqtt.close();
+            }
         }
     }
 

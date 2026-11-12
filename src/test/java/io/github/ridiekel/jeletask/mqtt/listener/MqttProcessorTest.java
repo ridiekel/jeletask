@@ -8,15 +8,8 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessorFixtures.FakeTeletaskClient;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
 import org.awaitility.Awaitility;
-import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
+// Only for its topic matching, the bridge itself no longer uses Paho
 import org.eclipse.paho.client.mqttv3.MqttTopic;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -57,32 +50,20 @@ class MqttProcessorTest {
             teletask,
             configuration,
             exitCodes::add,
-            (_, _) -> mqtt = new FakeMqttClient()
+            () -> mqtt = new FakeMqttClient()
     );
 
     private final Map<String, String> retainedOnBroker = new ConcurrentHashMap<>();
     // Published by someone else while the bridge subscribes, so not retained
     private final Map<String, String> liveOnBroker = new ConcurrentHashMap<>();
 
-    @Test
-    void startupFailsWhenNoMqttClientCanBeCreated() {
-        MqttException cause = new MqttException(MqttException.REASON_CODE_INVALID_CLIENT_ID);
-        MqttProcessor failing = new MqttProcessor(MqttProcessorFixtures.centralUnit(), teletask, configuration, exitCodes::add, (_, _) -> {
-            throw cause;
-        });
-
-        IllegalStateException failure = assertThrows(IllegalStateException.class, failing::startup);
-
-        assertThat(failure).hasCause(cause);
-    }
-
     /**
      * Characterization, not a wish: no retry of its own. The application stops, and its restart policy brings it back.
      */
     @Test
     void startupFailsWhenTheBrokerCannotBeReached() {
-        MqttException cause = new MqttException(MqttException.REASON_CODE_SERVER_CONNECT_ERROR);
-        MqttProcessor unreachable = new MqttProcessor(MqttProcessorFixtures.centralUnit(), teletask, configuration, exitCodes::add, (_, _) -> {
+        MqttConnectionException cause = new MqttConnectionException("Could not connect: Connection refused");
+        MqttProcessor unreachable = new MqttProcessor(MqttProcessorFixtures.centralUnit(), teletask, configuration, exitCodes::add, () -> {
             FakeMqttClient client = new FakeMqttClient();
             client.failConnect = cause;
             return client;
@@ -102,7 +83,7 @@ class MqttProcessorTest {
         centralUnit.setHost("192.168.0.5");
         centralUnit.setPort(55000);
 
-        MqttProcessor fallback = new MqttProcessor(centralUnit, teletask, configuration, exitCodes::add, (_, _) -> new FakeMqttClient());
+        MqttProcessor fallback = new MqttProcessor(centralUnit, teletask, configuration, exitCodes::add, FakeMqttClient::new);
 
         assertThat(fallback.getTeletaskIdentifier()).isEqualTo("192_168_0_5_55000");
         assertThat(fallback.getPrefix()).isEqualTo("fixture_client");
@@ -110,14 +91,26 @@ class MqttProcessorTest {
     }
 
     @Test
-    void blankUsernameConnectsWithoutUsernameButWithThePassword() {
+    void aPasswordWithoutAUsernameIsNotSent() {
         configuration.getMqtt().setUsername("  ");
         configuration.getMqtt().setPassword("secret");
 
         processor.startup();
 
-        assertThat(mqtt.options.getUserName()).isNull();
-        assertThat(mqtt.options.getPassword()).containsExactly("secret".toCharArray());
+        // MQTT 3.1.1 only allows a password together with a username
+        assertThat(mqtt.settings.username()).isNull();
+        assertThat(mqtt.settings.password()).isNull();
+    }
+
+    @Test
+    void usernameAndPasswordAreSentTogether() {
+        configuration.getMqtt().setUsername("bridge");
+        configuration.getMqtt().setPassword("secret");
+
+        processor.startup();
+
+        assertThat(mqtt.settings.username()).isEqualTo("bridge");
+        assertThat(mqtt.settings.password()).isEqualTo("secret");
     }
 
     @Test
@@ -126,20 +119,8 @@ class MqttProcessorTest {
 
         processor.startup();
 
-        assertThat(mqtt.options.getUserName()).isEqualTo("bridge");
-        assertThat(mqtt.options.getPassword()).isNull();
-    }
-
-    @Test
-    void messagesOnTheClientCallbackAreLeftToTheSubscriptions() throws Exception {
-        processor.startup();
-        mqtt.clearRecordings();
-
-        mqtt.callback.messageArrived(STOP_TOPIC, new MqttMessage("maintenance".getBytes()));
-        mqtt.callback.deliveryComplete(null);
-
-        assertThat(exitCodes).isEmpty();
-        assertThat(mqtt.published).isEmpty();
+        assertThat(mqtt.settings.username()).isEqualTo("bridge");
+        assertThat(mqtt.settings.password()).isNull();
     }
 
     @Test
@@ -230,7 +211,7 @@ class MqttProcessorTest {
         configuration.getMqtt().setExitOnDisconnect(true);
         processor.startup();
 
-        mqtt.callback.connectionLost(new IOException("broker gone"));
+        mqtt.listener.connectionLost(new IOException("broker gone"));
 
         assertThat(exitCodes).containsExactly(5);
     }
@@ -239,7 +220,7 @@ class MqttProcessorTest {
     void connectionLostKeepsRunningByDefault() {
         processor.startup();
 
-        mqtt.callback.connectionLost(new IOException("broker gone"));
+        mqtt.listener.connectionLost(new IOException("broker gone"));
 
         assertThat(exitCodes).isEmpty();
     }
@@ -250,7 +231,7 @@ class MqttProcessorTest {
         processor.checkAndPublishConnectedStatus();
         mqtt.clearRecordings();
 
-        mqtt.callback.connectComplete(true, "tcp://broker");
+        mqtt.listener.connected(true);
 
         awaitAvailabilityPublished("online");
         assertThat(mqtt.subscribed).containsExactlyInAnyOrder(
@@ -269,13 +250,13 @@ class MqttProcessorTest {
         mqtt.clearRecordings();
         mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
 
-        mqtt.callback.connectComplete(true, "tcp://broker");
+        mqtt.listener.connected(true);
 
         awaitAvailabilityPublished("online");
         // The reconnect executor survived the failure
         mqtt.failSubscribeTo = null;
         mqtt.clearRecordings();
-        mqtt.callback.connectComplete(true, "tcp://broker");
+        mqtt.listener.connected(true);
         Awaitility.await("subscribed again").atMost(AWAIT).untilAsserted(() -> assertThat(mqtt.subscribed).contains(STOP_TOPIC));
     }
 
@@ -286,7 +267,7 @@ class MqttProcessorTest {
         mqtt.clearRecordings();
         mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
 
-        mqtt.callback.connectComplete(true, "tcp://broker");
+        mqtt.listener.connected(true);
         Awaitility.await("a second attempt").atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() >= 2);
         mqtt.failSubscribeTo = null;
 
@@ -299,7 +280,7 @@ class MqttProcessorTest {
         processor.startup();
         mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
 
-        mqtt.callback.connectComplete(true, "tcp://broker");
+        mqtt.listener.connected(true);
 
         Awaitility.await("five attempts and no more").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() == 5);
     }
@@ -311,7 +292,7 @@ class MqttProcessorTest {
         mqtt.failSubscribeTo = BASE_TOPIC + "/+/+/set";
         mqtt.connected = false;
 
-        mqtt.callback.connectComplete(true, "tcp://broker");
+        mqtt.listener.connected(true);
 
         // The next reconnect subscribes again by itself
         Awaitility.await("one attempt").during(Duration.ofMillis(300)).atMost(AWAIT).until(() -> mqtt.failedSubscribes.get() == 1);
@@ -322,7 +303,7 @@ class MqttProcessorTest {
         processor.startup();
         mqtt.blockSubscribes = new CountDownLatch(1);
         try {
-            mqtt.callback.connectComplete(true, "tcp://broker");
+            mqtt.listener.connected(true);
             Awaitility.await("resubscribe waiting").atMost(AWAIT).until(() -> mqtt.subscribesWaiting.get() > 0);
 
             awaitNextGroupGetAfter(() -> mqtt.deliver(REFRESH_TOPIC, "while resubscribing"));
@@ -332,7 +313,7 @@ class MqttProcessorTest {
     }
 
     @Test
-    void aCommandWaitsForTheCentralUnitAndIsExecutedOnceItIsBack() throws Exception {
+    void aCommandWaitsForTheCentralUnitAndIsExecutedOnceItIsBack() {
         processor.startup();
         teletask.connected = false;
 
@@ -344,7 +325,7 @@ class MqttProcessorTest {
     }
 
     @Test
-    void aCommandIsNotExecutedWhenTheCentralUnitStaysAwayLongerThanItWaits() throws Exception {
+    void aCommandIsNotExecutedWhenTheCentralUnitStaysAwayLongerThanItWaits() {
         processor.setCommandMaxWait(Duration.ofMillis(200));
         processor.startup();
         teletask.connected = false;
@@ -362,7 +343,7 @@ class MqttProcessorTest {
     void theMqttClientStopsWaitingForAnAnswerOfTheBroker() {
         processor.startup();
 
-        assertThat(mqtt.getTimeToWait()).isEqualTo(MqttProcessor.MQTT_TIME_TO_WAIT_MILLIS);
+        assertThat(mqtt.settings.timeToWait()).isEqualTo(MqttProcessor.MQTT_TIME_TO_WAIT);
     }
 
     @Test
@@ -371,14 +352,14 @@ class MqttProcessorTest {
         assertThat(mqtt.subscribed).containsOnlyOnce(STOP_TOPIC);
         mqtt.clearRecordings();
 
-        mqtt.callback.connectComplete(false, "tcp://broker");
+        mqtt.listener.connected(false);
 
         assertDoesNotThrow(() -> MqttProcessor.afterReconnectWork().get(AWAIT.toSeconds(), TimeUnit.SECONDS));
         assertThat(mqtt.subscribed).isEmpty();
     }
 
     @Test
-    void stopTopicExitsWithStatus0() throws Exception {
+    void stopTopicExitsWithStatus0() {
         processor.startup();
 
         mqtt.deliver(STOP_TOPIC, "maintenance");
@@ -600,28 +581,24 @@ class MqttProcessorTest {
     }
 
     /**
-     * Stands in for Paho and a broker: records what the bridge does, and hands published messages to matching
-     * subscribers on the calling thread.
+     * Stands in for the MQTT client and a broker: records what the bridge does, and hands published messages to
+     * matching subscribers on the calling thread.
      */
-    private final class FakeMqttClient extends MqttClient {
+    private final class FakeMqttClient implements MqttConnection {
         final List<String> subscribed = new CopyOnWriteArrayList<>();
         final List<String> publishAttempts = new CopyOnWriteArrayList<>();
         final List<Published> published = new CopyOnWriteArrayList<>();
-        private final Map<String, IMqttMessageListener> listeners = new ConcurrentHashMap<>();
-        volatile MqttCallbackExtended callback;
-        volatile MqttConnectOptions options;
+        private final Map<String, MessageHandler> handlers = new ConcurrentHashMap<>();
+        volatile Listener listener;
+        volatile MqttConnectionSettings settings;
         volatile boolean connected;
         volatile boolean echoPublishes = true;
         volatile String failSubscribeTo;
         volatile CountDownLatch blockSubscribes;
-        volatile MqttException failConnect;
+        volatile MqttConnectionException failConnect;
         final AtomicInteger subscribesWaiting = new AtomicInteger();
         final AtomicInteger failedSubscribes = new AtomicInteger();
         volatile String failPublishTo;
-
-        FakeMqttClient() throws MqttException {
-            super("tcp://localhost:1", "fake", new MemoryPersistence());
-        }
 
         void clearRecordings() {
             subscribed.clear();
@@ -630,18 +607,14 @@ class MqttProcessorTest {
         }
 
         @Override
-        public void setCallback(MqttCallback callback) {
-            this.callback = (MqttCallbackExtended) callback;
-        }
-
-        @Override
-        public void connect(MqttConnectOptions options) throws MqttException {
+        public void connect(MqttConnectionSettings settings, Listener listener) throws MqttConnectionException {
             if (failConnect != null) {
                 throw failConnect;
             }
-            this.options = options;
+            this.settings = settings;
+            this.listener = listener;
             connected = true;
-            callback.connectComplete(false, getServerURI());
+            listener.connected(false);
         }
 
         @Override
@@ -650,20 +623,20 @@ class MqttProcessorTest {
         }
 
         @Override
-        public void subscribe(String topicFilter, int qos, IMqttMessageListener listener) throws MqttException {
+        public void subscribe(String topicFilter, MessageHandler handler) throws MqttConnectionException {
             if (topicFilter.equals(failSubscribeTo)) {
                 failedSubscribes.incrementAndGet();
-                throw new MqttException(MqttException.REASON_CODE_SUBSCRIBE_FAILED);
+                throw new MqttConnectionException("The broker refused the subscription to " + topicFilter);
             }
             awaitSubscribeUnblocked();
             subscribed.add(topicFilter);
-            listeners.put(topicFilter, listener);
-            deliverOnSubscribe(topicFilter, listener, retainedOnBroker, true);
-            deliverOnSubscribe(topicFilter, listener, liveOnBroker, false);
+            handlers.put(topicFilter, handler);
+            deliverOnSubscribe(topicFilter, handler, retainedOnBroker, true);
+            deliverOnSubscribe(topicFilter, handler, liveOnBroker, false);
         }
 
         // Like a SUBACK that is slow to come
-        private void awaitSubscribeUnblocked() throws MqttException {
+        private void awaitSubscribeUnblocked() throws MqttConnectionException {
             CountDownLatch block = blockSubscribes;
             if (block == null) {
                 return;
@@ -672,61 +645,56 @@ class MqttProcessorTest {
             try {
                 // Longer than any test waits, so a held back command times the test out first
                 if (!block.await(AWAIT.toSeconds() * 3, TimeUnit.SECONDS)) {
-                    throw new MqttException(MqttException.REASON_CODE_CLIENT_TIMEOUT);
+                    throw new MqttConnectionException("No answer of the broker");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new MqttException(e);
+                throw new MqttConnectionException("Interrupted", e);
             } finally {
                 subscribesWaiting.decrementAndGet();
             }
         }
 
-        private static void deliverOnSubscribe(String topicFilter, IMqttMessageListener listener, Map<String, String> messages, boolean retained) {
+        private static void deliverOnSubscribe(String topicFilter, MessageHandler handler, Map<String, String> messages, boolean retained) {
             for (Map.Entry<String, String> entry : messages.entrySet()) {
                 if (MqttTopic.isMatched(topicFilter, entry.getKey())) {
-                    MqttMessage message = new MqttMessage(entry.getValue().getBytes());
-                    message.setRetained(retained);
-                    try {
-                        listener.messageArrived(entry.getKey(), message);
-                    } catch (Exception e) {
-                        throw new IllegalStateException("Paho would drop the connection on this", e);
-                    }
+                    handler.arrived(entry.getKey(), new Message(entry.getValue().getBytes(), retained));
                 }
             }
         }
 
         @Override
-        public void unsubscribe(String[] topicFilters) {
+        public void unsubscribe(String... topicFilters) {
             for (String topicFilter : topicFilters) {
-                listeners.remove(topicFilter);
+                handlers.remove(topicFilter);
             }
         }
 
         @Override
-        public void publish(String topic, MqttMessage message) throws MqttException {
+        public void publish(String topic, byte[] payload, boolean retained) throws MqttConnectionException {
             publishAttempts.add(topic);
             if (topic.equals(failPublishTo)) {
-                throw new MqttException(MqttException.REASON_CODE_CLIENT_NOT_CONNECTED);
+                throw new MqttConnectionException("Not connected");
             }
-            published.add(new Published(topic, new String(message.getPayload()), message.isRetained()));
+            published.add(new Published(topic, new String(payload), retained));
             if (echoPublishes) {
-                try {
-                    deliver(topic, message);
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
+                deliver(topic, new Message(payload, false));
             }
         }
 
-        void deliver(String topic, String payload) throws Exception {
-            deliver(topic, new MqttMessage(payload.getBytes()));
+        @Override
+        public void close() {
+            connected = false;
         }
 
-        private void deliver(String topic, MqttMessage message) throws Exception {
-            for (Map.Entry<String, IMqttMessageListener> listener : listeners.entrySet()) {
-                if (MqttTopic.isMatched(listener.getKey(), topic)) {
-                    listener.getValue().messageArrived(topic, message);
+        void deliver(String topic, String payload) {
+            deliver(topic, Message.of(payload));
+        }
+
+        private void deliver(String topic, Message message) {
+            for (Map.Entry<String, MessageHandler> handler : handlers.entrySet()) {
+                if (MqttTopic.isMatched(handler.getKey(), topic)) {
+                    handler.getValue().arrived(topic, message);
                 }
             }
         }

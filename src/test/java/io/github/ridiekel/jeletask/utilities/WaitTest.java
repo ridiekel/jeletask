@@ -37,9 +37,10 @@ class WaitTest {
 
     @Test
     void givesUpOnceTheTimeIsUp() {
+        Duration atMost = Duration.ofMillis(50);
         long start = System.nanoTime();
 
-        assertThatThrownBy(() -> Wait.until("ready", Duration.ofMillis(50), POLL, () -> false))
+        assertThatThrownBy(() -> Wait.until("ready", atMost, POLL, () -> false))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("ready: not done within PT0.05S");
 
@@ -59,9 +60,10 @@ class WaitTest {
 
     @Test
     void anInterruptStopsTheWaitAndIsKept() {
+        Duration atMost = Duration.ofSeconds(5);
         Thread.currentThread().interrupt();
 
-        assertThatThrownBy(() -> Wait.until("ready", Duration.ofSeconds(5), POLL, () -> false))
+        assertThatThrownBy(() -> Wait.until("ready", atMost, POLL, () -> false))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("ready: interrupted")
                 .hasCauseInstanceOf(InterruptedException.class);

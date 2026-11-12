@@ -25,8 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import io.github.ridiekel.jeletask.utilities.Wait;
-import org.eclipse.paho.client.mqttv3.*;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
@@ -37,6 +35,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -75,14 +74,14 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     // Apart from EXECUTOR: a resubscribe that waits for the broker must not hold back the commands queued there
     private static final ScheduledExecutorService RECONNECT_EXECUTOR = Executors.newSingleThreadScheduledExecutor(Thread.ofPlatform().name("mqtt-reconnect").daemon().factory());
     private static final int RESUBSCRIBE_ATTEMPTS = 5;
-    // Paho's blocking calls wait forever by default, a reply that never comes would hang the calling thread for good
-    static final long MQTT_TIME_TO_WAIT_MILLIS = 10_000;
+    // A reply of the broker that never comes must not hang the calling thread for good
+    static final Duration MQTT_TIME_TO_WAIT = Duration.ofSeconds(10);
     private static final long COMMAND_POLL_MILLIS = 50;
     private static final long STALE_CONFIG_COLLECT_MILLIS = 1000;
 
     private PingMesage pingMesage;
     private volatile boolean lastPingSucceeded = true;
-    private MqttClient mqttClient;
+    private MqttConnection mqttClient;
     @Getter
     private final String prefix;
     @Getter
@@ -93,7 +92,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     @Getter
     private final Teletask2MqttConfigurationProperties configuration;
     private final IntConsumer exitHandler;
-    private final MqttClientFactory mqttClientFactory;
+    private final MqttConnection.Factory mqttClientFactory;
     // As long as TeletaskClientImpl waits for its startup
     @Setter(AccessLevel.PACKAGE)
     private Duration commandMaxWait = Duration.ofSeconds(30);
@@ -106,14 +105,14 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                          TeletaskClient teletaskClient,
                          Teletask2MqttConfigurationProperties configuration
     ) {
-        this(centralUnit, teletaskClient, configuration, System::exit, (brokerUrl, clientId) -> new MqttClient(brokerUrl, clientId, new MemoryPersistence()));
+        this(centralUnit, teletaskClient, configuration, System::exit, HiveMqConnection::new);
     }
 
     MqttProcessor(CentralUnit centralUnit,
                   TeletaskClient teletaskClient,
                   Teletask2MqttConfigurationProperties configuration,
                   IntConsumer exitHandler,
-                  MqttClientFactory mqttClientFactory
+                  MqttConnection.Factory mqttClientFactory
     ) {
         this.exitHandler = exitHandler;
         this.mqttClientFactory = mqttClientFactory;
@@ -147,11 +146,6 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         }));
     }
 
-    @FunctionalInterface
-    interface MqttClientFactory {
-        MqttClient create(String brokerUrl, String clientId) throws MqttException;
-    }
-
     private void scheduleGroupGet(Teletask2MqttConfigurationProperties configuration) {
         if (configuration.getPublish().getStatesInterval() > 0) {
             LOG.info(() -> String.format("Scheduling force refresh every %s second(s)", configuration.getPublish().getStatesInterval()));
@@ -181,7 +175,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             this.subscribe();
             this.teletaskClient.groupGet();
             scheduleGroupGet(configuration);
-        } catch (MqttException e) {
+        } catch (MqttConnectionException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -194,21 +188,17 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         return Optional.ofNullable(value).map(String::trim).filter(u -> !u.isEmpty()).map(u -> INVALID_CHARS.matcher(u).replaceAll("_")).orElseGet(() -> removeInvalid(defaultValue, "<not_found>"));
     }
 
-    private void configureAndConnectMqtt() throws MqttException {
+    private void configureAndConnectMqtt() throws MqttConnectionException {
         String brokerUrl = MqttTls.brokerUrl(this.configuration.getMqtt());
         String clientId = this.configuration.getMqtt().getClientId();
 
         String username = Optional.ofNullable(configuration.getMqtt().getUsername()).map(String::trim).filter(u -> !u.isEmpty()).orElse(null);
-        char[] password = Optional.ofNullable(configuration.getMqtt().getPassword()).map(String::toCharArray).orElse(null);
+        String password = configuration.getMqtt().getPassword();
 
         log(LOG::info, What.CONNECTION, STATUS, String.format("Connecting to MQTT (brokerUrl=%s, clientId=%s, username=%s, password_provided=%s, ca_file=%s)...)", brokerUrl, clientId, username, password != null, !this.configuration.getMqtt().isSsl() ? "-" : MqttTls.caFile(this.configuration.getMqtt()).map(Path::toString).orElse("<jvm trust store>")));
 
-        this.mqttClient = this.mqttClientFactory.create(brokerUrl, clientId);
-        this.mqttClient.setTimeToWait(MQTT_TIME_TO_WAIT_MILLIS);
-
-        MqttConnectOptions options = this.connectOptions(username, password);
-
-        this.mqttClient.setCallback(new MqttCallbackExtended() {
+        this.mqttClient = this.mqttClientFactory.create();
+        this.mqttClient.connect(this.connectionSettings(username, password), new MqttConnection.Listener() {
             @Override
             public void connectionLost(Throwable cause) {
                 log(LOG::warn, What.CONNECTION, STATUS, "Connection lost!");
@@ -218,11 +208,11 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             }
 
             @Override
-            public void connectComplete(boolean reconnect, String serverURI) {
+            public void connected(boolean reconnect) {
                 log(LOG::info, What.CONNECTION, STATUS, String.format("Connected to MQTT (reconnect=%s, brokerUrl=%s, clientId=%s, username=%s, password_provided=%s)...)", reconnect, brokerUrl, clientId, username, password != null));
                 if (reconnect) {
                     // A restarted broker may have lost our session. Subscribing again is harmless when it did not.
-                    // Not in this callback thread: blocking client calls from a callback can deadlock.
+                    // Not in this callback thread: it also hands out the incoming messages.
                     RECONNECT_EXECUTOR.execute(() -> {
                         resubscribe(1);
                         // The broker published our last will when the connection dropped, so overwrite it right away.
@@ -230,39 +220,30 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
                     });
                 }
             }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message) {
-                // Not used: every subscription has its own IMqttMessageListener.
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                // Nothing to do: publishing is fire-and-forget (QoS 0), nothing waits for delivery.
-            }
         });
-
-        this.mqttClient.connect(options);
     }
 
     /**
      * The last will marks every entity unavailable in Home Assistant when the bridge disappears without disconnecting
      * (crash, kill, network or power loss). The broker sends it once the keep alive expires.
      */
-    public MqttConnectOptions connectOptions(String username, char[] password) {
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setUserName(username);
-        if (password != null) {
-            options.setPassword(password);
+    public MqttConnectionSettings connectionSettings(String username, String password) {
+        if (username == null && password != null) {
+            log(LOG::warn, What.CONNECTION, STATUS, "A password without a username is not sent: MQTT 3.1.1 only allows a password together with a username");
         }
-        options.setAutomaticReconnect(true);
-        options.setCleanSession(false);
-        options.setKeepAliveInterval(10);
-        options.setConnectionTimeout(5);
-        options.setMaxReconnectDelay(10000);
-        options.setWill(this.getAvailabilityTopic(), OFFLINE.getBytes(), 1, true);
-        MqttTls.apply(this.configuration.getMqtt(), options);
-        return options;
+        return new MqttConnectionSettings(
+                this.configuration.getMqtt(),
+                this.configuration.getMqtt().getClientId(),
+                username,
+                username == null ? null : password,
+                Duration.ofSeconds(10),
+                Duration.ofSeconds(5),
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(10),
+                MQTT_TIME_TO_WAIT,
+                this.getAvailabilityTopic(),
+                OFFLINE
+        );
     }
 
     /**
@@ -271,7 +252,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private void resubscribe(int attempt) {
         try {
             subscribe();
-        } catch (MqttException e) {
+        } catch (MqttConnectionException e) {
             boolean again = attempt < RESUBSCRIBE_ATTEMPTS && this.mqttClient.isConnected();
             log(LOG::error, What.CONNECTION, STATUS, String.format("Could not subscribe again after reconnect (attempt %d of %d%s): %s", attempt, RESUBSCRIBE_ATTEMPTS, again ? ", trying again" : "", e.getMessage()));
             if (again) {
@@ -288,7 +269,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         }, RECONNECT_EXECUTOR);
     }
 
-    private void subscribe() throws MqttException {
+    private void subscribe() throws MqttConnectionException {
         this.subscribe(this.getBaseTopic() + "/+/+/set", (topic, message) -> {
             long arrived = System.nanoTime();
             EXECUTOR.execute(() -> this.executeCommand(topic, message, arrived));
@@ -299,11 +280,11 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             }
         });
         this.subscribe(getRemoteStopTopic(), (_, message) -> {
-            LOG.debug(() -> String.format("Stopping the service: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
+            LOG.debug(() -> String.format("Stopping the service: %s", Optional.ofNullable(message).map(MqttConnection.Message::toString).orElse("<no reason provided>")));
             this.exitHandler.accept(0);
         });
         this.subscribe(getRemoteRefreshTopic(), (_, message) -> {
-            LOG.debug(() -> String.format("Refreshing states: %s", Optional.ofNullable(message).map(MqttMessage::toString).orElse("<no reason provided>")));
+            LOG.debug(() -> String.format("Refreshing states: %s", Optional.ofNullable(message).map(MqttConnection.Message::toString).orElse("<no reason provided>")));
             EXECUTOR.execute(this.teletaskClient::groupGet);
         });
         this.subscribe("homeassistant/status", (_, message) -> {
@@ -324,7 +305,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
      * A command waits for the central unit at most {@link #commandMaxWait}, counted from its arrival and not from its turn
      * in the queue: commands that piled up during an outage are not executed long after someone asked for them.
      */
-    private void executeCommand(String topic, MqttMessage message, long arrivedNanos) {
+    private void executeCommand(String topic, MqttConnection.Message message, long arrivedNanos) {
         if (!this.teletaskClient.isConnected()) {
             LOG.info(() -> String.format("MQTT topic '%s' waits for the central unit -- %s", topic, message));
         }
@@ -332,7 +313,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
             LOG.warn(() -> String.format("MQTT topic '%s' not executed: waited %d seconds for the central unit -- %s", topic, this.commandMaxWait.toSeconds(), message));
             return;
         }
-        new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).messageArrived(topic, message);
+        new MQTTMessageToTeletaskCommand(this.teletaskClient, this.prefix, this.teletaskIdentifier).arrived(topic, message);
     }
 
     private boolean awaitCentralUnit(long arrivedNanos) {
@@ -350,9 +331,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         return true;
     }
 
-    private void subscribe(String topic, IMqttMessageListener target) throws MqttException {
+    private void subscribe(String topic, MqttConnection.MessageHandler target) throws MqttConnectionException {
         log(LOG::info, What.CONFIG, "SUBSCRIBE", topic);
-        this.mqttClient.subscribe(topic, 0, target);
+        this.mqttClient.subscribe(topic, target);
     }
 
     private String getPingTopic() {
@@ -401,7 +382,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
      * config topics this bridge published last time. That list survives a change of the central id or the prefixes,
      * because it is kept under the MQTT client id.
      */
-    public void removeStaleConfig() throws MqttException {
+    public void removeStaleConfig() throws MqttConnectionException {
         Set<String> current = this.centralUnit.getAllComponents().stream()
                 .map(component -> this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic().topic())
                 .collect(Collectors.toSet());
@@ -409,14 +390,14 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         Set<String> previous = ConcurrentHashMap.newKeySet();
         String filter = this.homeAssistentAutoConfig.configTopicFilter();
         String discoveryTopicsTopic = this.getDiscoveryTopicsTopic();
-        this.mqttClient.subscribe(filter, 0, (topic, message) -> {
+        this.mqttClient.subscribe(filter, (topic, message) -> {
             // An empty payload means the config was cleared already
-            if (message.isRetained() && message.getPayload().length > 0) {
+            if (message.retained() && message.payload().length > 0) {
                 previous.add(topic);
             }
         });
-        this.mqttClient.subscribe(discoveryTopicsTopic, 0, (_, message) -> {
-            if (message.isRetained() && message.getPayload().length > 0) {
+        this.mqttClient.subscribe(discoveryTopicsTopic, (_, message) -> {
+            if (message.retained() && message.payload().length > 0) {
                 previous.addAll(readDiscoveryTopics(message));
             }
         });
@@ -426,7 +407,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         } finally {
-            this.mqttClient.unsubscribe(new String[]{filter, discoveryTopicsTopic});
+            this.mqttClient.unsubscribe(filter, discoveryTopicsTopic);
         }
 
         previous.stream()
@@ -439,9 +420,9 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         this.publishDiscoveryTopics(current);
     }
 
-    private static List<String> readDiscoveryTopics(MqttMessage message) {
+    private static List<String> readDiscoveryTopics(MqttConnection.Message message) {
         try {
-            return StringUtilities.OBJECT_MAPPER.readValue(message.getPayload(), new TypeReference<>() {
+            return StringUtilities.OBJECT_MAPPER.readValue(message.payload(), new TypeReference<>() {
             });
         } catch (IOException e) {
             LOG.warn(() -> "Ignoring the list of previously published discovery topics, it is not readable: " + e.getMessage());
@@ -581,13 +562,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         String logStringValue = logString.get();
         try {
             if (this.mqttClient.isConnected()) {
-                MqttMessage mqttMessage = new MqttMessage(message.getBytes());
-                mqttMessage.setQos(0);
-                mqttMessage.setRetained(retained);
-
-
                 level.accept(String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message)));
-                this.mqttClient.publish(topic, mqttMessage);
+                this.mqttClient.publish(topic, message.getBytes(StandardCharsets.UTF_8), retained);
             } else {
                 LOG.warn(() -> String.format(WHAT_LOG_PATTERNS.get(what), getWhat(what), logStringValue, topicToLogWithColors(topic) + payloadToLogWithColors(message) + AnsiOutput.toString(AnsiColor.RED, " : MQTT Client disconnected", AnsiColor.DEFAULT)));
             }

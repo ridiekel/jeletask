@@ -6,6 +6,7 @@ import io.github.ridiekel.jeletask.MockingTeletaskTestSupport;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttProcessor;
 import io.github.ridiekel.jeletask.utilities.StringUtilities;
 import org.awaitility.Awaitility;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnectionException;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -67,7 +68,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void staleConfigOfThisBridgeIsRemoved() throws MqttException {
+    void staleConfigOfThisBridgeIsRemoved() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String ownConfigs = "homeassistant/+/" + processor.getTeletaskIdentifier() + "/+/config";
         String stale = "homeassistant/switch/" + processor.getTeletaskIdentifier() + "/relay_999/config";
@@ -93,7 +94,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void configUnderAPreviousTypeIsRemoved() throws MqttException {
+    void configUnderAPreviousTypeIsRemoved() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String relayConfigs = "homeassistant/+/" + processor.getTeletaskIdentifier() + "/relay_10/config";
         String current = onlyTopic(relayConfigs);
@@ -111,7 +112,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void configsThatAreNotOfThisBridgeAreLeftAlone() throws MqttException {
+    void configsThatAreNotOfThisBridgeAreLeftAlone() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         List<String> notOfThisBridge = List.of(
                 // Another bridge whose id starts with ours
@@ -139,7 +140,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void configUnderAPreviousDiscoveryPrefixIsRemoved() throws MqttException {
+    void configUnderAPreviousDiscoveryPrefixIsRemoved() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String previousPrefixConfigs = "homeassistant/+/" + processor.getTeletaskIdentifier() + "/+/config";
         String stale = "custom/switch/" + processor.getTeletaskIdentifier() + "/relay_999/config";
@@ -163,7 +164,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void configOfAPreviousCentralIdIsRemoved() throws MqttException {
+    void configOfAPreviousCentralIdIsRemoved() throws MqttException, MqttConnectionException {
         String previous = "homeassistant/switch/previous_central_id/relay_10/config";
 
         publishRetained(previous, "{}");
@@ -178,7 +179,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void discoveryTopicsListTheCurrentConfig() throws MqttException {
+    void discoveryTopicsListTheCurrentConfig() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
 
         processor.removeStaleConfig();
@@ -188,7 +189,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void onlyConfigTopicsFromTheDiscoveryTopicsAreCleared() throws MqttException {
+    void onlyConfigTopicsFromTheDiscoveryTopicsAreCleared() throws MqttException, MqttConnectionException {
         String notAConfig = "somewhere/else/state";
 
         publishRetained(notAConfig, "ON");
@@ -203,7 +204,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void discoveryTopicsOfAnotherBridgeAreIgnored() throws MqttException {
+    void discoveryTopicsOfAnotherBridgeAreIgnored() throws MqttException, MqttConnectionException {
         String otherBridgeTopics = "teletask2mqtt/bridges/other_client_id/discovery";
         String otherBridgeConfig = "homeassistant/switch/other_central_id/relay_10/config";
 
@@ -220,7 +221,7 @@ class End2EndRetainedTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void homeAssistantRemovesTheStaleEntity() throws MqttException {
+    void homeAssistantRemovesTheStaleEntity() throws MqttException, MqttConnectionException {
         MqttProcessor processor = this.mqtt().processor();
         String relaySwitch = "homeassistant/switch/" + processor.getTeletaskIdentifier() + "/relay_11/config";
         String stale = "homeassistant/switch/" + processor.getTeletaskIdentifier() + "/relay_999/config";

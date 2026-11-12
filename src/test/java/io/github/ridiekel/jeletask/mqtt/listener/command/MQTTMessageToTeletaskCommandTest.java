@@ -15,7 +15,7 @@ import io.github.ridiekel.jeletask.client.spec.state.State;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 import org.assertj.core.api.Assertions;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
+import io.github.ridiekel.jeletask.mqtt.listener.MqttConnection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -52,7 +52,7 @@ class MQTTMessageToTeletaskCommandTest {
     }
 
     private void arrive(String topic, String payload) {
-        command.messageArrived(topic, new MqttMessage(payload.getBytes()));
+        command.arrived(topic, MqttConnection.Message.of(payload));
     }
 
     @ParameterizedTest
@@ -113,7 +113,7 @@ class MQTTMessageToTeletaskCommandTest {
 
     @Test
     void aFailingClientDoesNotReachTheMqttThread() {
-        // An exception out of messageArrived would make Paho drop the MQTT connection
+        // An exception out of a handler would cost the messages after it
         client.failure = new IllegalStateException("Central unit is gone");
 
         Assertions.assertThatCode(() -> arrive(BASE + "/relay/1/set", ON)).doesNotThrowAnyException();
