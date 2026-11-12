@@ -413,6 +413,10 @@ The container is healthy when:
 - it is connected to the central unit,
 - it is connected to the MQTT broker and the last MQTT ping (sent every minute) came back.
 
+A bridge that starts before the MQTT broker can be reached keeps running and tries again every 10 seconds, so the start order of the containers does not matter.
+Until the broker answers the container is `unhealthy` and the log shows `Could not start on MQTT (attempt ...)` with the reason, also when the broker refuses the username or password.
+With `TELETASK_MQTT_EXIT_ON_DISCONNECT` the bridge exits instead (return code 1).
+
 The check starts after a grace period of 2 minutes and runs every 30 seconds; after 3 failed checks in a row the container is marked `unhealthy`.
 To see why, run:
 
