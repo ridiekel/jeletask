@@ -19,12 +19,13 @@ final class FakeBroker implements AutoCloseable {
     private static final int SUBSCRIBE = 0x80;
     private static final int PINGREQ = 0xC0;
 
-    private final ServerSocket server = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
+    private final ServerSocket server;
     private final AtomicInteger subscribesSeen = new AtomicInteger();
     private volatile boolean answerSubscribes = true;
     private volatile OutputStream toClient;
 
     FakeBroker() throws IOException {
+        this.server = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
         Thread.ofVirtual().start(this::serve);
     }
 
