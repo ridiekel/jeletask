@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DisplayMessageStateCalculatorTest {
     private DisplayMessageStateCalculator calculator;
@@ -511,6 +513,64 @@ class DisplayMessageStateCalculatorTest {
 
                 assertThat(log.messages(Level.WARN)).isEmpty();
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("One message over both lines")
+    class WrapTests {
+        @ParameterizedTest(name = "{0} in lines of {1}")
+        @CsvSource(delimiter = '|', quoteCharacter = '~', value = {
+                // text                                   | length | line 1             | line 2
+                "Doorbell                                 | 16     | Doorbell           | ",
+                "Exactly sixteen!                         | 16     | Exactly sixteen!   | ",
+                "Someone is at the front door             | 16     | Someone is at      | the front door",
+                "~Pizza \"Napoli\" is at the door~      | 16     | ~Pizza \"Napoli\"~ | is at the door",
+                "Line one fits!! and line two             | 16     | Line one fits!!    | and line two",
+                "Doorbell rings                           | 8      | Doorbell           | rings",
+                "~  Doorbell  ~                           | 8      | Doorbell           | ",
+                "Supercalifragilistic                     | 8      | Supercal           | ifragilistic",
+                "Someone is at the front door, please open it | 16 | Someone is at      | the front door, please open it",
+        })
+        void endsLineOneAtTheLastSpaceThatFits(String text, int length, String line1, String line2) {
+            assertThat(DisplayMessageStateCalculator.wrap(text, length)).containsExactly(line1.strip(), line2 == null ? null : line2.strip());
+        }
+
+        @Test
+        @DisplayName("What does not fit on line 2 is cut off with a warning")
+        void whatDoesNotFitOnLineTwoIsCutOff() {
+            DisplayMessageSpec display = new DisplayMessageSpec();
+            display.setNumber(1000);
+            DisplayMessageState state = DisplayMessageState.builder().ascii(true).message("Someone is at the front door, please open it").build();
+
+            try (LogCapture log = LogCapture.of(DisplayMessageStateCalculator.class, Level.WARN)) {
+                byte[] result = calculator.toCommand(display, state);
+
+                assertThat(new String(result, 2, 16, StandardCharsets.US_ASCII)).isEqualTo("Someone is at   ");
+                assertThat(new String(result, 18, 16, StandardCharsets.US_ASCII)).isEqualTo("the front door, ");
+                assertThat(log.messages(Level.WARN)).singleElement().asString().startsWith("Display message 1000 line 2 'the front door, please open it'");
+            }
+        }
+
+        @Test
+        @DisplayName("The length depends on ascii of the display")
+        void theLengthDependsOnAsciiOfTheDisplay() {
+            DisplayMessageSpec display = new DisplayMessageSpec();
+            display.setAscii(true);
+
+            byte[] result = calculator.toCommand(display, DisplayMessageState.builder().message("Doorbell rings").build());
+
+            assertThat(new String(result, 2, 16, StandardCharsets.US_ASCII)).isEqualTo("Doorbell rings  ");
+        }
+
+        @Test
+        @DisplayName("A message and lines together are refused")
+        void aMessageAndLinesTogetherAreRefused() {
+            DisplayMessageState state = DisplayMessageState.builder().message("Doorbell").messageLine2("Open up").build();
+
+            assertThatThrownBy(() -> calculator.toCommand(null, state))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("A display message has either a 'message' or 'message_line1' and 'message_line2', not both");
         }
     }
 }

@@ -469,40 +469,196 @@ They contain the Teletask bus number(s) and Teletask interface address(es) of th
 
 #### Sending a display message
 
+Publish JSON to the set topic of the display:
+
+```
+<TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/<number>/set
+```
+
+| Field         | Description                                                                                                                                         |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| message_line1 | The first line                                                                                                                                      |
+| message_line2 | The second line                                                                                                                                     |
+| message       | Instead of the two lines: one text that the bridge spreads over both lines (see below). Not together with `message_line1` or `message_line2`       |
+| ascii         | `true`: 16 ASCII characters per line. `false`: 8 characters per line, any character. Left out: the `ascii` of the display in the config, or else `false` |
+| message_type  | `message` or `alarm`. Left out: the `message_type` of the display in the config, or else `alarm`                                                   |
+| message_beeps | The number of beeps. Left out: the `message_beeps` of the display in the config, or else 1                                                          |
+
+`message` is spread over the lines like this:
+
+1. If the text fits on line 1, it all goes there.
+2. Otherwise line 1 ends at the last space that still fits, and the rest goes to line 2. A word longer than a line is
+   split where the line ends.
+3. What does not fit on line 2 is cut off, with a warning in the log.
+
+The examples below are for display 1000 with the config above (`message`, 2 beeps, ascii). The box shows what the
+display shows.
+
+##### Two lines, each on its own
+
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
-    -m '{"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!","message_beeps":10,"message_type":"message","ascii":true}'
+    -m '{"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!"}'
 ```
 
-| Field         | Description                                                                                         |
-|---------------|-----------------------------------------------------------------------------------------------------|
-| message_line1 | The first line                                                                                      |
-| message_line2 | The second line                                                                                     |
-| ascii         | `true`: 16 ASCII characters per line. `false`: 8 characters per line, any character. Left out: the `ascii` of the display in the config, or else `false` |
-| message_type  | `message` or `alarm`. Left out: the `message_type` of the display in the config, or else `alarm`   |
-| message_beeps | The number of beeps. Left out: the `message_beeps` of the display in the config, or else 1          |
+```
+┌────────────────┐
+│DOORBELL        │
+│PLEASE OPEN!    │
+└────────────────┘
+```
+
+Only line 1 is fine too: `{"message_line1":"DOORBELL"}` leaves line 2 empty.
+
+##### One text, spread over both lines
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
+    -m '{"message":"Someone is at the front door"}'
+```
+
+```
+┌────────────────┐
+│Someone is at   │
+│the front door  │
+└────────────────┘
+```
+
+"Someone is at the" would be 17 characters, so line 1 ends at the space before "the".
+
+##### A text that does not fit
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
+    -m '{"message":"Someone is at the front door, please open it"}'
+```
+
+```
+┌────────────────┐
+│Someone is at   │
+│the front door, │
+└────────────────┘
+```
+
+and in the log:
+
+```
+Display message 1000 line 2 'the front door, please open it' has 30 characters, the display shows 16 with ascii: cut to 'the front door, '
+```
+
+The same warning appears for `message_line1` or `message_line2` when they are too long.
+
+##### An alarm, while the display defaults to a message
+
+What the message says wins over the defaults of the display:
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
+    -m '{"message":"WATER LEAK BASEMENT","message_type":"alarm","message_beeps":10}'
+```
+
+```
+┌────────────────┐
+│WATER LEAK      │
+│BASEMENT        │
+└────────────────┘
+```
+
+##### Without a sound
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
+    -m '{"message":"Good night","message_beeps":0}'
+```
+
+##### Characters outside ASCII
+
+With `"ascii": false` a line holds 8 characters, but any character (UTF-16), such as é or ü. With `"ascii": true` they
+show as `?`.
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
+    -m '{"message":"Café is open","ascii":false}'
+```
+
+```
+┌────────┐
+│Café is │
+│open    │
+└────────┘
+```
+
+##### Not accepted
+
+`message` together with `message_line1` or `message_line2` is refused, because it is not clear which text to show.
+Nothing is sent to the display, and the log says why:
+
+```
+MQTT topic '.../displaymessage/1000/set' could not change state to: {"message":"Doorbell","message_line2":"Open up"} -- A display message has either a 'message' or 'message_line1' and 'message_line2', not both
+```
 
 Notes:
 
-- A line longer than 16 (ascii) or 8 characters is cut off, with a warning in the log
-  (`Display message 1000 line 2 '...' has 28 characters, the display shows 16 with ascii: cut to '...'`).
-  This is a Teletask limitation.
+- A display shows at most 16 (ascii) or 8 characters per line. This is a Teletask limitation.
 - The same message twice is shown twice: a display has no state, so nothing is dropped as unchanged.
 
 #### From Home Assistant
 
 Every display is a `notify` entity in Home Assistant, e.g. `notify.teletask_<TELETASK_CENTRAL_ID>_displaymessage_1000`.
-Its `notify.send_message` action shows the text over the two lines: the first 16 characters on line 1 and the rest on
-line 2 when the display has `"ascii": true`, otherwise 8. Text that does not fit on line 2 is cut off with a warning in
-the log. Home Assistant only passes the text, so the message type, ascii and the beeps come from `message_type`,
-`ascii` and `message_beeps` of the display in the config.
+Its `notify.send_message` action sends the text as `message`, so the bridge spreads it over the two lines as described
+above. Home Assistant only passes the text, so the message type, ascii and the beeps come from `message_type`, `ascii`
+and `message_beeps` of the display in the config.
+
+A message from a script or the developer tools:
 
 ```yaml
+action: notify.send_message
+target:
+  entity_id: notify.teletask_1_displaymessage_1000
+data:
+  message: "Someone is at the front door"
+```
+
+An automation that shows the doorbell on the displays, with the time:
+
+```yaml
+alias: Doorbell on the displays
+triggers:
+  - trigger: state
+    entity_id: sensor.teletask_1_input_42
+    to: "CLOSED"
 actions:
   - action: notify.send_message
     target:
       entity_id: notify.teletask_1_displaymessage_1000
     data:
-      message: "Someone is at the front door"
+      message: "Doorbell {{ now().strftime('%H:%M') }}"
+```
+
+Several displays at once:
+
+```yaml
+action: notify.send_message
+target:
+  entity_id:
+    - notify.teletask_1_displaymessage_1000
+    - notify.teletask_1_displaymessage_1001
+data:
+  message: "Dinner is ready"
+```
+
+For an alarm, other beeps or each line on its own from Home Assistant, publish the JSON yourself:
+
+```yaml
+action: mqtt.publish
+data:
+  topic: teletask2mqtt/1/displaymessage/1000/set
+  payload: >-
+    {"message_line1": "WATER LEAK", "message_line2": "BASEMENT", "message_type": "alarm", "message_beeps": 10}
 ```

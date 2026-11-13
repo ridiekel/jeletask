@@ -205,6 +205,15 @@ class TeletaskClientImplMessagingTest {
     }
 
     @Test
+    void aDisplayMessageWithBothATextAndLinesIsRefusedBeforeAnythingIsSent() {
+        DisplayMessageState state = DisplayMessageState.builder().message("Doorbell").messageLine2("Open up").build();
+
+        assertThrows(IllegalArgumentException.class, () -> this.client.set(Function.DISPLAYMESSAGE, DISPLAY, state, this.callbacks::success, this.callbacks::failure));
+
+        assertThat(this.central.frames(Command.DISPLAYMESSAGE)).isEmpty();
+    }
+
+    @Test
     void displayMessageWithoutStateIsRefused() {
         assertThrows(IllegalArgumentException.class, () -> this.client.set(Function.DISPLAYMESSAGE, DISPLAY, null, this.callbacks::success, this.callbacks::failure));
 

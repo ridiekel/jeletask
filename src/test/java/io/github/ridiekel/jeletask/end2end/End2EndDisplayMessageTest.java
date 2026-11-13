@@ -90,9 +90,9 @@ class End2EndDisplayMessageTest extends MockingTeletaskTestSupport {
 
     @Test
     void homeAssistantShowsANotificationOnTheDisplays() {
-        // Longer than one line, and with quotes that must not break the JSON payload
+        // Longer than one line, so split at a space, and with quotes that must not break the JSON payload
         ha().callService("notify", "send_message", Map.of("entity_id", ENTITY, "message", "Pizza \"Napoli\" is at the door"));
 
-        assertThat(displayMessagesAtTheCentralUnit(1)).containsExactly(onBothDisplays("Pizza \"Napoli\" i", "s at the door", 3));
+        assertThat(displayMessagesAtTheCentralUnit(1)).containsExactly(onBothDisplays("Pizza \"Napoli\"", "is at the door", 3));
     }
 }

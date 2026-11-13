@@ -51,18 +51,44 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
 
     /**
      * The message type, ascii and beeps a message leaves out come from the config of the display, if it has them.
+     * A {@code message} is spread over both lines, see {@link #wrap(String, int)}.
      */
     private static DisplayMessageState withDefaultsOf(ComponentSpec component, DisplayMessageState message) {
-        if (!(component instanceof DisplayMessageSpec display)) {
-            return message;
-        }
+        DisplayMessageSpec display = component instanceof DisplayMessageSpec d ? d : new DisplayMessageSpec();
+        Boolean ascii = Optional.ofNullable(message.getAscii()).orElse(display.getAscii());
+        String[] lines = lines(message, lineLength(Boolean.TRUE.equals(ascii)));
         return DisplayMessageState.builder()
-                .messageLine1(message.getMessageLine1())
-                .messageLine2(message.getMessageLine2())
-                .ascii(Optional.ofNullable(message.getAscii()).orElse(display.getAscii()))
+                .messageLine1(lines[0])
+                .messageLine2(lines[1])
+                .ascii(ascii)
                 .messageType(Optional.ofNullable(message.getMessageType()).orElse(display.getMessageType()))
                 .messageBeeps(Optional.ofNullable(message.getMessageBeeps()).orElse(display.getMessageBeeps()))
                 .build();
+    }
+
+    private static String[] lines(DisplayMessageState message, int length) {
+        if (message.getMessage() == null) {
+            return new String[]{message.getMessageLine1(), message.getMessageLine2()};
+        }
+        if (message.getMessageLine1() != null || message.getMessageLine2() != null) {
+            throw new IllegalArgumentException("A display message has either a 'message' or 'message_line1' and 'message_line2', not both");
+        }
+        return wrap(message.getMessage(), length);
+    }
+
+    /**
+     * Spreads a text over the two lines of a display: line 1 ends at the last space that still fits, the rest goes to
+     * line 2. A word longer than a line is split where the line ends. What does not fit on line 2 is left for
+     * {@link #toMessageLineBytes} to cut off, with a warning.
+     */
+    static String[] wrap(String text, int length) {
+        String trimmed = text.strip();
+        if (trimmed.length() <= length) {
+            return new String[]{trimmed, null};
+        }
+        int space = trimmed.lastIndexOf(' ', length);
+        int end = space > 0 ? space : length;
+        return new String[]{trimmed.substring(0, end).stripTrailing(), trimmed.substring(end).strip()};
     }
 
     private static byte[] toMessageLineBytes(ComponentSpec component, DisplayMessageState state, int line, Function<DisplayMessageState, String> extractor) {

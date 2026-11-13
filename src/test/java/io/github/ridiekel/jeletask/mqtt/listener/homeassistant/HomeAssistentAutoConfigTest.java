@@ -7,7 +7,6 @@ import io.github.ridiekel.jeletask.client.spec.CentralUnitType;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.TestComponents;
-import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.client.spec.component.OnOffSpec;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import org.assertj.core.api.Assertions;
@@ -81,17 +80,8 @@ class HomeAssistentAutoConfigTest {
         Assertions.assertThat(config.getMqttConfigTopic().topic()).isEqualTo("homeassistant/notify/1/displaymessage_35/config");
         Assertions.assertThat(node.get("default_entity_id").asText()).startsWith("notify.");
         Assertions.assertThat(node.get("command_topic").asText()).isEqualTo("~/set");
-        // Without ascii a line holds 8 characters; the rest of the text goes to line 2, where the bridge cuts it
-        Assertions.assertThat(node.get("command_template").asText())
-                .isEqualTo("{{ {\"message_line1\": value[:8], \"message_line2\": value[8:]} | tojson }}");
+        // The bridge spreads the text over the lines, it knows how many characters fit on this display
+        Assertions.assertThat(node.get("command_template").asText()).isEqualTo("{{ {\"message\": value} | tojson }}");
         Assertions.assertThat(node.has("state_topic")).isFalse();
-    }
-
-    @Test
-    void aDisplayWithAsciiSplitsTheTextAfterSixteenCharacters() {
-        ObjectNode node = config(Function.DISPLAYMESSAGE, c -> ((DisplayMessageSpec) c).setAscii(true)).getConfig();
-
-        Assertions.assertThat(node.get("command_template").asText())
-                .isEqualTo("{{ {\"message_line1\": value[:16], \"message_line2\": value[16:]} | tojson }}");
     }
 }
