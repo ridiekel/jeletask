@@ -39,6 +39,9 @@ public class Teletask2MqttApplication {
     private static ApplicationContext start(String[] args) {
         try {
             return SpringApplication.run(Teletask2MqttApplication.class, args);
+        } catch (SpringApplication.AbandonedRunException e) {
+            // No failure: the ahead-of-time processing of the native build calls main and ends the run this way
+            throw e;
         } catch (RuntimeException e) {
             // Spring has logged the cause already
             System.exit(1);
