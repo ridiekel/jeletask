@@ -18,6 +18,8 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
     // A line holds 16 bytes: 16 ASCII characters or 8 UTF-16 ones (TT15132 §3.6)
     public static final int ASCII_LINE_LENGTH = 16;
     public static final int UNICODE_LINE_LENGTH = 8;
+    // Hyphen, en dash, em dash and slash: a line may break after them
+    private static final String BREAK_AFTER = "-\u2013\u2014/";
 
     /**
      * How many characters fit on a line of a display.
@@ -77,17 +79,24 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
     }
 
     /**
-     * Spreads a text over the two lines of a display: line 1 ends at the last space that still fits, the rest goes to
-     * line 2. A word longer than a line is split where the line ends. What does not fit on line 2 is left for
-     * {@link #toMessageLineBytes} to cut off, with a warning.
+     * Spreads a text over the two lines of a display: line 1 ends at the last place that still fits where a line may
+     * break, the rest goes to line 2. A line may break at a space, which then disappears, and after a hyphen, a dash or
+     * a slash, which stay on line 1. Not after a full stop or a comma: without a space after them they are usually
+     * part of a number. A word longer than a line is split where the line ends. What does not fit on line 2 is left
+     * for {@link #toMessageLineBytes} to cut off, with a warning.
      */
     static String[] wrap(String text, int length) {
         String trimmed = text.strip();
         if (trimmed.length() <= length) {
             return new String[]{trimmed, null};
         }
-        int space = trimmed.lastIndexOf(' ', length);
-        int end = space > 0 ? space : length;
+        int end = length;
+        while (end > 0 && trimmed.charAt(end) != ' ' && BREAK_AFTER.indexOf(trimmed.charAt(end - 1)) < 0) {
+            end--;
+        }
+        if (end == 0) {
+            end = length;
+        }
         return new String[]{trimmed.substring(0, end).stripTrailing(), trimmed.substring(end).strip()};
     }
 

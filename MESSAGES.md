@@ -487,8 +487,12 @@ Publish JSON to the set topic of the display:
 `message` is spread over the lines like this:
 
 1. If the text fits on line 1, it all goes there.
-2. Otherwise line 1 ends at the last space that still fits, and the rest goes to line 2. A word longer than a line is
-   split where the line ends.
+2. Otherwise line 1 ends at the last place that still fits where a line may break, and the rest goes to line 2:
+   - at a space, which disappears;
+   - after a hyphen `-`, a dash `–` `—` or a slash `/`, which stay on line 1.
+
+   Not after a full stop or a comma: without a space after them they are usually part of a number, like `21.5` or
+   `12,5`. A word longer than a line is split where the line ends.
 3. What does not fit on line 2 is cut off, with a warning in the log.
 
 The examples below are for display 1000 with the config above (`message`, 2 beeps, ascii). The box shows what the
@@ -527,6 +531,30 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 ```
 
 "Someone is at the" would be 17 characters, so line 1 ends at the space before "the".
+
+##### A text with hyphens or slashes
+
+```
+mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
+    -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
+    -m '{"message":"Garage-door-opener open"}'
+```
+
+```
+┌────────────────┐
+│Garage-door-    │
+│opener open     │
+└────────────────┘
+```
+
+On a display without ascii (8 characters per line), `{"message":"Bad/Keuken"}` shows:
+
+```
+┌────────┐
+│Bad/    │
+│Keuken  │
+└────────┘
+```
 
 ##### A text that does not fit
 

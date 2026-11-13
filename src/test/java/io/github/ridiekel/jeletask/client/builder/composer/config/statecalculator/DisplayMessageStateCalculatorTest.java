@@ -531,6 +531,17 @@ class DisplayMessageStateCalculatorTest {
                 "~  Doorbell  ~                           | 8      | Doorbell           | ",
                 "Supercalifragilistic                     | 8      | Supercal           | ifragilistic",
                 "Someone is at the front door, please open it | 16 | Someone is at      | the front door, please open it",
+                // After a hyphen, a dash or a slash, which stay on line 1
+                "Garage-door-opener open                  | 16     | Garage-door-       | opener open",
+                "Bad/Keuken                               | 8      | Bad/               | Keuken",
+                "Open 9\u201317 tomorrow                  | 8      | Open 9\u2013       | 17 tomorrow",
+                "Open 9\u201417 tomorrow                  | 8      | Open 9\u2014       | 17 tomorrow",
+                // The break furthest to the right wins, whether a space or a hyphen
+                "Twenty-five degrees                      | 16     | Twenty-five        | degrees",
+                "Not a-b-c-d-e-f-g                        | 16     | Not a-b-c-d-e-f-   | g",
+                // Not after a full stop or a comma, they are part of a number
+                "Temperature 21.5 degrees                 | 16     | Temperature 21.5   | degrees",
+                "Rain 12,5mm today                        | 8      | Rain               | 12,5mm today",
         })
         void endsLineOneAtTheLastSpaceThatFits(String text, int length, String line1, String line2) {
             assertThat(DisplayMessageStateCalculator.wrap(text, length)).containsExactly(line1.strip(), line2 == null ? null : line2.strip());
