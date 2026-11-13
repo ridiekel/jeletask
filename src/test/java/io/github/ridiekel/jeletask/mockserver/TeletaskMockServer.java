@@ -54,6 +54,7 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
     private Socket socket;
     private InputStream inputStream;
     private OutputStream outputStream;
+    private volatile DisplayMessageTap displayMessageTap;
     private final Timer timer = new Timer();
     private Map<String, List<Supplier<MockServerResponse>>> mocks;
     // The last run of every motor, so a group get answers with where the motor is now, like a real central unit
@@ -398,8 +399,9 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
                 LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Server listening to port (random): ", AnsiColor.BRIGHT_WHITE, this.port, AnsiColor.DEFAULT));
             }
             this.socket = this.server.accept();
-            this.inputStream = this.socket.getInputStream();
             this.outputStream = this.socket.getOutputStream();
+            this.displayMessageTap = new DisplayMessageTap(this.socket.getInputStream(), this.outputStream, this.centralUnit.getMessageHandler());
+            this.inputStream = this.displayMessageTap;
             this.timer.schedule(new TimerTask() {
                 // False positive: both caught exceptions are wrapped in the RuntimeException they throw, so neither is unused
                 @SuppressWarnings("java:S7467")
@@ -490,6 +492,17 @@ public class TeletaskMockServer implements Runnable, TeletaskReceiver {
 
     public Map<String, List<Supplier<MockServerResponse>>> getMocks() {
         return Optional.ofNullable(mocks).orElseGet(Map::of);
+    }
+
+    /**
+     * Every display message the bridge sent so far, as raw frames.
+     */
+    public List<byte[]> receivedDisplayMessages() {
+        return Optional.ofNullable(this.displayMessageTap).map(DisplayMessageTap::displayMessages).orElseGet(List::of);
+    }
+
+    public void clearReceivedDisplayMessages() {
+        Optional.ofNullable(this.displayMessageTap).ifPresent(DisplayMessageTap::clear);
     }
 
     public int getPort() {

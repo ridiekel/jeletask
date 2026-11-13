@@ -208,7 +208,10 @@ This is just a description, repeating it (like in the example) will group everyt
         "number": 1000,
         "bus_numbers": "1,1",
         "address_numbers": "13,5",
-        "description": "Aurus living room + aurus basement"
+        "description": "Aurus living room + aurus basement",
+        "message_type": "message",
+        "message_beeps": 2,
+        "ascii": true
       }
     ]
   }
@@ -263,7 +266,7 @@ function to `config.json` always needs a restart, because the bridge reads that 
 | TELETASK_MQTT_PREFIX                             | Optional | teletask2mqtt | The MQTT message topic prefix                                                                                                                                               |
 | TELETASK_MQTT_RETAINED                           | Optional | false         | Whether state messages are retained by the broker. Discovery config and availability are always retained, the ping never.                                                   |
 | TELETASK_MQTT_DISCOVERY_PREFIX                   | Optional | homeassistant | The MQTT home assistant discovery prefix                                                                                                                                    |
-| TELETASK_MQTT_EXIT_ON_DISCONNECT                 | Optional | false         | Stop the container (return code 5) when the mqtt connection is lost. Make sure your restart config is set (always or unless-stopped).                                       |
+| TELETASK_MQTT_EXIT_ON_DISCONNECT                 | Optional | false         | Stop the container (return code 5) when the mqtt connection is lost, or (return code 1) when the broker cannot be reached at startup. Make sure your restart config is set (always or unless-stopped). Without it the bridge keeps trying to reach the broker.                                       |
 | TELETASK_PUBLISH_MOTOR_POSITION                  | Optional | true          | Publish the position of the motor                                                                                                                                           |
 | TELETASK_PUBLISH_MOTOR_POSITION_INTERVAL         | Optional | 250           | How frequently the position is published when the motor is running (in milliseconds).                                                                                       |
 | TELETASK_PUBLISH_STATES_INTERVAL                 | Optional | 300           | How frequently the states are force refreshed (in seconds). A negative value disables the force refresh of states.                                                          |
@@ -416,6 +419,10 @@ The container is healthy when:
 - it is connected to the central unit,
 - it is connected to the MQTT broker and the last MQTT ping (sent every minute) came back.
 
+A bridge that starts before the MQTT broker can be reached keeps running and tries again every 10 seconds, so the start order of the containers does not matter.
+Until the broker answers the container is `unhealthy` and the log shows `Could not start on MQTT (attempt ...)` with the reason, also when the broker refuses the username or password.
+With `TELETASK_MQTT_EXIT_ON_DISCONNECT` the bridge exits instead (return code 1).
+
 The check starts after a grace period of 2 minutes and runs every 30 seconds; after 3 failed checks in a row the container is marked `unhealthy`.
 To see why, run:
 
@@ -425,7 +432,8 @@ docker inspect --format '{{json .State.Health}}' jeletask2mqtt
 
 # HomeAssistant
 
-Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions and digital inputs.
+Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions, digital inputs and display messages.
+A display message becomes a `notify` entity: `notify.send_message` shows the text on the displays, see [MESSAGES.md](MESSAGES.md#from-home-assistant).
 Other types are not yet supported, work in progress.
 Please log an issue when having trouble with auto configuration in HA.
 
@@ -611,7 +619,7 @@ A new `Function` touches seven places, and the compiler does not point you to mo
 2. `MicrosPlusFunctionConfiguration`: the function number and its `StateCalculator`.
 3. A `StateCalculator`, and usually a new `State` implementation, which must also be registered in `NativeRuntimeHints` (a new `Function` constant does not need that).
 4. `TeletaskClientImpl.sendLogEventMessages()`: lists every function that subscribes to events by hand. **Forget it and the component never receives state updates**, without any error.
-5. `HomeAssistentAutoConfig.FUNCTION_TO_TYPE`: a missing entry is a `NullPointerException` during Home Assistant discovery.
+5. `HomeAssistentAutoConfig.FUNCTION_TO_TYPE`: without an entry the function gets no Home Assistant entity, silently.
 6. `MESSAGES.md` and the config example in this README.
 7. `src/test/resources/test-config.json` and the Home Assistant fixtures in `src/test/resources/haconfig/`.
 

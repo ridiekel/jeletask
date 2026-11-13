@@ -53,7 +53,7 @@ class DisplayMessageStateTest {
         DisplayMessageState state = CALCULATOR.stateFromMessage("""
                 {"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!","message_beeps":"10","message_type":"message"}""");
 
-        assertThat(state.isAscii()).isFalse();
+        assertThat(state.getAscii()).isNull();
         assertThat(Bytes.bytesToHex(CALCULATOR.toCommand(null, state))).isEqualTo(
                 "01 00 "
                         + "00 44 00 4F 00 4F 00 52 00 42 00 45 00 4C 00 4C "
@@ -66,7 +66,7 @@ class DisplayMessageStateTest {
         DisplayMessageState state = CALCULATOR.stateFromMessage("""
                 {"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!","ascii":true}""");
 
-        assertThat(state.isAscii()).isTrue();
+        assertThat(state.getAscii()).isTrue();
         assertThat(Bytes.bytesToHex(CALCULATOR.toCommand(null, state))).isEqualTo(
                 "00 01 "
                         + "44 4F 4F 52 42 45 4C 4C 20 20 20 20 20 20 20 20 "

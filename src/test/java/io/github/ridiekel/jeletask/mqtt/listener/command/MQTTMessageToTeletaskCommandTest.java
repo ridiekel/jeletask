@@ -64,12 +64,12 @@ class MQTTMessageToTeletaskCommandTest {
     }
 
     @Test
-    void aDisplayMessageIsNotSetButDisplayed() {
+    void aDisplayMessageIsSetOnTheDisplay() {
         arrive(BASE + "/displaymessage/2/set", "{\"message_line1\": \"Hello\"}");
 
         DisplayMessageState expected = new DisplayMessageState();
         expected.setMessageLine1("Hello");
-        Assertions.assertThat(client.calls).containsExactly(new Call("displaymessage", Function.DISPLAYMESSAGE, 2, expected));
+        Assertions.assertThat(client.calls).containsExactly(new Call("set", Function.DISPLAYMESSAGE, 2, expected));
     }
 
     @ParameterizedTest
@@ -145,11 +145,6 @@ class MQTTMessageToTeletaskCommandTest {
         }
 
         @Override
-        public void displaymessage(int number, DisplayMessageState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-            recordCall(new Call("displaymessage", Function.DISPLAYMESSAGE, number, state));
-        }
-
-        @Override
         public CentralUnit getCentralUnit() {
             return centralUnit;
         }
@@ -161,11 +156,6 @@ class MQTTMessageToTeletaskCommandTest {
 
         @Override
         public void set(ComponentSpec component, State<?> state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void displaymessage(ComponentSpec component, DisplayMessageState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
             throw new UnsupportedOperationException();
         }
 

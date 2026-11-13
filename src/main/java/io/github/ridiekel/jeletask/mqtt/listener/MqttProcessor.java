@@ -52,6 +52,7 @@ import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttLogger.*;
 import static io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters.componentTopic;
@@ -81,7 +82,10 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
 
     private PingMesage pingMesage;
     private volatile boolean lastPingSucceeded = true;
-    private MqttConnection mqttClient;
+    // Replaced by the thread that keeps trying to start, read by all the others.
+    // Only the reference changes hands, and that is what volatile is for: a connection takes calls from any thread.
+    @SuppressWarnings("java:S3077")
+    private volatile MqttConnection mqttClient;
     @Getter
     private final String prefix;
     @Getter
@@ -98,6 +102,8 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     private Duration commandMaxWait = Duration.ofSeconds(30);
     @Setter(AccessLevel.PACKAGE)
     private Duration resubscribeDelay = Duration.ofSeconds(5);
+    @Setter(AccessLevel.PACKAGE)
+    private Duration startupRetryDelay = Duration.ofSeconds(10);
 
     // Required: with more than one constructor, Spring otherwise looks for a no-arg one.
     @Autowired
@@ -165,19 +171,73 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         }
     }
 
+    /**
+     * A broker that is not there yet does not stop the bridge: it keeps trying until the broker answers. Only with
+     * exit on disconnect the startup fails, like a lost connection ends the process there.
+     * <p>
+     * The first attempt runs here, so a startup that works is complete when this returns. The later ones run on a
+     * thread of their own: Spring holds its startup lock while this method runs, and a shutdown would wait for it.
+     */
     @EventListener(classes = {ContextRefreshedEvent.class})
     @Order(200)
     public void startup() {
+        try {
+            this.connectAndPrepare();
+        } catch (MqttConnectionException e) {
+            if (this.configuration.getMqtt().isExitOnDisconnect()) {
+                throw new IllegalStateException(e);
+            }
+            this.logStartupFailure(1, e);
+            Thread.ofPlatform().name("mqtt-startup").daemon().start(this::keepTryingToStart);
+            return;
+        }
+        this.teletaskClient.groupGet();
+        scheduleGroupGet(configuration);
+    }
+
+    private void connectAndPrepare() throws MqttConnectionException {
         try {
             this.configureAndConnectMqtt();
             this.removeStaleConfig();
             this.publishConfig();
             this.subscribe();
+        } catch (MqttConnectionException e) {
+            // A step after the connect may have failed: the next attempt starts over with a connection of its own
+            this.mqttClient.close();
+            throw e;
+        }
+    }
+
+    private void keepTryingToStart() {
+        try {
+            int attempt = 2;
+            while (!this.connectedAndPreparedAfterDelay(attempt)) {
+                attempt++;
+            }
             this.teletaskClient.groupGet();
             scheduleGroupGet(configuration);
-        } catch (MqttConnectionException e) {
-            throw new IllegalStateException(e);
+        } catch (InterruptedException _) {
+            Thread.currentThread().interrupt();
+        } catch (RuntimeException e) {
+            // Nobody is left to start the bridge, so leave that to the restart policy of the container
+            LOG.error("Startup failed: {}", e.getMessage(), e);
+            this.exitHandler.accept(1);
         }
+    }
+
+    private boolean connectedAndPreparedAfterDelay(int attempt) throws InterruptedException {
+        Thread.sleep(this.startupRetryDelay.toMillis());
+        try {
+            this.connectAndPrepare();
+            return true;
+        } catch (MqttConnectionException e) {
+            this.logStartupFailure(attempt, e);
+            return false;
+        }
+    }
+
+    private void logStartupFailure(int attempt, MqttConnectionException e) {
+        log(LOG::warn, What.CONNECTION, STATUS, String.format("Could not start on MQTT (attempt %d): %s. Trying again in %d second(s)", attempt, e.getMessage(), this.startupRetryDelay.toSeconds()));
     }
 
     private static String resolveTeletaskIdentifier(CentralUnit centralUnit, Teletask2MqttConfigurationProperties configuration) {
@@ -349,8 +409,16 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         return getBaseTopic() + "/refresh";
     }
 
+    /**
+     * The components Home Assistant gets an entity for. Not a display message: it only shows text on the displays when
+     * something publishes to its set topic, there is nothing for Home Assistant to discover.
+     */
+    private Stream<? extends ComponentSpec> discoverableComponents() {
+        return this.centralUnit.getAllComponents().stream().filter(component -> this.homeAssistentAutoConfig.toConfig(component) != null);
+    }
+
     public void publishConfig() {
-        this.centralUnit.getAllComponents().stream().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> {
+        this.discoverableComponents().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> {
             HAConfig.MQTTConfigTopic config = this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic();
             this.publish(
                     What.CONFIG,
@@ -384,7 +452,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
      * because it is kept under the MQTT client id.
      */
     public void removeStaleConfig() throws MqttConnectionException {
-        Set<String> current = this.centralUnit.getAllComponents().stream()
+        Set<String> current = this.discoverableComponents()
                 .map(component -> this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic().topic())
                 .collect(Collectors.toSet());
 
@@ -447,7 +515,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     public void removeConfig() {
-        this.centralUnit.getAllComponents().stream().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction).reversed()).forEach(component -> {
+        this.discoverableComponents().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction).reversed()).forEach(component -> {
             HAConfig.MQTTConfigTopic config = this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic();
             this.publish(
                     What.CONFIG,

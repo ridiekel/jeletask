@@ -224,8 +224,14 @@ final class ResilienceBridge implements AutoCloseable {
         eventually().alias("availability " + availability).until(() -> availability.equals(lastAvailability()));
     }
 
+    /**
+     * The health file belongs to the whole JVM: a Spring context that an End2End test left behind writes it on its
+     * schedule too, and its "all up" says nothing about this bridge. So "up" also has to be what this bridge itself
+     * sees, or a scenario goes on while the bridge is still reconnecting and loses what it publishes next.
+     */
     void awaitHealth(String expected) {
-        eventually().alias("health " + expected).until(() -> health().contains(expected));
+        boolean up = expected.contains("teletask=UP") && expected.contains("mqtt=UP");
+        eventually().alias("health " + expected).until(() -> health().contains(expected) && (!up || this.client.isConnected() && this.bridgeMqtt.isConnected()));
     }
 
     /**

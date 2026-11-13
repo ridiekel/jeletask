@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -66,6 +67,8 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicBoolean starting = new AtomicBoolean(false);
     private final AtomicBoolean stopping = new AtomicBoolean(false);
+    // Counts the connections that were made, to tell the current one from an earlier one
+    private final AtomicInteger connections = new AtomicInteger();
     private final AtomicBoolean eventListenerQueued = new AtomicBoolean(false);
     private final SocketFactory socketFactory;
     // One round of connecting: a start fails after it, a reconnect begins the next one
@@ -100,6 +103,10 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     @Override
     public void set(ComponentSpec component, State<?> state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        if (component.getFunction() == Function.DISPLAYMESSAGE) {
+            this.display(component, state, onSuccess, onFailed);
+            return;
+        }
         withStarted(() -> {
             if (Objects.isNull(component.getState())) {
                 this.get(component,
@@ -125,10 +132,17 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         });
     }
 
-    @Override
-    public void displaymessage(ComponentSpec component, DisplayMessageState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+    /**
+     * A display message is its own command on the central unit (TT15132 §6.6), not a SET of a state. The central unit
+     * cannot be asked what a display shows, so unlike a SET there is no current state to read first or compare with:
+     * every message is sent, also the same text twice in a row.
+     */
+    private void display(ComponentSpec component, State<?> state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        if (!(state instanceof DisplayMessageState displayMessageState)) {
+            throw new IllegalArgumentException("A display message needs a DisplayMessageState, not: " + state);
+        }
         withStarted(() -> this.execute(
-                new DisplayMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                new DisplayMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), displayMessageState),
                 m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
                 (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
         ));
@@ -168,11 +182,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     }
 
     @Override
-    public void displaymessage(int number, DisplayMessageState state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
-        this.displaymessage(this.getComponent(Function.DISPLAYMESSAGE, number), state, onSucccess, onFailed);
-    }
-
-    @Override
     public void get(Function function, int number, SuccessConsumer onSucccess, FailureConsumer onFailed) {
         this.get(this.getComponent(function, number), onSucccess, onFailed);
     }
@@ -192,7 +201,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
             this.startEventListener();
 
             LOG.info("Performing group get...");
-            this.getIoService().execute(() -> this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON)));
+            this.askForStateChanges(() -> this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON)));
 
             LOG.info("Starting keepalive...");
             this.startKeepAlive();
@@ -234,6 +243,29 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         }
     }
 
+    /**
+     * A central unit only reports the changes of a function after the log message for it. When one of those fails on
+     * a connection that stays up, for instance on a line that hiccups right after the reconnect, the keep-alive keeps
+     * finding that connection fine and nobody would notice that the bridge went deaf. So such a connection is
+     * replaced by a new one.
+     */
+    private void askForStateChanges(Runnable messages) {
+        int connection = this.connections.get();
+        this.getIoService().execute(() -> {
+            try {
+                messages.run();
+            } catch (RuntimeException e) {
+                if (this.stopping.get() || this.starting.get() || this.connections.get() != connection) {
+                    // Stopping, or someone else is replacing that connection or did so already
+                    LOG.debug("Not reconnecting after failing to ask the central unit for its state changes: {}", e.getMessage());
+                    return;
+                }
+                LOG.warn("Could not ask the central unit for its state changes, reconnecting: {}", e.getMessage());
+                this.restart();
+            }
+        });
+    }
+
     public void restart() {
         // Also counts as starting: a call in the meantime has to wait for this reconnect, not begin a second one
         this.starting.set(true);
@@ -246,7 +278,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
             this.connectAndKeepTrying();
 
-            this.getIoService().execute(() -> {
+            this.askForStateChanges(() -> {
                 this.groupGet();
 
                 this.sendLogEventMessages(new LogState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
@@ -406,6 +438,7 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         }
 
         if (connected) {
+            this.connections.incrementAndGet();
             LOG.info(() -> "Successfully (Re)connected");
         } else {
             this.closeInputStream();
