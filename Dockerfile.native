@@ -1,0 +1,18 @@
+# The native image, built the way the native tests are built: native-maven-plugin with the metadata of the pom.
+# docker buildx build --platform linux/<amd64|arm64> -f Dockerfile.native .   (arm64 compiles under QEMU)
+FROM ghcr.io/graalvm/native-image-community:25.0.2@sha256:0d936f32bb8acb5bc60c41b33e05f064d7a6aaf36b726538296c54949bd4a3c0 AS build
+WORKDIR /build
+COPY .mvn .mvn
+COPY mvnw pom.xml LICENSE.md ./
+COPY src/main src/main
+# The Maven repository survives between builds in the BuildKit cache
+RUN --mount=type=cache,target=/root/.m2,sharing=locked \
+    ./mvnw --batch-mode --no-transfer-progress -Pnative -Dmaven.test.skip=true package native:compile-no-fork
+
+FROM gcr.io/distroless/base-debian13:nonroot@sha256:a08d9054afbaf1af9b90fd02cdc7b32236319b5376d374505a41548d42b0c5db
+COPY --from=build /build/target/jeletask /app/jeletask
+# Our licence and the notices of the libraries compiled into the binary, as files anyone can read
+COPY --from=build /build/target/classes/META-INF/LICENSE.md /licenses/
+COPY --from=build /build/target/classes/META-INF/third-party /licenses/third-party
+HEALTHCHECK --interval=30s --timeout=10s --start-period=2m --retries=3 CMD ["/app/jeletask","--healthcheck"]
+ENTRYPOINT ["/app/jeletask"]

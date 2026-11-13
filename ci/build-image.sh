@@ -22,19 +22,7 @@ case "${KIND}" in
     docker buildx build --platform "linux/${ARCH}" --load -t "${LOCAL_IMAGE}" .
     ;;
   native)
-    # shellcheck disable=SC2086 # MAVEN_CLI_OPTS holds several options
-    ./mvnw ${MAVEN_CLI_OPTS} -Pnative -DskipTests spring-boot:build-image \
-      -Dspring-boot.build-image.imageName="${LOCAL_IMAGE}" \
-      -Dspring-boot.build-image.imagePlatform="linux/${ARCH}" \
-      -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-${ARCH}"
-    # Buildpacks cannot set a HEALTHCHECK, so it is added as metadata on top. The licences go along: the binary has
-    # the libraries compiled in, but not their notices.
-    docker build --platform "linux/${ARCH}" -t "${LOCAL_IMAGE}" -f - target/classes/META-INF <<EOF
-FROM ${LOCAL_IMAGE}
-COPY LICENSE.md /licenses/
-COPY third-party /licenses/third-party
-HEALTHCHECK --interval=30s --timeout=10s --start-period=2m --retries=3 CMD ["/cnb/process/web","--healthcheck"]
-EOF
+    docker buildx build --platform "linux/${ARCH}" --load -t "${LOCAL_IMAGE}" -f Dockerfile.native .
     ;;
   *)
     echo "Unknown image kind: ${KIND}"
