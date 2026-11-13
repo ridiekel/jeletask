@@ -7,7 +7,7 @@ RUN cd /build && jar xf app.jar \
         --class-path 'BOOT-INF/lib/*' BOOT-INF/classes)" \
         --strip-debug --no-man-pages --no-header-files --compress=zip-6 --output /jre
 
-FROM gcr.io/distroless/base-debian13:nonroot@sha256:7fe4df6a4413adf5889960d345a28b4574aea0872ea47684c7244c8d88027dca
+FROM gcr.io/distroless/base-debian13:nonroot@sha256:a08d9054afbaf1af9b90fd02cdc7b32236319b5376d374505a41548d42b0c5db
 ENV JAVA_HOME=/opt/java
 COPY --from=jre /jre ${JAVA_HOME}
 ENV JAVA_TOOL_OPTIONS="--enable-native-access=ALL-UNNAMED -Xms64m -Xmx64m -XX:+UseParallelGC"
