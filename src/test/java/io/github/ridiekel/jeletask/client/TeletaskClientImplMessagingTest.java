@@ -174,7 +174,7 @@ class TeletaskClientImplMessagingTest {
         state.setMessageLine1("Hi");
         state.setMessageBeeps(3);
 
-        this.client.displaymessage(DISPLAY, state, this.callbacks::success, this.callbacks::failure);
+        this.client.set(Function.DISPLAYMESSAGE, DISPLAY, state, this.callbacks::success, this.callbacks::failure);
 
         awaitFrame(Command.DISPLAYMESSAGE);
         String line1 = HexFormat.of().formatHex(String.format("%-16s", "Hi").getBytes(StandardCharsets.US_ASCII));
@@ -184,8 +184,29 @@ class TeletaskClientImplMessagingTest {
     }
 
     @Test
+    void theSameDisplayMessageTwiceIsSentTwice() {
+        DisplayMessageState state = new DisplayMessageState();
+        state.setMessageLine1("Doorbell");
+
+        this.client.set(Function.DISPLAYMESSAGE, DISPLAY, state, this.callbacks::success, this.callbacks::failure);
+        this.client.set(Function.DISPLAYMESSAGE, DISPLAY, state, this.callbacks::success, this.callbacks::failure);
+
+        // A display has no state to compare with, and no get is sent to read one
+        eventually().until(() -> this.central.frames(Command.DISPLAYMESSAGE).size() == 2);
+        assertThat(this.central.frames(Command.GET)).isEmpty();
+        assertThat(this.callbacks.successes).containsExactly("DISPLAYMESSAGE/5", "DISPLAYMESSAGE/5");
+    }
+
+    @Test
+    void aDisplayMessageNeedsADisplayMessageState() {
+        assertThrows(IllegalArgumentException.class, () -> this.client.set(Function.DISPLAYMESSAGE, DISPLAY, ON, this.callbacks::success, this.callbacks::failure));
+
+        assertThat(this.central.frames(Command.DISPLAYMESSAGE)).isEmpty();
+    }
+
+    @Test
     void displayMessageWithoutStateIsRefused() {
-        assertThrows(IllegalArgumentException.class, () -> this.client.displaymessage(DISPLAY, null, this.callbacks::success, this.callbacks::failure));
+        assertThrows(IllegalArgumentException.class, () -> this.client.set(Function.DISPLAYMESSAGE, DISPLAY, null, this.callbacks::success, this.callbacks::failure));
 
         assertThat(this.callbacks.successes).isEmpty();
     }
@@ -194,7 +215,7 @@ class TeletaskClientImplMessagingTest {
     void displayMessageToADisplayWithoutAddressIsRefused() {
         DisplayMessageState state = new DisplayMessageState();
 
-        assertThrows(IllegalArgumentException.class, () -> this.client.displaymessage(DISPLAY_WITHOUT_ADDRESS, state, this.callbacks::success, this.callbacks::failure));
+        assertThrows(IllegalArgumentException.class, () -> this.client.set(Function.DISPLAYMESSAGE, DISPLAY_WITHOUT_ADDRESS, state, this.callbacks::success, this.callbacks::failure));
 
         assertThat(this.callbacks.successes).isEmpty();
     }
@@ -269,7 +290,7 @@ class TeletaskClientImplMessagingTest {
 
     @Test
     void aFailingSuccessCallbackOfDisplayMessageEndsUpInTheFailureCallback() {
-        this.client.displaymessage(component(Function.DISPLAYMESSAGE, DISPLAY), new DisplayMessageState(), this::failingSuccess, this.callbacks::failure);
+        this.client.set(component(Function.DISPLAYMESSAGE, DISPLAY), new DisplayMessageState(), this::failingSuccess, this.callbacks::failure);
 
         assertThat(this.callbacks.failures).containsExactly("DISPLAYMESSAGE/5: callback failure");
     }
