@@ -13,8 +13,10 @@ public class DisplayMessageState extends State<Long> {
     private String messageLine2;
     private Number messageBeeps;
     private String messageType;
-    // true = ascii, false = unicode
-    private boolean ascii;
+    // true = ascii, false = unicode, null = left out (the default of the display, or else unicode)
+    private Boolean ascii;
+    // One text that the bridge spreads over both lines, instead of messageLine1 and messageLine2
+    private String message;
 
     public DisplayMessageState() {
     }
@@ -59,11 +61,19 @@ public class DisplayMessageState extends State<Long> {
         return this.getMessageType() != null && !"alarm".equalsIgnoreCase(this.getMessageType());
     }
 
-    public boolean isAscii() {
+    public Boolean getAscii() {
         return ascii;
     }
 
-    public void setAscii(boolean ascii) {
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setAscii(Boolean ascii) {
         this.ascii = ascii;
     }
 
@@ -75,11 +85,11 @@ public class DisplayMessageState extends State<Long> {
 
         DisplayMessageState that = (DisplayMessageState) o;
 
-        return new EqualsBuilder().appendSuper(super.equals(o)).append(messageLine1, that.messageLine1).append(messageLine2, that.messageLine2).append(messageBeeps, that.messageBeeps).append(messageType, that.messageType).isEquals();
+        return new EqualsBuilder().appendSuper(super.equals(o)).append(messageLine1, that.messageLine1).append(messageLine2, that.messageLine2).append(messageBeeps, that.messageBeeps).append(messageType, that.messageType).append(message, that.message).isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(messageLine1).append(messageLine2).append(messageBeeps).append(messageType).toHashCode();
+        return new HashCodeBuilder(17, 37).appendSuper(super.hashCode()).append(messageLine1).append(messageLine2).append(messageBeeps).append(messageType).append(message).toHashCode();
     }
 }

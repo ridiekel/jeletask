@@ -103,6 +103,10 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
 
     @Override
     public void set(ComponentSpec component, State<?> state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        if (component.getFunction() == Function.DISPLAYMESSAGE) {
+            this.display(component, state, onSuccess, onFailed);
+            return;
+        }
         withStarted(() -> {
             if (Objects.isNull(component.getState())) {
                 this.get(component,
@@ -128,10 +132,17 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
         });
     }
 
-    @Override
-    public void displaymessage(ComponentSpec component, DisplayMessageState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+    /**
+     * A display message is its own command on the central unit (TT15132 §6.6), not a SET of a state. The central unit
+     * cannot be asked what a display shows, so unlike a SET there is no current state to read first or compare with:
+     * every message is sent, also the same text twice in a row.
+     */
+    private void display(ComponentSpec component, State<?> state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
+        if (!(state instanceof DisplayMessageState displayMessageState)) {
+            throw new IllegalArgumentException("A display message needs a DisplayMessageState, not: " + state);
+        }
         withStarted(() -> this.execute(
-                new DisplayMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), Optional.ofNullable(state).orElseThrow(() -> new IllegalArgumentException("State should not be null"))),
+                new DisplayMessage(this.getCentralUnit(), component.getFunction(), component.getNumber(), displayMessageState),
                 m -> onSuccess.execute(component.getFunction(), component.getNumber(), component.getState()),
                 (m, e) -> onFailed.execute(component.getFunction(), component.getNumber(), component.getState(), e)
         ));
@@ -168,11 +179,6 @@ public final class TeletaskClientImpl implements TeletaskReceiver, TeletaskClien
     @Override
     public void set(Function function, int number, State<?> state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
         this.set(this.getComponent(function, number), state, onSucccess, onFailed);
-    }
-
-    @Override
-    public void displaymessage(int number, DisplayMessageState state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
-        this.displaymessage(this.getComponent(Function.DISPLAYMESSAGE, number), state, onSucccess, onFailed);
     }
 
     @Override

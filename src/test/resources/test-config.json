@@ -150,6 +150,17 @@
         "number": 11,
         "description": "Input 2"
       }
+    ],
+    "DISPLAYMESSAGE": [
+      {
+        "number": 60,
+        "description": "Display in the hall",
+        "bus_numbers": "1,1",
+        "address_numbers": "13,5",
+        "message_type": "message",
+        "message_beeps": 3,
+        "ascii": true
+      }
     ]
   }
 }

@@ -12,7 +12,6 @@ import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.TestComponents;
 import io.github.ridiekel.jeletask.client.spec.state.State;
-import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.client.spec.state.impl.OnOffState;
 
 import java.util.LinkedHashMap;
@@ -102,16 +101,6 @@ final class MqttProcessorFixtures {
 
         @Override
         public void set(Function function, int number, State<?> state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void displaymessage(ComponentSpec component, DisplayMessageState state, SuccessConsumer onSuccess, FailureConsumer onFailed) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void displaymessage(int number, DisplayMessageState state, SuccessConsumer onSucccess, FailureConsumer onFailed) {
             throw new UnsupportedOperationException();
         }
 

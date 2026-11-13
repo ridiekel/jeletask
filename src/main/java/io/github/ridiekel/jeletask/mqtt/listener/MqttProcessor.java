@@ -52,6 +52,7 @@ import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.github.ridiekel.jeletask.mqtt.listener.MqttLogger.*;
 import static io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters.componentTopic;
@@ -408,8 +409,16 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
         return getBaseTopic() + "/refresh";
     }
 
+    /**
+     * The components Home Assistant gets an entity for. Not a display message: it only shows text on the displays when
+     * something publishes to its set topic, there is nothing for Home Assistant to discover.
+     */
+    private Stream<? extends ComponentSpec> discoverableComponents() {
+        return this.centralUnit.getAllComponents().stream().filter(component -> this.homeAssistentAutoConfig.toConfig(component) != null);
+    }
+
     public void publishConfig() {
-        this.centralUnit.getAllComponents().stream().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> {
+        this.discoverableComponents().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction)).forEach(component -> {
             HAConfig.MQTTConfigTopic config = this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic();
             this.publish(
                     What.CONFIG,
@@ -443,7 +452,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
      * because it is kept under the MQTT client id.
      */
     public void removeStaleConfig() throws MqttConnectionException {
-        Set<String> current = this.centralUnit.getAllComponents().stream()
+        Set<String> current = this.discoverableComponents()
                 .map(component -> this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic().topic())
                 .collect(Collectors.toSet());
 
@@ -506,7 +515,7 @@ public class MqttProcessor implements StateChangeListener, MqttPublisher {
     }
 
     public void removeConfig() {
-        this.centralUnit.getAllComponents().stream().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction).reversed()).forEach(component -> {
+        this.discoverableComponents().sorted(Comparator.comparing(ComponentSpec::getNumber).thenComparing(ComponentSpec::getFunction).reversed()).forEach(component -> {
             HAConfig.MQTTConfigTopic config = this.homeAssistentAutoConfig.toConfig(component).getMqttConfigTopic();
             this.publish(
                     What.CONFIG,

@@ -4,7 +4,6 @@ import io.github.ridiekel.jeletask.client.TeletaskClient;
 import io.github.ridiekel.jeletask.client.spec.CentralUnit;
 import io.github.ridiekel.jeletask.client.spec.Function;
 import io.github.ridiekel.jeletask.client.spec.state.State;
-import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttConnection;
 import io.github.ridiekel.jeletask.mqtt.listener.MqttLogger;
 import org.apache.logging.log4j.LogManager;
@@ -43,15 +42,9 @@ public class MQTTMessageToTeletaskCommand implements MqttConnection.MessageHandl
                 String componentLog = getLoggingStringForComponent(centralUnit.getComponent(function, number)).get();
                 LOG.info(() -> String.format(WHAT_LOG_PATTERNS.get(MqttLogger.What.RECEIVE), getWhat(MqttLogger.What.RECEIVE), componentLog, payloadToLogWithColors(mqttMessage.toString())));
 
-                if (function == Function.DISPLAYMESSAGE) {
-                    teletaskClient.displaymessage(number, (DisplayMessageState) state,
-                            (f, n, s) -> LOG.trace(() -> String.format("%s - MQTT topic '%s' changed state for: %s / %s -> %s", componentLog, topic, f, n, s)),
-                            (f, n, s, e) -> LOG.warn(String.format("%s - MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
-                } else {
-                    teletaskClient.set(function, number, state,
-                            (f, n, s) -> LOG.trace(() -> String.format("%s - MQTT topic '%s' changed state for: %s / %s -> %s", componentLog, topic, f, n, s)),
-                            (f, n, s, e) -> LOG.warn(String.format("%s - MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
-                }
+                teletaskClient.set(function, number, state,
+                        (f, n, s) -> LOG.trace(() -> String.format("%s - MQTT topic '%s' changed state for: %s / %s -> %s", componentLog, topic, f, n, s)),
+                        (f, n, s, e) -> LOG.warn(String.format("%s - MQTT topic '%s' could not change state for: %s / %s -> %s", componentLog, topic, f, n, s)));
 
             }
         } catch (Exception e) {

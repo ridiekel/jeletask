@@ -78,7 +78,9 @@ public class HomeAssistentAutoConfig {
             )), HASensorConfig::new)),
             Map.entry(Function.RELAY, f(switchSceneLight(HADeviceType.LIGHT), HomeAssistentAutoConfig::onOffConfig)),
             // Timed functions actually act like a switch. They can only be ON or OFF -> HA auto discovery: switch
-            Map.entry(Function.TIMEDFNC, f(switchSceneLight(HADeviceType.SWITCH), HomeAssistentAutoConfig::onOffConfig))
+            Map.entry(Function.TIMEDFNC, f(switchSceneLight(HADeviceType.SWITCH), HomeAssistentAutoConfig::onOffConfig)),
+            // A display message only shows text, it has no state -> HA auto discovery: notify
+            Map.entry(Function.DISPLAYMESSAGE, f(HADeviceType.NOTIFY, HANotifyConfig::new))
     );
 
     // The type can make any on/off function read-only, and a binary_sensor compares with payload_on instead of state_on
@@ -113,7 +115,8 @@ public class HomeAssistentAutoConfig {
         CLIMATE,
         SWITCH,
         SCENE,
-        COVER;
+        COVER,
+        NOTIFY;
 
         @Override
         public String toString() {
