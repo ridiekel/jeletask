@@ -16,6 +16,21 @@ if [ "${ARCH}" = "arm64" ]; then
   docker run --privileged --rm "${BINFMT_IMAGE}" --install arm64
 fi
 
+# The legacy builder cannot add a layer to an image of another platform when the daemon keeps its images in
+# containerd: the COPY of the native arm64 image fails on a missing snapshot. BuildKit can, so the native jobs, whose
+# image has no buildx, borrow the plugin from the image the jvm jobs run in.
+ensure_buildx() {
+  if docker buildx version > /dev/null 2>&1; then
+    return
+  fi
+  local container
+  container="$(docker create "${DOCKER_CLI_IMAGE:-docker:latest}")"
+  mkdir -p "${HOME}/.docker/cli-plugins"
+  docker cp "${container}:/usr/local/libexec/docker/cli-plugins/docker-buildx" "${HOME}/.docker/cli-plugins/docker-buildx"
+  docker rm "${container}" > /dev/null
+  docker buildx version
+}
+
 echo "Building ${LOCAL_IMAGE}..."
 case "${KIND}" in
   jvm)
@@ -29,7 +44,8 @@ case "${KIND}" in
       -Dbuild-image.cache-name="${CI_PROJECT_NAME}-native-${ARCH}"
     # Buildpacks cannot set a HEALTHCHECK, so it is added as metadata on top. The licences go along: the binary has
     # the libraries compiled in, but not their notices.
-    docker build --platform "linux/${ARCH}" -t "${LOCAL_IMAGE}" -f - target/classes/META-INF <<EOF
+    ensure_buildx
+    docker buildx build --platform "linux/${ARCH}" --load -t "${LOCAL_IMAGE}" -f - target/classes/META-INF <<EOF
 FROM ${LOCAL_IMAGE}
 COPY LICENSE.md /licenses/
 COPY third-party /licenses/third-party
