@@ -29,6 +29,10 @@
         <!-- Fixed buildpack cache volumes, so the cache survives version bumps; override per target architecture -->
         <third-party.directory>${project.build.directory}/third-party</third-party.directory>
         <build-image.cache-name>${project.artifactId}-build-image</build-image.cache-name>
+        <!-- Heap cap for native-image (native and nativeTest). Without it GraalVM takes up to ~45% of the host,
+             about 28 GB on the CI host, and two concurrent native test builds there ran out of memory.
+             The native test image peaks around 8.3 GB. Override with -Dnative-image.max-heap=... -->
+        <native-image.max-heap>12g</native-image.max-heap>
     </properties>
 
     <dependencies>
@@ -265,6 +269,7 @@
                     <buildArgs>
                         <buildArg>-march=compatibility</buildArg>
                         <buildArg>--initialize-at-build-time=io.github.classgraph.vfs.VfsFileSystemProvider</buildArg>
+                        <buildArg>-J-Xmx${native-image.max-heap}</buildArg>
                     </buildArgs>
                 </configuration>
             </plugin>
