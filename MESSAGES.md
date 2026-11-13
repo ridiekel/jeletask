@@ -482,7 +482,7 @@ Publish JSON to the set topic of the display:
 | message       | Instead of the two lines: one text that the bridge spreads over both lines (see below). Not together with `message_line1` or `message_line2`       |
 | ascii         | `true`: 16 ASCII characters per line. `false`: 8 characters per line, any character. Left out: the `ascii` of the display in the config, or else `false` |
 | message_type  | `message` or `alarm`. Left out: the `message_type` of the display in the config, or else `alarm`                                                   |
-| message_beeps | The number of beeps. Left out: the `message_beeps` of the display in the config, or else 1                                                          |
+| message_beeps | The number of beeps, 0 to 255. Left out: the `message_beeps` of the display in the config, or else 1                                                |
 
 `message` is spread over the lines like this:
 
@@ -641,7 +641,7 @@ Notes:
 Every display is a `notify` entity in Home Assistant, e.g. `notify.teletask_<TELETASK_CENTRAL_ID>_displaymessage_1000`.
 Its `notify.send_message` action sends the text as `message`, so the bridge spreads it over the two lines as described
 above. Home Assistant only passes the text, so the message type, ascii and the beeps come from `message_type`, `ascii`
-and `message_beeps` of the display in the config.
+and `message_beeps` of the display in the config. A `title` is not shown: a display has no room for it.
 
 A message from a script or the developer tools:
 
