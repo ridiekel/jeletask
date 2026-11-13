@@ -10,6 +10,7 @@ import io.github.ridiekel.jeletask.client.spec.TestComponents;
 import io.github.ridiekel.jeletask.client.spec.component.OnOffSpec;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfig;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -68,5 +69,19 @@ class HomeAssistentAutoConfigTest {
         Assertions.assertThat(node.get("payload_on").asText()).contains("\"state\": \"ON\"");
         Assertions.assertThat(node.get("state_on").asText()).isEqualTo("ON");
         Assertions.assertThat(node.get("command_topic").asText()).isEqualTo("~/set");
+    }
+
+    @Test
+    void aDisplayMessageIsANotifyEntityWithoutState() {
+        HAConfig<?> config = config(Function.DISPLAYMESSAGE, c -> {
+        });
+        ObjectNode node = config.getConfig();
+
+        Assertions.assertThat(config.getMqttConfigTopic().topic()).isEqualTo("homeassistant/notify/1/displaymessage_35/config");
+        Assertions.assertThat(node.get("default_entity_id").asText()).startsWith("notify.");
+        Assertions.assertThat(node.get("command_topic").asText()).isEqualTo("~/set");
+        Assertions.assertThat(node.get("command_template").asText())
+                .isEqualTo("{{ {\"ascii\": true, \"message_line1\": value[:16], \"message_line2\": value[16:32]} | tojson }}");
+        Assertions.assertThat(node.has("state_topic")).isFalse();
     }
 }
