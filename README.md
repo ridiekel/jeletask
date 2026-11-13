@@ -33,7 +33,7 @@ Upgrading to 6.4 needs no configuration changes, but `TEMPERATURECONTROL` sensor
 
 Upgrading to 7.0 needs no configuration changes for a correct `config.json`, but the file is now checked at startup and mistakes that used to slip through (an unknown `type`, a duplicate `number`, `gas_max` not above `gas_min`, ...) stop the bridge. The log names the line and what is wrong. For `TEMPERATURECONTROL` sensors, `window_open`, `output_state` and `swing_direction` now report 255 instead of -1 on MQTT, so check automations that compare these to -1.
 
-Upgrading to 7.1 needs no configuration changes for most setups. The bridge uses another MQTT client, which still speaks MQTT 3.1.1 but no longer falls back to MQTT 3.1, so the broker has to support MQTT 3.1.1 (every mosquitto since 1.3 does). A `TELETASK_MQTT_PASSWORD` without a `TELETASK_MQTT_USERNAME` is no longer sent; mosquitto refused such a connection anyway. Commands that arrive while the central unit is unreachable are dropped after 30 seconds instead of executed once it is back, so automations that relied on that have to send them again. The native image runs as user `nonroot` (uid 65532) and its binary is `/app/jeletask`: a mounted `config.json` has to be readable for that user, and an overridden entrypoint or health check has to use the new path.
+Upgrading to 7.1 needs no configuration changes for most setups. The bridge uses another MQTT client, which still speaks MQTT 3.1.1 but no longer falls back to MQTT 3.1, so the broker has to support MQTT 3.1.1 (every mosquitto since 1.3 does). A `TELETASK_MQTT_PASSWORD` without a `TELETASK_MQTT_USERNAME` is no longer sent; mosquitto refused such a connection anyway. Commands that arrive while the central unit is unreachable are dropped after 30 seconds instead of executed once it is back, so automations that relied on that have to send them again. The binary in the native image is now `/app/jeletask` instead of `/cnb/process/web`, which only matters if you override its entrypoint or health check.
 
 # Configuring
 
@@ -296,8 +296,8 @@ If the native image fails, use the following (but slower and more resource hungr
 
     ridiekel/jeletask2mqtt:latest
 
-Both images run as a non-root user (the JVM image since 6.1.1, as user `65532`), so the mounted `config.json` must be readable by other users (for example `chmod 644 config.json`).
-The JVM image is distroless: it contains no shell, so `docker exec -it jeletask2mqtt sh` does not work.
+Both images run as the non-root user `65532` (the JVM image since 6.1.1, the native image since 7.1.2), so the mounted `config.json` must be readable by other users (for example `chmod 644 config.json`).
+Both images are distroless: they contain no shell, so `docker exec -it jeletask2mqtt sh` does not work.
 
 ### Command line
 
