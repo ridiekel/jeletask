@@ -19,6 +19,7 @@ class End2EndMqttAddonConfigTest extends MockingTeletaskTestSupport {
                 "Binary Sensor Relay 1",
                 "Condition 1",
                 "Dimmer 1",
+                "Display in the hall",
                 "Flags",
                 "GAS Sensors",
                 "General Scenery 1",

@@ -263,7 +263,7 @@ class CentralUnitConfigReaderTest {
     void anInvalidHaTypeIsAnError() {
         assertThat(invalid("DIMMER", """
                 {"number": 1, "haType": "lamp"}""").getErrors()).singleElement().asString()
-                .isEqualTo("line 1, DIMMER (number 1): 'haType' 'lamp' is not a Home Assistant type, expected one of [binary_sensor, sensor, light, climate, switch, scene, cover]");
+                .isEqualTo("line 1, DIMMER (number 1): 'haType' 'lamp' is not a Home Assistant type, expected one of [binary_sensor, sensor, light, climate, switch, scene, cover, notify]");
     }
 
     @ParameterizedTest
