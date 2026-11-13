@@ -271,6 +271,48 @@
                         <buildArg>--initialize-at-build-time=io.github.classgraph.vfs.VfsFileSystemProvider</buildArg>
                         <buildArg>-J-Xmx${native-image.max-heap}</buildArg>
                     </buildArgs>
+                    <!-- Netty ships the metadata of its own version. The repository only knows 4.1 and 5.0 alphas, and its
+                         4.1 entries override what is in the jar: for netty-buffer that dropped the reflection Netty 4.2
+                         needs to load its allocator, and the native bridge failed at its first MQTT connect. -->
+                    <metadataRepository>
+                        <dependencies>
+                            <dependency>
+                                <groupId>io.netty</groupId>
+                                <artifactId>netty-buffer</artifactId>
+                                <excluded>true</excluded>
+                            </dependency>
+                            <dependency>
+                                <groupId>io.netty</groupId>
+                                <artifactId>netty-codec</artifactId>
+                                <excluded>true</excluded>
+                            </dependency>
+                            <dependency>
+                                <groupId>io.netty</groupId>
+                                <artifactId>netty-common</artifactId>
+                                <excluded>true</excluded>
+                            </dependency>
+                            <dependency>
+                                <groupId>io.netty</groupId>
+                                <artifactId>netty-handler</artifactId>
+                                <excluded>true</excluded>
+                            </dependency>
+                            <dependency>
+                                <groupId>io.netty</groupId>
+                                <artifactId>netty-resolver</artifactId>
+                                <excluded>true</excluded>
+                            </dependency>
+                            <dependency>
+                                <groupId>io.netty</groupId>
+                                <artifactId>netty-transport</artifactId>
+                                <excluded>true</excluded>
+                            </dependency>
+                            <dependency>
+                                <groupId>io.netty</groupId>
+                                <artifactId>netty-transport-native-unix-common</artifactId>
+                                <excluded>true</excluded>
+                            </dependency>
+                        </dependencies>
+                    </metadataRepository>
                 </configuration>
             </plugin>
             <plugin>
