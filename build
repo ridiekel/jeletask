@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
+# Builds the native image locally, the way the pipeline does (needs docker buildx)
+set -euo pipefail
 
-mkdir -p /tmp/.m2
-
-./mvnw clean install spring-boot:build-image
+docker buildx build --load -t jeletask2mqtt:native -f Dockerfile.native .

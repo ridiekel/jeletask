@@ -1,0 +1,7 @@
+# Only what the native build reads: the sources, not target/ or the tests
+*
+!.mvn/wrapper/maven-wrapper.properties
+!mvnw
+!pom.xml
+!LICENSE.md
+!src/main

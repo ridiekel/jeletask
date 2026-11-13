@@ -25,10 +25,7 @@
         <sonar.projectKey>jeletask</sonar.projectKey>
         <sonar.projectName>jeletask</sonar.projectName>
         <sonar.coverage.exclusions>**/Teletask2MqttApplication.java</sonar.coverage.exclusions>
-        <spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>-march=compatibility</spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS>
-        <!-- Fixed buildpack cache volumes, so the cache survives version bumps; override per target architecture -->
         <third-party.directory>${project.build.directory}/third-party</third-party.directory>
-        <build-image.cache-name>${project.artifactId}-build-image</build-image.cache-name>
         <!-- Heap cap for native-image (native and nativeTest). Without it GraalVM takes up to ~45% of the host,
              about 28 GB on the CI host, and two concurrent native test builds there ran out of memory.
              The native test image peaks around 8.3 GB. Override with -Dnative-image.max-heap=... -->
@@ -268,6 +265,8 @@
                 <configuration>
                     <buildArgs>
                         <buildArg>-march=compatibility</buildArg>
+                        <!-- Everything but glibc linked in, so the binary runs on the distroless base image (no zlib there) -->
+                        <buildArg>--static-nolibc</buildArg>
                         <buildArg>--initialize-at-build-time=io.github.classgraph.vfs.VfsFileSystemProvider</buildArg>
                         <buildArg>-J-Xmx${native-image.max-heap}</buildArg>
                     </buildArgs>
@@ -326,21 +325,6 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
-                    <image>
-                        <env>
-                            <BP_NATIVE_IMAGE_BUILD_ARGUMENTS>${spring-boot.build-image.environment.BP_NATIVE_IMAGE_BUILD_ARGUMENTS}</BP_NATIVE_IMAGE_BUILD_ARGUMENTS>
-                        </env>
-                        <buildCache>
-                            <volume>
-                                <name>${build-image.cache-name}.build</name>
-                            </volume>
-                        </buildCache>
-                        <launchCache>
-                            <volume>
-                                <name>${build-image.cache-name}.launch</name>
-                            </volume>
-                        </launchCache>
-                    </image>
                 </configuration>
             </plugin>
             <plugin>
