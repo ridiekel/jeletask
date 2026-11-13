@@ -33,7 +33,7 @@ Upgrading to 6.4 needs no configuration changes, but `TEMPERATURECONTROL` sensor
 
 Upgrading to 7.0 needs no configuration changes for a correct `config.json`, but the file is now checked at startup and mistakes that used to slip through (an unknown `type`, a duplicate `number`, `gas_max` not above `gas_min`, ...) stop the bridge. The log names the line and what is wrong. For `TEMPERATURECONTROL` sensors, `window_open`, `output_state` and `swing_direction` now report 255 instead of -1 on MQTT, so check automations that compare these to -1.
 
-Upgrading to 7.1 needs no configuration changes for most setups. The bridge uses another MQTT client, which still speaks MQTT 3.1.1 but no longer falls back to MQTT 3.1, so the broker has to support MQTT 3.1.1 (every mosquitto since 1.3 does). A `TELETASK_MQTT_PASSWORD` without a `TELETASK_MQTT_USERNAME` is no longer sent; mosquitto refused such a connection anyway. Commands that arrive while the central unit is unreachable are dropped after 30 seconds instead of executed once it is back, so automations that relied on that have to send them again.
+Upgrading to 7.1 needs no configuration changes for most setups. The bridge uses another MQTT client, which still speaks MQTT 3.1.1 but no longer falls back to MQTT 3.1, so the broker has to support MQTT 3.1.1 (every mosquitto since 1.3 does). A `TELETASK_MQTT_PASSWORD` without a `TELETASK_MQTT_USERNAME` is no longer sent; mosquitto refused such a connection anyway. Commands that arrive while the central unit is unreachable are dropped after 30 seconds instead of executed once it is back, so automations that relied on that have to send them again. The native image runs as user `nonroot` (uid 65532) and its binary is `/app/jeletask`: a mounted `config.json` has to be readable for that user, and an overridden entrypoint or health check has to use the new path.
 
 # Configuring
 
@@ -377,7 +377,7 @@ boot: auto
 `Dockerfile`
 
 ```dockerfile
-FROM ridiekel/jeletask2mqtt:7.1.1-native
+FROM ridiekel/jeletask2mqtt:7.1.2-native
 
 COPY --chmod=644 config.json /teletask2mqtt/config.json
 
