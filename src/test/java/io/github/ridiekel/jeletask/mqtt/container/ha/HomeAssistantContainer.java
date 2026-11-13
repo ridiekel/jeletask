@@ -184,7 +184,8 @@ public class HomeAssistantContainer extends GenericContainer<HomeAssistantContai
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .until(() -> {
                     List<Entity> states = this.teletaskStates();
-                    return states.size() >= this.centralUnit.getAllComponents().size();
+                    // A display message has no entity in Home Assistant
+                    return states.size() >= this.centralUnit.getAllComponents().stream().filter(c -> c.getFunction() != Function.DISPLAYMESSAGE).count();
                 });
 
         LOG.info(AnsiOutput.toString(AnsiColor.BRIGHT_MAGENTA, "Home Assistant online according to published entities:", AnsiColor.DEFAULT));
