@@ -440,25 +440,64 @@ You can only send a display message. Listening for events is not supported.
 
 DISPLAYMESSAGE config attribute parameters:
 
-| Attribute       | Description                           |
-|-----------------|---------------------------------------|
-| number          | A unique DISPLAYMESSAGE number        |
-| bus_numbers     | A list of BUS numbers (see below)     |
-| address_numbers | A list of ADDRESS numbers (see below) |
-| description     | Description for this config entry     |
+| Attribute       | Required | Description                                                                                  |
+|-----------------|----------|----------------------------------------------------------------------------------------------|
+| number          | yes      | A unique DISPLAYMESSAGE number                                                               |
+| bus_numbers     | yes      | A list of BUS numbers (see below)                                                            |
+| address_numbers | yes      | A list of ADDRESS numbers (see below)                                                        |
+| description     | no       | Description for this config entry                                                            |
+| message_type    | no       | `message` or `alarm`: the type of a display message that does not say. Without it: `alarm`  |
+| message_beeps   | no       | 0 to 255: the number of beeps of a display message that does not say. Without it: 1          |
 
-`bus_numbers` and `addres_numbers` are two comma separated lists of the same size.
+`bus_numbers` and `address_numbers` are two comma separated lists of the same size.
 They contain the Teletask bus number(s) and Teletask interface address(es) of the interface(s) on which to display the Message/Alarm
+
+```json
+"DISPLAYMESSAGE": [
+  {
+    "number": 1000,
+    "bus_numbers": "1,1",
+    "address_numbers": "13,5",
+    "description": "Aurus living room + aurus basement",
+    "message_type": "message",
+    "message_beeps": 2
+  }
+]
+```
 
 #### Sending a display message
 
 ```
 mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
     -t <TELETASK_MQTT_PREFIX>/<TELETASK_CENTRAL_ID>/displaymessage/1000/set \
-    -m '{"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!", "message_beeps":"10","message_type="message"}'
+    -m '{"message_line1":"DOORBELL","message_line2":"PLEASE OPEN!","message_beeps":10,"message_type":"message","ascii":true}'
 ```
+
+| Field         | Description                                                                                         |
+|---------------|-----------------------------------------------------------------------------------------------------|
+| message_line1 | The first line                                                                                      |
+| message_line2 | The second line                                                                                     |
+| ascii         | `true`: 16 ASCII characters per line. `false` (the default): 8 characters per line, any character |
+| message_type  | `message` or `alarm`. Left out: the `message_type` of the display in the config, or else `alarm`   |
+| message_beeps | The number of beeps. Left out: the `message_beeps` of the display in the config, or else 1          |
 
 Notes:
 
-- Both lines each have maximum length of 16 chars. This is a Teletask limitation.
-- message_type can either be "alarm" or "message".
+- A line longer than 16 (ascii) or 8 characters is cut off. This is a Teletask limitation.
+- The same message twice is shown twice: a display has no state, so nothing is dropped as unchanged.
+
+#### From Home Assistant
+
+Every display is a `notify` entity in Home Assistant, e.g. `notify.teletask_<TELETASK_CENTRAL_ID>_displaymessage_1000`.
+Its `notify.send_message` action shows the text in ASCII: the first 16 characters on line 1, the next 16 on line 2.
+Home Assistant only passes the text, so the message type and the beeps come from `message_type` and
+`message_beeps` of the display in the config.
+
+```yaml
+actions:
+  - action: notify.send_message
+    target:
+      entity_id: notify.teletask_1_displaymessage_1000
+    data:
+      message: "Someone is at the front door"
+```

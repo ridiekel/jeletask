@@ -205,7 +205,9 @@ This is just a description, repeating it (like in the example) will group everyt
         "number": 1000,
         "bus_numbers": "1,1",
         "address_numbers": "13,5",
-        "description": "Aurus living room + aurus basement"
+        "description": "Aurus living room + aurus basement",
+        "message_type": "message",
+        "message_beeps": 2
       }
     ]
   }
@@ -426,7 +428,8 @@ docker inspect --format '{{json .State.Health}}' jeletask2mqtt
 
 # HomeAssistant
 
-Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions and digital inputs.
+Auto configuration should work with relays, dimmers, motors, sensors, timed functions, flags, general/local/timed moods, conditions, digital inputs and display messages.
+A display message becomes a `notify` entity: `notify.send_message` shows the text on the displays, see [MESSAGES.md](MESSAGES.md#from-home-assistant).
 Other types are not yet supported, work in progress.
 Please log an issue when having trouble with auto configuration in HA.
 
@@ -612,7 +615,7 @@ A new `Function` touches seven places, and the compiler does not point you to mo
 2. `MicrosPlusFunctionConfiguration`: the function number and its `StateCalculator`.
 3. A `StateCalculator`, and usually a new `State` implementation, which must also be registered in `NativeRuntimeHints` (a new `Function` constant does not need that).
 4. `TeletaskClientImpl.sendLogEventMessages()`: lists every function that subscribes to events by hand. **Forget it and the component never receives state updates**, without any error.
-5. `HomeAssistentAutoConfig.FUNCTION_TO_TYPE`: a missing entry is a `NullPointerException` during Home Assistant discovery.
+5. `HomeAssistentAutoConfig.FUNCTION_TO_TYPE`: without an entry the function gets no Home Assistant entity, silently.
 6. `MESSAGES.md` and the config example in this README.
 7. `src/test/resources/test-config.json` and the Home Assistant fixtures in `src/test/resources/haconfig/`.
 
