@@ -311,10 +311,31 @@ class CentralUnitConfigReaderTest {
             "\"bus_numbers\": \"1,x\", \"address_numbers\": \"1,2\" | 'bus_numbers' 'x' in '1,x' is not a number between 0 and 127",
             "\"bus_numbers\": \"1\", \"address_numbers\": \"200\"   | 'address_numbers' '200' in '200' is not a number between 0 and 127",
             "\"bus_numbers\": \"1,1\", \"address_numbers\": \"13\"  | 'address_numbers' needs one address for every bus, but there are 2 bus numbers ('1,1') and 1 address numbers ('13')",
+            "\"bus_numbers\": \"1\", \"address_numbers\": \"13\", \"message_type\": \"doorbell\" | 'message_type' 'doorbell' is not one of [message, alarm]",
+            "\"bus_numbers\": \"1\", \"address_numbers\": \"13\", \"message_beeps\": 256       | 'message_beeps' must be between 0 and 255, but is 256",
+            "\"bus_numbers\": \"1\", \"address_numbers\": \"13\", \"message_beeps\": -1        | 'message_beeps' must be between 0 and 255, but is -1",
     })
     void aDisplayMessageIsValidated(String properties, String error) {
         assertThat(invalid("DISPLAYMESSAGE", "{\"number\": 1000, " + properties + "}").getErrors())
                 .containsExactly("line 1, DISPLAYMESSAGE (number 1000): " + error);
+    }
+
+    @Test
+    void theDefaultsOfADisplayAreOptional() {
+        DisplayMessageSpec display = (DisplayMessageSpec) components("DISPLAYMESSAGE", """
+                {"number": 1000, "bus_numbers": "1", "address_numbers": "13"}""").centralUnit().getComponent(Function.DISPLAYMESSAGE, 1000);
+
+        assertThat(display.getMessageType()).isNull();
+        assertThat(display.getMessageBeeps()).isNull();
+    }
+
+    @Test
+    void theDefaultsOfADisplayAreRead() {
+        DisplayMessageSpec display = (DisplayMessageSpec) components("DISPLAYMESSAGE", """
+                {"number": 1000, "bus_numbers": "1", "address_numbers": "13", "message_type": "Message", "message_beeps": 3}""").centralUnit().getComponent(Function.DISPLAYMESSAGE, 1000);
+
+        assertThat(display.getMessageType()).isEqualTo("Message");
+        assertThat(display.getMessageBeeps()).isEqualTo(3);
     }
 
     @Test

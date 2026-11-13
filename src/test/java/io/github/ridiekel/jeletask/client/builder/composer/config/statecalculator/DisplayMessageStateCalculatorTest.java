@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator;
 
+import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -377,5 +378,62 @@ class DisplayMessageStateCalculatorTest {
 
         assertThat(line1).hasSize(16);
         assertThat(line2).hasSize(16);
+    }
+
+    @Nested
+    @DisplayName("Defaults of the display")
+    class DefaultsTests {
+        private static final int TYPE = 0;
+        private static final int BEEPS = 34;
+
+        private DisplayMessageSpec display(String messageType, Integer messageBeeps) {
+            DisplayMessageSpec display = new DisplayMessageSpec();
+            display.setMessageType(messageType);
+            display.setMessageBeeps(messageBeeps);
+            return display;
+        }
+
+        private DisplayMessageState.DisplayMessageStateBuilder text() {
+            return DisplayMessageState.builder().ascii(true).messageLine1("Doorbell");
+        }
+
+        @Test
+        @DisplayName("A message without type or beeps takes them from the display")
+        void aMessageWithoutTypeOrBeepsTakesThemFromTheDisplay() {
+            byte[] result = calculator.toCommand(display("message", 4), text().build());
+
+            assertThat(result[TYPE]).isEqualTo((byte) 1);
+            assertThat(result[BEEPS]).isEqualTo((byte) 4);
+        }
+
+        @Test
+        @DisplayName("What the message says wins over the defaults of the display")
+        void whatTheMessageSaysWins() {
+            byte[] result = calculator.toCommand(display("message", 4), text().messageType("alarm").messageBeeps(0).build());
+
+            assertThat(result[TYPE]).isEqualTo((byte) 0);
+            assertThat(result[BEEPS]).isEqualTo((byte) 0);
+        }
+
+        @Test
+        @DisplayName("Without defaults a message is an alarm with one beep, as before")
+        void withoutDefaultsAMessageIsAnAlarmWithOneBeep() {
+            byte[] result = calculator.toCommand(display(null, null), text().build());
+
+            assertThat(result[TYPE]).isEqualTo((byte) 0);
+            assertThat(result[BEEPS]).isEqualTo((byte) 1);
+        }
+
+        @Test
+        @DisplayName("The beeps of a display can be zero")
+        void theBeepsOfADisplayCanBeZero() {
+            assertThat(calculator.toCommand(display(null, 0), text().build())[BEEPS]).isEqualTo((byte) 0);
+        }
+
+        @Test
+        @DisplayName("Up to 255 beeps fit in the unsigned byte")
+        void upTo255Beeps() {
+            assertThat(calculator.toCommand(display(null, 255), text().build())[BEEPS]).isEqualTo((byte) 0xFF);
+        }
     }
 }

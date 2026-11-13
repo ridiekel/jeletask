@@ -2,6 +2,7 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter;
 import io.github.ridiekel.jeletask.client.spec.ComponentSpec;
+import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
 import io.github.ridiekel.jeletask.utilities.Bytes;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +18,8 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
     }
 
     @Override
-    public byte[] toCommand(ComponentSpec component, DisplayMessageState state) {
+    public byte[] toCommand(ComponentSpec component, DisplayMessageState message) {
+        DisplayMessageState state = withDefaultsOf(component, message);
         return Bytes.concat(
                 toMessageTypeBytes(state),
                 toIsAsciiBytes(state),
@@ -31,6 +33,22 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
     public DisplayMessageState fromEvent(ComponentSpec component, byte[] dataBytes) {
         long number = NumberConverter.UNSIGNED_BYTE.convert(dataBytes).longValue();
         return new DisplayMessageState(number == -1 ? 255 : number);
+    }
+
+    /**
+     * The message type and beeps a message leaves out come from the config of the display, if it has them.
+     */
+    private static DisplayMessageState withDefaultsOf(ComponentSpec component, DisplayMessageState message) {
+        if (!(component instanceof DisplayMessageSpec display)) {
+            return message;
+        }
+        return DisplayMessageState.builder()
+                .messageLine1(message.getMessageLine1())
+                .messageLine2(message.getMessageLine2())
+                .ascii(message.isAscii())
+                .messageType(Optional.ofNullable(message.getMessageType()).orElse(display.getMessageType()))
+                .messageBeeps(Optional.ofNullable(message.getMessageBeeps()).orElse(display.getMessageBeeps()))
+                .build();
     }
 
     private static byte[] toMessageLineBytes(DisplayMessageState state, Function<DisplayMessageState, String> extractor) {

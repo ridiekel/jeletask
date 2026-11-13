@@ -7,6 +7,9 @@ import io.github.ridiekel.jeletask.client.spec.config.ConfigProblems;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+import java.util.Locale;
+
 /**
  * A message shown on one or more displays (e.g. an AURUS). Each display is a pair of a bus number and an address number.
  */
@@ -15,6 +18,11 @@ import lombok.Setter;
 public class DisplayMessageSpec extends ComponentSpec {
     private static final String BUS_NUMBERS = "bus_numbers";
     private static final String ADDRESS_NUMBERS = "address_numbers";
+    private static final String MESSAGE_TYPE = "message_type";
+    private static final String MESSAGE_BEEPS = "message_beeps";
+    private static final List<String> MESSAGE_TYPES = List.of("message", "alarm");
+    // Sent as one unsigned byte
+    private static final int MAX_BEEPS = 255;
 
     // Comma separated, e.g. "1,1"
     @JsonProperty(BUS_NUMBERS)
@@ -23,6 +31,14 @@ public class DisplayMessageSpec extends ComponentSpec {
     // Comma separated, e.g. "13,5"; the n-th address belongs to the n-th bus
     @JsonProperty(ADDRESS_NUMBERS)
     private String addressNumbers;
+
+    // Optional: the message type when a display message does not say, "message" or "alarm"
+    @JsonProperty(MESSAGE_TYPE)
+    private String messageType;
+
+    // Optional: the number of beeps when a display message does not say
+    @JsonProperty(MESSAGE_BEEPS)
+    private Integer messageBeeps;
 
     @Override
     public Function getFunction() {
@@ -36,6 +52,12 @@ public class DisplayMessageSpec extends ComponentSpec {
         boolean addressNumbersValid = validateNumbers(problems, ADDRESS_NUMBERS, this.addressNumbers);
         if (busNumbersValid && addressNumbersValid && this.busNumbers.split(",").length != this.addressNumbers.split(",").length) {
             problems.error(ADDRESS_NUMBERS, "needs one address for every bus, but there are " + this.busNumbers.split(",").length + " bus numbers ('" + this.busNumbers + "') and " + this.addressNumbers.split(",").length + " address numbers ('" + this.addressNumbers + "')");
+        }
+        if (this.messageType != null && !MESSAGE_TYPES.contains(this.messageType.toLowerCase(Locale.ROOT))) {
+            problems.error(MESSAGE_TYPE, "'" + this.messageType + "' is not one of " + MESSAGE_TYPES);
+        }
+        if (this.messageBeeps != null && (this.messageBeeps < 0 || this.messageBeeps > MAX_BEEPS)) {
+            problems.error(MESSAGE_BEEPS, "must be between 0 and " + MAX_BEEPS + ", but is " + this.messageBeeps);
         }
     }
 
