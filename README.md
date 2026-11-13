@@ -1,5 +1,8 @@
 # Jeletask
 
+[![tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ridiekel/jeletask/badges/tests.json)](https://github.com/ridiekel/jeletask/releases/latest)
+[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ridiekel/jeletask/badges/coverage.json)](https://github.com/ridiekel/jeletask/releases/latest)
+
 An open source java API for Teletask domotics.
 
 It is the purpose to create a MQTT bridge for software developers or domotics enthusiasts, 
