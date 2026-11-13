@@ -327,15 +327,17 @@ class CentralUnitConfigReaderTest {
 
         assertThat(display.getMessageType()).isNull();
         assertThat(display.getMessageBeeps()).isNull();
+        assertThat(display.getAscii()).isNull();
     }
 
     @Test
     void theDefaultsOfADisplayAreRead() {
         DisplayMessageSpec display = (DisplayMessageSpec) components("DISPLAYMESSAGE", """
-                {"number": 1000, "bus_numbers": "1", "address_numbers": "13", "message_type": "Message", "message_beeps": 3}""").centralUnit().getComponent(Function.DISPLAYMESSAGE, 1000);
+                {"number": 1000, "bus_numbers": "1", "address_numbers": "13", "message_type": "Message", "message_beeps": 3, "ascii": true}""").centralUnit().getComponent(Function.DISPLAYMESSAGE, 1000);
 
         assertThat(display.getMessageType()).isEqualTo("Message");
         assertThat(display.getMessageBeeps()).isEqualTo(3);
+        assertThat(display.getAscii()).isTrue();
     }
 
     @Test

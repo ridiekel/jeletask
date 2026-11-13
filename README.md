@@ -207,7 +207,8 @@ This is just a description, repeating it (like in the example) will group everyt
         "address_numbers": "13,5",
         "description": "Aurus living room + aurus basement",
         "message_type": "message",
-        "message_beeps": 2
+        "message_beeps": 2,
+        "ascii": true
       }
     ]
   }

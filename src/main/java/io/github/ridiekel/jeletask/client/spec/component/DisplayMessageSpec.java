@@ -40,6 +40,10 @@ public class DisplayMessageSpec extends ComponentSpec {
     @JsonProperty(MESSAGE_BEEPS)
     private Integer messageBeeps;
 
+    // Optional: when a display message does not say, true = 16 ASCII characters per line, false = 8 unicode ones
+    @JsonProperty("ascii")
+    private Boolean ascii;
+
     @Override
     public Function getFunction() {
         return Function.DISPLAYMESSAGE;

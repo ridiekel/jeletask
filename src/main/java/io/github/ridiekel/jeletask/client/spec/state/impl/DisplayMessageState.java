@@ -13,8 +13,8 @@ public class DisplayMessageState extends State<Long> {
     private String messageLine2;
     private Number messageBeeps;
     private String messageType;
-    // true = ascii, false = unicode
-    private boolean ascii;
+    // true = ascii, false = unicode, null = left out (the default of the display, or else unicode)
+    private Boolean ascii;
 
     public DisplayMessageState() {
     }
@@ -59,11 +59,11 @@ public class DisplayMessageState extends State<Long> {
         return this.getMessageType() != null && !"alarm".equalsIgnoreCase(this.getMessageType());
     }
 
-    public boolean isAscii() {
+    public Boolean getAscii() {
         return ascii;
     }
 
-    public void setAscii(boolean ascii) {
+    public void setAscii(Boolean ascii) {
         this.ascii = ascii;
     }
 

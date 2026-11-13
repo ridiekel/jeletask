@@ -2,6 +2,8 @@ package io.github.ridiekel.jeletask.client.builder.composer.config.statecalculat
 
 import io.github.ridiekel.jeletask.client.spec.component.DisplayMessageSpec;
 import io.github.ridiekel.jeletask.client.spec.state.impl.DisplayMessageState;
+import io.github.ridiekel.jeletask.mockserver.LogCapture;
+import ch.qos.logback.classic.Level;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -384,12 +386,19 @@ class DisplayMessageStateCalculatorTest {
     @DisplayName("Defaults of the display")
     class DefaultsTests {
         private static final int TYPE = 0;
+        private static final int ASCII = 1;
         private static final int BEEPS = 34;
 
         private DisplayMessageSpec display(String messageType, Integer messageBeeps) {
+            return display(messageType, messageBeeps, null);
+        }
+
+        private DisplayMessageSpec display(String messageType, Integer messageBeeps, Boolean ascii) {
             DisplayMessageSpec display = new DisplayMessageSpec();
+            display.setNumber(1000);
             display.setMessageType(messageType);
             display.setMessageBeeps(messageBeeps);
+            display.setAscii(ascii);
             return display;
         }
 
@@ -434,6 +443,74 @@ class DisplayMessageStateCalculatorTest {
         @DisplayName("Up to 255 beeps fit in the unsigned byte")
         void upTo255Beeps() {
             assertThat(calculator.toCommand(display(null, 255), text().build())[BEEPS]).isEqualTo((byte) 0xFF);
+        }
+
+        @Test
+        @DisplayName("A message without ascii takes it from the display")
+        void aMessageWithoutAsciiTakesItFromTheDisplay() {
+            byte[] result = calculator.toCommand(display(null, null, true), DisplayMessageState.builder().messageLine1("Front door bell").build());
+
+            assertThat(result[ASCII]).isEqualTo((byte) 1);
+            assertThat(new String(result, 2, 16, StandardCharsets.US_ASCII)).isEqualTo("Front door bell ");
+        }
+
+        @Test
+        @DisplayName("Ascii in the message wins over the display")
+        void asciiInTheMessageWins() {
+            byte[] result = calculator.toCommand(display(null, null, true), DisplayMessageState.builder().ascii(false).messageLine1("Bell").build());
+
+            assertThat(result[ASCII]).isEqualTo((byte) 0);
+        }
+
+        @Test
+        @DisplayName("Without ascii anywhere a message is unicode, as before")
+        void withoutAsciiAnywhereAMessageIsUnicode() {
+            byte[] result = calculator.toCommand(display(null, null, null), DisplayMessageState.builder().messageLine1("Bell").build());
+
+            assertThat(result[ASCII]).isEqualTo((byte) 0);
+        }
+    }
+
+    @Nested
+    @DisplayName("A line that does not fit")
+    class TooLongTests {
+        @Test
+        @DisplayName("Is cut off with a warning that says how much fits")
+        void isCutOffWithAWarning() {
+            DisplayMessageSpec display = new DisplayMessageSpec();
+            display.setNumber(1000);
+            DisplayMessageState state = DisplayMessageState.builder().ascii(true).messageLine1("Line one fits").messageLine2("Someone is at the front door").build();
+
+            try (LogCapture log = LogCapture.of(DisplayMessageStateCalculator.class, Level.WARN)) {
+                byte[] result = calculator.toCommand(display, state);
+
+                assertThat(new String(result, 18, 16, StandardCharsets.US_ASCII)).isEqualTo("Someone is at th");
+                assertThat(log.messages(Level.WARN)).containsExactly(
+                        "Display message 1000 line 2 'Someone is at the front door' has 28 characters, the display shows 16 with ascii: cut to 'Someone is at th'");
+            }
+        }
+
+        @Test
+        @DisplayName("Without ascii the warning says that ascii fits more")
+        void withoutAsciiTheWarningPointsAtAscii() {
+            DisplayMessageState state = DisplayMessageState.builder().messageLine1("Doorbell!").build();
+
+            try (LogCapture log = LogCapture.of(DisplayMessageStateCalculator.class, Level.WARN)) {
+                calculator.toCommand(null, state);
+
+                assertThat(log.messages(Level.WARN)).containsExactly(
+                        "Display message line 1 'Doorbell!' has 9 characters, the display shows 8 without ascii (16 with ascii): cut to 'Doorbell'");
+            }
+        }
+
+        @Test
+        @DisplayName("A line that fits gives no warning")
+        void aLineThatFitsGivesNoWarning() {
+            try (LogCapture log = LogCapture.of(DisplayMessageStateCalculator.class, Level.WARN)) {
+                calculator.toCommand(null, DisplayMessageState.builder().ascii(true).messageLine1("Exactly sixteen!").build());
+
+                assertThat(log.messages(Level.WARN)).isEmpty();
+            }
         }
     }
 }

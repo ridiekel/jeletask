@@ -448,6 +448,7 @@ DISPLAYMESSAGE config attribute parameters:
 | description     | no       | Description for this config entry                                                            |
 | message_type    | no       | `message` or `alarm`: the type of a display message that does not say. Without it: `alarm`  |
 | message_beeps   | no       | 0 to 255: the number of beeps of a display message that does not say. Without it: 1          |
+| ascii           | no       | `true`: 16 ASCII characters per line, `false`: 8 characters of any kind. For a display message that does not say. Without it: `false` |
 
 `bus_numbers` and `address_numbers` are two comma separated lists of the same size.
 They contain the Teletask bus number(s) and Teletask interface address(es) of the interface(s) on which to display the Message/Alarm
@@ -460,7 +461,8 @@ They contain the Teletask bus number(s) and Teletask interface address(es) of th
     "address_numbers": "13,5",
     "description": "Aurus living room + aurus basement",
     "message_type": "message",
-    "message_beeps": 2
+    "message_beeps": 2,
+    "ascii": true
   }
 ]
 ```
@@ -477,21 +479,24 @@ mosquitto_pub -h <TELETASK_MQTT_HOST> -p <TELETASK_MQTT_PORT> \
 |---------------|-----------------------------------------------------------------------------------------------------|
 | message_line1 | The first line                                                                                      |
 | message_line2 | The second line                                                                                     |
-| ascii         | `true`: 16 ASCII characters per line. `false` (the default): 8 characters per line, any character |
+| ascii         | `true`: 16 ASCII characters per line. `false`: 8 characters per line, any character. Left out: the `ascii` of the display in the config, or else `false` |
 | message_type  | `message` or `alarm`. Left out: the `message_type` of the display in the config, or else `alarm`   |
 | message_beeps | The number of beeps. Left out: the `message_beeps` of the display in the config, or else 1          |
 
 Notes:
 
-- A line longer than 16 (ascii) or 8 characters is cut off. This is a Teletask limitation.
+- A line longer than 16 (ascii) or 8 characters is cut off, with a warning in the log
+  (`Display message 1000 line 2 '...' has 28 characters, the display shows 16 with ascii: cut to '...'`).
+  This is a Teletask limitation.
 - The same message twice is shown twice: a display has no state, so nothing is dropped as unchanged.
 
 #### From Home Assistant
 
 Every display is a `notify` entity in Home Assistant, e.g. `notify.teletask_<TELETASK_CENTRAL_ID>_displaymessage_1000`.
-Its `notify.send_message` action shows the text in ASCII: the first 16 characters on line 1, the next 16 on line 2.
-Home Assistant only passes the text, so the message type and the beeps come from `message_type` and
-`message_beeps` of the display in the config.
+Its `notify.send_message` action shows the text over the two lines: the first 16 characters on line 1 and the rest on
+line 2 when the display has `"ascii": true`, otherwise 8. Text that does not fit on line 2 is cut off with a warning in
+the log. Home Assistant only passes the text, so the message type, ascii and the beeps come from `message_type`,
+`ascii` and `message_beeps` of the display in the config.
 
 ```yaml
 actions:

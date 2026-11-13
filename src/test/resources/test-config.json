@@ -158,7 +158,8 @@
         "bus_numbers": "1,1",
         "address_numbers": "13,5",
         "message_type": "message",
-        "message_beeps": 3
+        "message_beeps": 3,
+        "ascii": true
       }
     ]
   }

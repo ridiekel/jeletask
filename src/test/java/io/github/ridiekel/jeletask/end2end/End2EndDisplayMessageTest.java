@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("resource")
 class End2EndDisplayMessageTest extends MockingTeletaskTestSupport {
     private static final MessageHandler HANDLER = MessageHandlerFactory.getMessageHandler(CentralUnitType.MICROS_PLUS);
-    // Display 60 in test-config.json: bus 1 address 13 and bus 1 address 5, by default a message with 3 beeps
+    // Display 60 in test-config.json: bus 1 address 13 and bus 1 address 5, by default an ascii message with 3 beeps
     private static final String ENTITY = HomeAssistantContainer.getId(Function.DISPLAYMESSAGE, 60, "notify");
     private static final String SET_TOPIC = "test_prefix_teletask2mqtt/MAN_TEST_localhost/displaymessage/60/set";
     private static final String HELLO = "{\"message_type\":\"message\",\"ascii\":true,\"message_line1\":\"Hello\",\"message_line2\":\"World\",\"message_beeps\":2}";
@@ -82,8 +82,8 @@ class End2EndDisplayMessageTest extends MockingTeletaskTestSupport {
     }
 
     @Test
-    void aMessageOverMqttWithoutTypeOrBeepsTakesThoseOfTheDisplay() {
-        mqtt().publish(SET_TOPIC, "{\"ascii\":true,\"message_line1\":\"Doorbell\"}");
+    void aMessageOverMqttWithOnlyTextTakesTheRestFromTheDisplay() {
+        mqtt().publish(SET_TOPIC, "{\"message_line1\":\"Doorbell\"}");
 
         assertThat(displayMessagesAtTheCentralUnit(1)).containsExactly(onBothDisplays("Doorbell", "", 3));
     }
