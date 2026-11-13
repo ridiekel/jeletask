@@ -18,6 +18,7 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
     // A line holds 16 bytes: 16 ASCII characters or 8 UTF-16 ones (TT15132 §3.6)
     public static final int ASCII_LINE_LENGTH = 16;
     public static final int UNICODE_LINE_LENGTH = 8;
+    public static final int MAX_BEEPS = 255;
     // Hyphen, en dash, em dash and slash: a line may break after them
     private static final String BREAK_AFTER = "-\u2013\u2014/";
 
@@ -41,7 +42,7 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
                 toIsAsciiBytes(state),
                 toMessageLineBytes(component, state, 1, DisplayMessageState::getMessageLine1),
                 toMessageLineBytes(component, state, 2, DisplayMessageState::getMessageLine2),
-                toNumberOfBeepsBytes(state)
+                toNumberOfBeepsBytes(component, state)
         );
     }
 
@@ -104,12 +105,13 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
         boolean ascii = isAscii(state);
         int length = lineLength(ascii);
         String text = Optional.ofNullable(extractor.apply(state)).orElse("");
+        String shown = StringUtils.left(text, length);
         if (text.length() > length) {
-            LOG.warn("Display message{} line {} '{}' has {} characters, the display shows {}{}: cut to '{}'",
-                    displayNumber(component), line, text, text.length(), length, ascii ? " with ascii" : " without ascii (16 with ascii)", StringUtils.left(text, length));
+            String display = displayNumber(component);
+            String fits = ascii ? " with ascii" : " without ascii (16 with ascii)";
+            LOG.warn("Display message{} line {} '{}' has {} characters, the display shows {}{}: cut to '{}'", display, line, text, text.length(), length, fits, shown);
         }
-        return StringUtils.rightPad(StringUtils.left(text, length), length)
-                .getBytes(ascii ? StandardCharsets.US_ASCII : StandardCharsets.UTF_16BE);
+        return StringUtils.rightPad(shown, length).getBytes(ascii ? StandardCharsets.US_ASCII : StandardCharsets.UTF_16BE);
     }
 
     private static String displayNumber(ComponentSpec component) {
@@ -125,10 +127,18 @@ public class DisplayMessageStateCalculator extends StateCalculatorSupport<Displa
         return new byte[]{(byte) (isAscii(state) ? 1 : 0)};
     }
 
-    private static byte[] toNumberOfBeepsBytes(DisplayMessageState state) {
-        return Optional.ofNullable(state.getMessageBeeps())
-                .map(b -> new byte[]{b.byteValue()})
-                .orElseGet(() -> new byte[]{(byte) 1});
+    private static byte[] toNumberOfBeepsBytes(ComponentSpec component, DisplayMessageState state) {
+        Number beeps = state.getMessageBeeps();
+        if (beeps == null) {
+            return new byte[]{(byte) 1};
+        }
+        // One unsigned byte: more would wrap around, 300 would be 44 beeps
+        int clamped = Math.clamp(beeps.longValue(), 0, MAX_BEEPS);
+        if (clamped != beeps.longValue()) {
+            String display = displayNumber(component);
+            LOG.warn("Display message{} asks for {} beeps, the display can do 0 to {}: {} beeps", display, beeps, MAX_BEEPS, clamped);
+        }
+        return new byte[]{(byte) clamped};
     }
 
     private static byte[] toMessageTypeBytes(DisplayMessageState state) {

@@ -584,4 +584,39 @@ class DisplayMessageStateCalculatorTest {
                     .hasMessage("A display message has either a 'message' or 'message_line1' and 'message_line2', not both");
         }
     }
+
+    @Nested
+    @DisplayName("Beeps the display cannot do")
+    class BeepsTests {
+        private static final int BEEPS = 34;
+
+        private DisplayMessageSpec display() {
+            DisplayMessageSpec display = new DisplayMessageSpec();
+            display.setNumber(1000);
+            return display;
+        }
+
+        @ParameterizedTest(name = "{0} beeps become {1}")
+        @CsvSource({"300, 255", "256, 255", "-3, 0"})
+        void becomeTheNearestItCanDoWithAWarning(int asked, int sent) {
+            try (LogCapture log = LogCapture.of(DisplayMessageStateCalculator.class, Level.WARN)) {
+                byte[] result = calculator.toCommand(display(), DisplayMessageState.builder().ascii(true).messageBeeps(asked).build());
+
+                assertThat(Byte.toUnsignedInt(result[BEEPS])).isEqualTo(sent);
+                assertThat(log.messages(Level.WARN)).containsExactly(
+                        "Display message 1000 asks for " + asked + " beeps, the display can do 0 to 255: " + sent + " beeps");
+            }
+        }
+
+        @ParameterizedTest(name = "{0} beeps")
+        @CsvSource({"0", "1", "255"})
+        void whatTheDisplayCanDoGivesNoWarning(int beeps) {
+            try (LogCapture log = LogCapture.of(DisplayMessageStateCalculator.class, Level.WARN)) {
+                byte[] result = calculator.toCommand(display(), DisplayMessageState.builder().ascii(true).messageBeeps(beeps).build());
+
+                assertThat(Byte.toUnsignedInt(result[BEEPS])).isEqualTo(beeps);
+                assertThat(log.messages(Level.WARN)).isEmpty();
+            }
+        }
+    }
 }
