@@ -62,6 +62,15 @@ public final class HiveMqConnection implements MqttConnection {
                 .initialDelay(settings.reconnectDelay().toMillis(), TimeUnit.MILLISECONDS)
                 .maxDelay(settings.maxReconnectDelay().toMillis(), TimeUnit.MILLISECONDS)
                 .applyAutomaticReconnect()
+                // On the client and not on the CONNECT: every automatic reconnect sends a CONNECT the client builds
+                // itself from these defaults, and a login or will set only on the first CONNECT is gone from then on.
+                // A broker without anonymous access refused every reconnect with "not authorised" (2026-11-18).
+                .willPublish()
+                .topic(settings.willTopic())
+                .payload(settings.willPayload().getBytes(StandardCharsets.UTF_8))
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .retain(true)
+                .applyWillPublish()
                 .addConnectedListener(_ -> {
                     this.up.set(true);
                     boolean reconnect = this.connectedBefore.getAndSet(true);
@@ -78,22 +87,16 @@ public final class HiveMqConnection implements MqttConnection {
                         this.callbacks.execute(() -> listener.connectionLost(context.getCause()));
                     }
                 });
+        if (settings.username() != null) {
+            var auth = builder.simpleAuth().username(settings.username());
+            builder = (settings.password() == null ? auth : auth.password(settings.password().getBytes(StandardCharsets.UTF_8))).applySimpleAuth();
+        }
         this.client = builder.buildAsync();
         this.client.publishes(MqttGlobalPublishFilter.ALL, this::dispatch, this.callbacks);
 
         var connect = this.client.connectWith()
                 .cleanSession(false)
-                .keepAlive((int) settings.keepAlive().toSeconds())
-                .willPublish()
-                .topic(settings.willTopic())
-                .payload(settings.willPayload().getBytes(StandardCharsets.UTF_8))
-                .qos(MqttQos.AT_LEAST_ONCE)
-                .retain(true)
-                .applyWillPublish();
-        if (settings.username() != null) {
-            var auth = connect.simpleAuth().username(settings.username());
-            connect = (settings.password() == null ? auth : auth.password(settings.password().getBytes(StandardCharsets.UTF_8))).applySimpleAuth();
-        }
+                .keepAlive((int) settings.keepAlive().toSeconds());
 
         try {
             this.await(connect.send(), "connect");
