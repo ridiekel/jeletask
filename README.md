@@ -377,7 +377,7 @@ boot: auto
 `Dockerfile`
 
 ```dockerfile
-FROM ridiekel/jeletask2mqtt:7.1.2-native
+FROM ridiekel/jeletask2mqtt:7.1.3-native
 
 COPY --chmod=644 config.json /teletask2mqtt/config.json
 
